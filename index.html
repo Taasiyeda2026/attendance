@@ -390,7 +390,7 @@
       color: #1e293b;
     }
 
-    .card-body {
+    .card- {
       padding: 25px;
     }
 
@@ -420,7 +420,7 @@
       font-size: 14px;
     }
 
-    table tbody tr:hover {
+    table t tr:hover {
       background: #f8fafc;
     }
 
@@ -683,7 +683,57 @@
   <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
+async function submitAll() {
+    const pendingRecords = records.filter(r => r.status === 'pending');
+    
+    if (pendingRecords.length === 0) {
+        showAlert('אין רשומות חדשות לשליחה', 'info');
+        return;
+    }
 
+    // הכתובת שקיבלת מה-HTTP Trigger ב-Logic App
+    const logicAppUrl = 'YOUR_LOGIC_APP_URL_HERE';
+
+    // טיפול בקבצים - הופך את הקובץ הראשון ל-Base64 (אם קיים)
+    const fileInput = document.getElementById('attachments');
+    let fileBase64 = null;
+    if (fileInput.files.length > 0) {
+        fileBase64 = await toBase64(fileInput.files[0]);
+    }
+
+    const payload = {
+        employeeNumber: document.getElementById('empNum').value,
+        employeeName: document.getElementById('empName').value,
+        records: pendingRecords,
+        attachment: fileBase64 // נשלח כטקסט ארוך
+    };
+
+    try {
+        const response = await fetch(logicAppUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            showAlert('הנתונים סונכרנו בהצלחה!', 'success');
+            // עדכון סטטוס מקומי כדי שלא יישלח פעמיים
+            records.forEach(r => r.status = 'sent');
+            localStorage.setItem('attendance_records', JSON.stringify(records));
+            renderRecords();
+        }
+    } catch (error) {
+        showAlert('שגיאה בחיבור ל-Logic App', 'error');
+    }
+}
+
+// פונקציית עזר להמרת קובץ לפורמט שה-Logic App יכול לקרוא
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+});
 <!-- =============== Login Screen =============== -->
 <div id="loginScreen">
   <div class="login-card">
