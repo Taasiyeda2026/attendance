@@ -835,11 +835,15 @@
         </div>
       </div>
       
-      <!-- כפתור הוספת רשומה חדשה -->
-      <div style="text-align: center; margin-top: 40px;">
+      <!-- כפתורי פעולות -->
+      <div style="text-align: center; margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
         <button class="btn btn-primary" onclick="showPage(event, 'add-record')" style="font-size: 18px; padding: 20px 40px;">
           <i class="fas fa-plus"></i>
           הוסף רשומה חדשה
+        </button>
+        <button class="btn" onclick="exportToExcel()" style="background: #10b981; color: white; font-size: 18px; padding: 20px 40px;">
+          <i class="fas fa-file-excel"></i>
+          ייצוא ל-Excel
         </button>
       </div>
     </div>
