@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מערכת נוכחות - תעשיידע</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <form id="loginForm">
+    <input id="loginEmpNum" placeholder="מספר עובד" />
+    <input id="empCode" placeholder="קוד אישי" type="password" />
+    <button type="submit">כניסה</button>
+    <div id="loginError" style="color:red;display:none"></div>
+  </form>
+</div>
+
+<div id="mainApp" style="display:none">
+  <h1>ברוך הבא</h1>
+</div>
+
+<script>
+const LOGIC_APP_URL = "https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g";
+
+async function doLogin(event) {
+  event.preventDefault();
+
+  const employeeId = document.getElementById('loginEmpNum').value.trim();
+  const personalCode = document.getElementById('empCode').value.trim();
+  const errorEl = document.getElementById('loginError');
+
+  errorEl.style.display = 'none';
+
+  try {
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employeeId: Number(employeeId),
+        personalCode: Number(personalCode)
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+    } else {
+      errorEl.innerText = data.message || 'פרטי התחברות שגויים';
+      errorEl.style.display = 'block';
+    }
+
+  } catch (err) {
+    errorEl.innerText = 'שגיאת תקשורת – בדוק חיבור';
+    errorEl.style.display = 'block';
+  }
+}
+
+document.getElementById('loginForm').addEventListener('submit', doLogin);
+</script>
+</body>
+</html>
