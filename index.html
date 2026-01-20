@@ -730,20 +730,32 @@
       </div>
     </div>
     
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" onclick="showPage(event, 'dashboard')">
+    <nav class="sidebar-nav" id="sidebarNav">
+      <a href="#" class="nav-item active" onclick="showPage(event, 'dashboard')" data-roles="all">
         <i class="fas fa-chart-line"></i>
         <span>לוח בקרה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')">
+      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="all">
         <i class="fas fa-plus-circle"></i>
         <span>הוספת רשומה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'records')">
+      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="all">
         <i class="fas fa-table"></i>
         <span>רשומות נוכחות</span>
       </a>
-      <a href="#" class="nav-item" onclick="syncFromSharePoint()">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin">
+        <i class="fas fa-users"></i>
+        <span>רשומות הצוות</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
+        <i class="fas fa-file-alt"></i>
+        <span>דוחות</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage(event, 'admin')" data-roles="system_admin">
+        <i class="fas fa-cog"></i>
+        <span>הגדרות מערכת</span>
+      </a>
+      <a href="#" class="nav-item" onclick="syncFromSharePoint()" data-roles="all">
         <i class="fas fa-sync-alt"></i>
         <span>סנכרון נתונים</span>
       </a>
@@ -1001,6 +1013,104 @@
       </div>
     </div>
 
+    <!-- Team Records Page (for manager, operations_controller, system_admin) -->
+    <div id="teamRecordsPage" class="page hidden">
+      <div class="page-header">
+        <h1>רשומות הצוות</h1>
+        <p id="teamRecordsSubtitle">צפייה ועריכה של רשומות הצוות</p>
+      </div>
+      
+      <div class="content-card">
+        <div class="card-header">
+          <h2 class="card-title">רשומות צוות <span id="teamName"></span></h2>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn" onclick="exportTeamToExcel()" style="background: #10b981; color: white;">
+              <i class="fas fa-file-excel"></i>
+              ייצוא ל-Excel
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="teamRecordsTable">
+            <p style="text-align: center; color: #94a3b8; padding: 40px;">טוען רשומות צוות...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Page (for manager, operations_controller, system_admin) -->
+    <div id="reportsPage" class="page hidden">
+      <div class="page-header">
+        <h1>דוחות</h1>
+        <p>סיכומים וסטטיסטיקות</p>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-card-header">
+            <span class="stat-card-title">סה"כ רשומות הצוות</span>
+            <div class="stat-card-icon"><i class="fas fa-clipboard-list"></i></div>
+          </div>
+          <div class="stat-card-value" id="teamTotalRecords">0</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-card-header">
+            <span class="stat-card-title">סה"כ שעות הצוות</span>
+            <div class="stat-card-icon"><i class="fas fa-clock"></i></div>
+          </div>
+          <div class="stat-card-value" id="teamTotalHours">0</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-card-header">
+            <span class="stat-card-title">סה"כ הוצאות הצוות</span>
+            <div class="stat-card-icon"><i class="fas fa-shekel-sign"></i></div>
+          </div>
+          <div class="stat-card-value" id="teamTotalExpenses">0 ₪</div>
+        </div>
+      </div>
+      
+      <div class="content-card" style="margin-top: 20px;">
+        <div class="card-header">
+          <h2 class="card-title">סיכום לפי עובד</h2>
+        </div>
+        <div class="card-body">
+          <div id="reportsByEmployee">
+            <p style="text-align: center; color: #94a3b8; padding: 40px;">טוען נתונים...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Page (for system_admin only) -->
+    <div id="adminPage" class="page hidden">
+      <div class="page-header">
+        <h1>הגדרות מערכת</h1>
+        <p>ניהול משתמשים והגדרות</p>
+      </div>
+      
+      <div class="content-card">
+        <div class="card-header">
+          <h2 class="card-title">פעולות מנהל</h2>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <button class="btn btn-primary" onclick="viewAllRecords()" style="padding: 20px;">
+              <i class="fas fa-database"></i><br>
+              צפייה בכל הרשומות
+            </button>
+            <button class="btn" onclick="exportAllToExcel()" style="background: #10b981; color: white; padding: 20px;">
+              <i class="fas fa-file-excel"></i><br>
+              ייצוא כל הנתונים
+            </button>
+            <button class="btn" onclick="syncFromSharePoint()" style="background: #3b82f6; color: white; padding: 20px;">
+              <i class="fas fa-sync-alt"></i><br>
+              סנכרון מ-SharePoint
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Edit Modal -->
     <div id="editModal" class="modal">
       <div class="modal-content">
@@ -1253,6 +1363,68 @@ const schoolsData = [
 schoolsData.sort((a, b) => a['בית ספר'].localeCompare(b['בית ספר'], 'he'));
 schoolsData.unshift({"רשות":"זום","בית ספר":"זום"});
 
+// =============== Role Management ===============
+function getRoleDisplayName(role) {
+  const roleNames = {
+    'system_admin': 'מנהל מערכת',
+    'manager': 'מנהל/ת פעילויות',
+    'operations_controller': 'עוזרת אדמין',
+    'instructor': 'מדריך/ה'
+  };
+  return roleNames[role] || 'משתמש';
+}
+
+function getCurrentUserData() {
+  try {
+    const saved = localStorage.getItem('currentUser');
+    return saved ? JSON.parse(saved) : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+function updateMenuByRole(role) {
+  const navItems = document.querySelectorAll('#sidebarNav .nav-item');
+  navItems.forEach(item => {
+    const allowedRoles = item.getAttribute('data-roles');
+    if (allowedRoles === 'all') {
+      item.style.display = 'flex';
+    } else {
+      const roles = allowedRoles.split(',');
+      item.style.display = roles.includes(role) ? 'flex' : 'none';
+    }
+  });
+}
+
+function hasPermission(action, targetTeam = null) {
+  const user = getCurrentUserData();
+  if (!user) return false;
+  
+  const role = user.role;
+  
+  switch(action) {
+    case 'view_own':
+      return true;
+    case 'view_team':
+      return ['manager', 'operations_controller', 'system_admin'].includes(role);
+    case 'view_all':
+      return ['operations_controller', 'system_admin'].includes(role);
+    case 'edit_own':
+      return true;
+    case 'edit_team':
+      if (role === 'manager') {
+        return user.team === targetTeam;
+      }
+      return ['operations_controller', 'system_admin'].includes(role);
+    case 'edit_all':
+      return ['operations_controller', 'system_admin'].includes(role);
+    case 'admin':
+      return role === 'system_admin';
+    default:
+      return false;
+  }
+}
+
 // =============== Login ===============
 async function doLogin(event) {
   if (event) {
@@ -1297,7 +1469,7 @@ async function doLogin(event) {
       const empData = {
         empNum: data.employeeId.toString(),
         empName: data.employeeName,
-        role: data.role,
+        role: data.role || 'instructor',
         team: data.team || null
       };
       localStorage.setItem('currentUser', JSON.stringify(empData));
@@ -1308,7 +1480,9 @@ async function doLogin(event) {
       document.getElementById('empNum').value = empData.empNum;
       document.getElementById('empName').value = empData.empName;
       document.getElementById('userName').textContent = empData.empName;
+      document.getElementById('userRole').textContent = getRoleDisplayName(empData.role);
       
+      updateMenuByRole(empData.role);
       loadFromLocalStorage();
       updateStats();
       showPage(null, 'dashboard');
@@ -1349,10 +1523,16 @@ function showPage(event, pageName) {
   const pageMap = {
     'dashboard': 'dashboardPage',
     'add-record': 'addRecordPage',
-    'records': 'recordsPage'
+    'records': 'recordsPage',
+    'team-records': 'teamRecordsPage',
+    'reports': 'reportsPage',
+    'admin': 'adminPage'
   };
   
-  document.getElementById(pageMap[pageName]).classList.remove('hidden');
+  const pageId = pageMap[pageName];
+  if (pageId) {
+    document.getElementById(pageId).classList.remove('hidden');
+  }
   
   if (event && event.target.closest('.nav-item')) {
     event.target.closest('.nav-item').classList.add('active');
@@ -1360,6 +1540,53 @@ function showPage(event, pageName) {
   
   if (pageName === 'dashboard') updateDashboard();
   if (pageName === 'records') renderRecordsTable();
+  if (pageName === 'team-records') loadTeamRecords();
+  if (pageName === 'reports') loadReports();
+}
+
+// =============== Team Records Functions ===============
+function loadTeamRecords() {
+  const user = getCurrentUserData();
+  if (!user) return;
+  
+  const teamName = document.getElementById('teamName');
+  if (user.role === 'system_admin' || user.role === 'operations_controller') {
+    teamName.textContent = '(כל הצוותים)';
+  } else if (user.role === 'manager') {
+    teamName.textContent = user.team || '';
+  }
+  
+  document.getElementById('teamRecordsTable').innerHTML = `
+    <p style="text-align: center; color: #64748b; padding: 40px;">
+      <i class="fas fa-info-circle"></i>
+      רשומות הצוות יוצגו כאן לאחר סנכרון מ-SharePoint
+    </p>
+  `;
+}
+
+function loadReports() {
+  document.getElementById('teamTotalRecords').textContent = '0';
+  document.getElementById('teamTotalHours').textContent = '0';
+  document.getElementById('teamTotalExpenses').textContent = '0 ₪';
+  
+  document.getElementById('reportsByEmployee').innerHTML = `
+    <p style="text-align: center; color: #64748b; padding: 40px;">
+      <i class="fas fa-info-circle"></i>
+      דוחות יוצגו כאן לאחר סנכרון מ-SharePoint
+    </p>
+  `;
+}
+
+function exportTeamToExcel() {
+  showAlert('פונקציה זו תהיה זמינה לאחר סנכרון מ-SharePoint', 'info');
+}
+
+function viewAllRecords() {
+  showPage(null, 'team-records');
+}
+
+function exportAllToExcel() {
+  exportToExcel();
 }
 
 // =============== Alert ===============
@@ -2004,7 +2231,9 @@ window.addEventListener('DOMContentLoaded', function() {
       document.getElementById('empNum').value = empData.empNum;
       document.getElementById('empName').value = empData.empName;
       document.getElementById('userName').textContent = empData.empName;
+      document.getElementById('userRole').textContent = getRoleDisplayName(empData.role || 'instructor');
       
+      updateMenuByRole(empData.role || 'instructor');
       loadFromLocalStorage();
       updateStats();
       showPage(null, 'dashboard');
