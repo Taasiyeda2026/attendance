@@ -593,24 +593,179 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
+    /* Mobile Menu Toggle */
+    .mobile-menu-toggle {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 200;
+      background: #1e40af;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+
+    /* Responsive - Tablet */
+    @media (max-width: 1024px) {
       .sidebar {
-        width: 100%;
-        position: relative;
+        width: 220px;
+      }
+      .main-content {
+        margin-right: 220px;
+        padding: 16px;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Responsive - Mobile */
+    @media (max-width: 768px) {
+      .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .mobile-overlay.active {
+        display: block;
+      }
+
+      .sidebar {
+        position: fixed;
+        right: -260px;
+        width: 260px;
+        transition: right 0.3s ease;
+        z-index: 150;
+      }
+
+      .sidebar.open {
+        right: 0;
       }
 
       .main-content {
         margin-right: 0;
-        padding: 20px;
+        padding: 60px 12px 12px 12px;
+      }
+
+      .page-header h1 {
+        font-size: 20px;
+      }
+
+      .page-header p {
+        font-size: 12px;
       }
 
       .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 12px;
+      }
+
+      .stat-card-value {
+        font-size: 20px;
+      }
+
+      .stat-card-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+      }
+
+      .content-card {
+        border-radius: 10px;
+      }
+
+      .card-header {
+        padding: 12px;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .card-body {
+        padding: 12px;
       }
 
       .form-grid {
         grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .form-field input,
+      .form-field select,
+      .form-field textarea {
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .btn {
+        padding: 10px 14px;
+        font-size: 13px;
+        width: 100%;
+      }
+
+      .form-actions {
+        flex-direction: column;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      table th,
+      table td {
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+
+      .modal-content {
+        padding: 20px;
+        margin: 10px;
+        max-height: 85vh;
+      }
+    }
+
+    /* Responsive - Small Mobile */
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card-header {
+        flex-direction: row-reverse;
+      }
+
+      .login-card {
+        padding: 25px 20px;
+        margin: 10px;
+      }
+
+      .login-card h2 {
+        font-size: 20px;
       }
     }
 
@@ -733,8 +888,16 @@
 <!-- =============== Main App =============== -->
 <div id="mainApp" class="hidden">
   
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+    <i class="fas fa-bars" id="mobileMenuIcon"></i>
+  </button>
+  
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+  
   <!-- Sidebar -->
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h2 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0; text-align: center;">תעשיידע<br><span style="font-size: 14px; font-weight: 500; color: #64748b;">מערכת נוכחות</span></h2>
     </div>
@@ -1532,11 +1695,40 @@ function logout() {
   }
 }
 
+// =============== Mobile Menu ===============
+function toggleMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('mobileOverlay');
+  const icon = document.getElementById('mobileMenuIcon');
+  
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('active');
+  
+  if (sidebar.classList.contains('open')) {
+    icon.className = 'fas fa-times';
+  } else {
+    icon.className = 'fas fa-bars';
+  }
+}
+
+function closeMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('mobileOverlay');
+  const icon = document.getElementById('mobileMenuIcon');
+  
+  sidebar.classList.remove('open');
+  overlay.classList.remove('active');
+  icon.className = 'fas fa-bars';
+}
+
 // =============== Page Navigation ===============
 function showPage(event, pageName) {
   if (event) {
     event.preventDefault();
   }
+  
+  // Close mobile menu when navigating
+  closeMobileMenu();
   
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
