@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a Hebrew-language attendance management system built as a Progressive Web App (PWA). The application provides a login-based interface for tracking attendance, designed for right-to-left (RTL) display. It follows a full-stack architecture with a React frontend and Express backend, using Azure Logic Apps as an external authentication and data processing service.
+This is a Hebrew-language attendance management system built as a Progressive Web App (PWA). The application provides a login-based interface for tracking attendance, designed for right-to-left (RTL) display. It uses an Express backend with Azure Logic Apps for authentication and SharePoint List synchronization.
 
 ## User Preferences
 
@@ -11,14 +11,18 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite with HMR support
-- **Styling**: Tailwind CSS with Heebo Hebrew font
-- **UI Components**: Radix UI primitives for accessible components
-- **State Management**: React Query for server state
+- **Framework**: Static HTML with vanilla JavaScript
+- **Styling**: Tailwind CSS via CDN with Heebo Hebrew font
 - **PWA Support**: Service worker (sw.js) with offline caching, manifest.json for installability
+- **UI Features**: Loading overlay for mobile feedback, gradient buttons, responsive design
 
-The frontend is located in `/client` with the entry point at `client/src/main.tsx`. The app uses RTL direction throughout for Hebrew language support.
+The frontend is located in `/public/index.html` as a self-contained static file. The app uses RTL direction throughout for Hebrew language support.
+
+### Key Files
+- `public/index.html` - Main application (login, dashboard, forms)
+- `public/manifest.json` - PWA manifest
+- `public/sw.js` - Service worker for offline support
+- `public/logo.png` - Application logo
 
 ### Backend Architecture
 - **Framework**: Express 5 with TypeScript
@@ -29,6 +33,7 @@ The frontend is located in `/client` with the entry point at `client/src/main.ts
 Key endpoints:
 - `POST /api/auth` - Authentication proxy to Azure Logic Apps
 - `POST /api/submit` - Form submission proxy to Azure Logic Apps
+- `POST /api/sync` - Sync records from SharePoint (action=sync)
 - `GET /api/chat/health` - Health check endpoint
 
 ### Data Storage
