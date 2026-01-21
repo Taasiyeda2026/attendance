@@ -1040,8 +1040,16 @@
 
     <!-- Add Record Page -->
     <div id="addRecordPage" class="page hidden">
-      <div class="page-header">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h1>הוספת רשומה חדשה</h1>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-success" onclick="addRecord()" title="הוסף רשומה" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-check"></i>
+          </button>
+          <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
       </div>
       
       <div class="content-card">
@@ -1159,16 +1167,6 @@
             </div>
           </div>
           
-          <div style="display: flex; gap: 15px; margin-top: 25px;">
-            <button class="btn btn-success" onclick="addRecord()">
-              <i class="fas fa-check"></i>
-              הוסף רשומה
-            </button>
-            <button class="btn btn-primary" onclick="showPage(event, 'dashboard')">
-              <i class="fas fa-arrow-right"></i>
-              חזור ללוח בקרה
-            </button>
-          </div>
         </div>
       </div>
     </div>
