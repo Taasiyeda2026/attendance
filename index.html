@@ -1645,6 +1645,75 @@ function hasPermission(action, targetTeam = null) {
   }
 }
 
+// =============== Sync from SharePoint ===============
+function generateRecordKey(rec) {
+  return `${rec.empNum || rec.employeeId}_${rec.date || rec.attendanceDate}_${rec.start || rec.startTime}_${rec.activity || rec.activityType}`;
+}
+
+async function syncFromSharePoint(employeeId) {
+  try {
+    showAlert('🔄 מסנכרן נתונים...', 'info');
+    
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employeeId: employeeId })
+    });
+    
+    if (!response.ok) {
+      showAlert('⚠️ לא ניתן לסנכרן כעת, ממשיך עם נתונים מקומיים', 'error');
+      return;
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      showAlert('⚠️ הסנכרון נכשל, ממשיך עם נתונים מקומיים', 'error');
+      return;
+    }
+    
+    if (data.records && Array.isArray(data.records)) {
+      const syncedRecords = data.records.map(rec => ({
+        id: rec.id || generateRecordKey(rec),
+        empNum: rec.employeeId?.toString() || employeeId,
+        empName: rec.employeeName || '',
+        date: rec.attendanceDate || '',
+        start: rec.startTime || '',
+        end: rec.endTime || '',
+        hours: rec.workHours || 0,
+        activity: rec.activityType || '',
+        school: rec.schoolName || '',
+        municipality: rec.municipality || '',
+        program: rec.programName || '',
+        session: rec.sessionNumber || '',
+        km: rec.kilometers || 0,
+        totalExpenses: rec.totalExpenses || 0,
+        expensesDetail: rec.expensesDetails || '',
+        notes: rec.notes || '',
+        status: 'נשלח',
+        attachments: []
+      }));
+      
+      const existingKeys = new Set(records.map(r => generateRecordKey(r)));
+      const newRecords = syncedRecords.filter(r => !existingKeys.has(generateRecordKey(r)));
+      
+      if (newRecords.length > 0) {
+        records = [...records, ...newRecords];
+        saveToLocalStorage();
+        renderRecordsTable();
+        showAlert(`✅ סונכרנו ${newRecords.length} רשומות חדשות`, 'success');
+      } else {
+        showAlert('✅ הנתונים מעודכנים', 'success');
+      }
+    } else {
+      showAlert('✅ הנתונים מעודכנים', 'success');
+    }
+  } catch (error) {
+    console.error('Sync error:', error);
+    showAlert('⚠️ שגיאת סנכרון, ממשיך עם נתונים מקומיים', 'error');
+  }
+}
+
 // =============== Login ===============
 async function doLogin(event) {
   if (event) {
@@ -1704,6 +1773,9 @@ async function doLogin(event) {
       
       updateMenuByRole(empData.role);
       loadFromLocalStorage();
+      
+      await syncFromSharePoint(empData.empNum);
+      
       updateStats();
       showPage(null, 'dashboard');
     } else {
