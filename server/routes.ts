@@ -16,6 +16,7 @@ export async function registerRoutes(
   
   app.use('/attached_assets', express.static(path.resolve(process.cwd(), 'attached_assets')));
   app.use(express.static(path.resolve(process.cwd(), 'public')));
+  app.use(express.static(process.cwd()));
   
   app.post("/api/auth", async (req, res) => {
     try {
