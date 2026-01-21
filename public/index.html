@@ -1149,11 +1149,11 @@
             </div>
             <div class="form-field">
               <label for="startTime">שעת התחלה <span style="color: #ef4444;">*</span></label>
-              <input type="time" id="startTime" onchange="calculateHours()" required>
+              <input type="time" id="startTime" oninput="calculateHours()" onchange="calculateHours()" required>
             </div>
             <div class="form-field">
               <label for="endTime">שעת סיום <span style="color: #ef4444;">*</span></label>
-              <input type="time" id="endTime" onchange="calculateHours()" required>
+              <input type="time" id="endTime" oninput="calculateHours()" onchange="calculateHours()" required>
             </div>
             <div class="form-field">
               <label for="hoursField">סה"כ שעות</label>
@@ -1403,11 +1403,11 @@
           </div>
           <div class="form-field">
             <label for="editStartTime" class="required-label">שעת התחלה</label>
-            <input type="time" id="editStartTime" onchange="calculateEditHours()" required>
+            <input type="time" id="editStartTime" oninput="calculateEditHours()" onchange="calculateEditHours()" required>
           </div>
           <div class="form-field">
             <label for="editEndTime" class="required-label">שעת סיום</label>
-            <input type="time" id="editEndTime" onchange="calculateEditHours()" required>
+            <input type="time" id="editEndTime" oninput="calculateEditHours()" onchange="calculateEditHours()" required>
           </div>
           <div class="form-field">
             <label for="editHours">סה"כ שעות</label>
