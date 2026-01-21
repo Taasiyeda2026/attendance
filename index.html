@@ -509,12 +509,9 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      z-index: 10001;
+      z-index: 1000;
       opacity: 0;
       transition: all 0.3s;
-      max-width: 90vw;
-      text-align: center;
-      font-weight: 600;
     }
 
     .alert.show {
@@ -535,53 +532,6 @@
     .alert.info {
       background: #dbeafe;
       color: #3b82f6;
-    }
-
-    /* Loading Overlay */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .loading-overlay.show {
-      display: flex;
-    }
-
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .loading-text {
-      color: white;
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 768px) {
-      .alert {
-        top: 70px;
-        padding: 14px 20px;
-        font-size: 14px;
-      }
     }
 
     /* Form */
@@ -918,13 +868,6 @@
   <link rel="apple-touch-icon" href="./logo.png">
 </head>
 <body>
-
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-spinner"></div>
-  <div class="loading-text" id="loadingText">טוען...</div>
-</div>
-
 <!-- =============== Login Screen =============== -->
 <div id="loginScreen">
   <div class="login-card">
@@ -1149,11 +1092,11 @@
             </div>
             <div class="form-field">
               <label for="startTime">שעת התחלה <span style="color: #ef4444;">*</span></label>
-              <input type="time" id="startTime" oninput="calculateHours()" onchange="calculateHours()" required>
+              <input type="time" id="startTime" onchange="calculateHours()" required>
             </div>
             <div class="form-field">
               <label for="endTime">שעת סיום <span style="color: #ef4444;">*</span></label>
-              <input type="time" id="endTime" oninput="calculateHours()" onchange="calculateHours()" required>
+              <input type="time" id="endTime" onchange="calculateHours()" required>
             </div>
             <div class="form-field">
               <label for="hoursField">סה"כ שעות</label>
@@ -1403,11 +1346,11 @@
           </div>
           <div class="form-field">
             <label for="editStartTime" class="required-label">שעת התחלה</label>
-            <input type="time" id="editStartTime" oninput="calculateEditHours()" onchange="calculateEditHours()" required>
+            <input type="time" id="editStartTime" onchange="calculateEditHours()" required>
           </div>
           <div class="form-field">
             <label for="editEndTime" class="required-label">שעת סיום</label>
-            <input type="time" id="editEndTime" oninput="calculateEditHours()" onchange="calculateEditHours()" required>
+            <input type="time" id="editEndTime" onchange="calculateEditHours()" required>
           </div>
           <div class="form-field">
             <label for="editHours">סה"כ שעות</label>
@@ -1709,7 +1652,7 @@ function generateRecordKey(rec) {
 
 async function syncFromSharePoint(employeeId) {
   try {
-    showLoading('מסנכרן נתונים...');
+    showAlert('🔄 מסנכרן נתונים...', 'info');
     
     const response = await fetch('/api/sync', {
       method: 'POST',
@@ -1718,7 +1661,6 @@ async function syncFromSharePoint(employeeId) {
     });
     
     if (!response.ok) {
-      hideLoading();
       showAlert('⚠️ לא ניתן לסנכרן כעת, ממשיך עם נתונים מקומיים', 'error');
       return;
     }
@@ -1726,7 +1668,6 @@ async function syncFromSharePoint(employeeId) {
     const data = await response.json();
     
     if (!data.success) {
-      hideLoading();
       showAlert('⚠️ הסנכרון נכשל, ממשיך עם נתונים מקומיים', 'error');
       return;
     }
@@ -1756,7 +1697,6 @@ async function syncFromSharePoint(employeeId) {
       const existingKeys = new Set(records.map(r => generateRecordKey(r)));
       const newRecords = syncedRecords.filter(r => !existingKeys.has(generateRecordKey(r)));
       
-      hideLoading();
       if (newRecords.length > 0) {
         records = [...records, ...newRecords];
         saveToLocalStorage();
@@ -1766,11 +1706,9 @@ async function syncFromSharePoint(employeeId) {
         showAlert('✅ הנתונים מעודכנים', 'success');
       }
     } else {
-      hideLoading();
       showAlert('✅ הנתונים מעודכנים', 'success');
     }
   } catch (error) {
-    hideLoading();
     console.error('Sync error:', error);
     showAlert('⚠️ שגיאת סנכרון, ממשיך עם נתונים מקומיים', 'error');
   }
@@ -1988,23 +1926,6 @@ function showAlert(message, type = 'success') {
   }, 5000);
 }
 
-// =============== Loading Overlay ===============
-function showLoading(text = 'טוען...') {
-  const overlay = document.getElementById('loadingOverlay');
-  const loadingText = document.getElementById('loadingText');
-  if (overlay) {
-    loadingText.textContent = text;
-    overlay.classList.add('show');
-  }
-}
-
-function hideLoading() {
-  const overlay = document.getElementById('loadingOverlay');
-  if (overlay) {
-    overlay.classList.remove('show');
-  }
-}
-
 // =============== LocalStorage ===============
 function saveToLocalStorage() {
   localStorage.setItem('attendanceRecords', JSON.stringify(records));
@@ -2071,7 +1992,7 @@ async function submitAll() {
     return;
   }
   
-  showLoading(`שולח ${pending.length} דיווחים...`);
+  showAlert(`🚀 שולח ${pending.length} דיווחים...`, 'info');
   
   let success = 0;
   let failed = 0;
@@ -2130,7 +2051,6 @@ async function submitAll() {
   saveToLocalStorage();
   updateStats();
   renderRecordsTable();
-  hideLoading();
   
   if (failed === 0) {
     showAlert(`✅ כל הדיווחים (${success}) נשלחו בהצלחה!`, 'success');
