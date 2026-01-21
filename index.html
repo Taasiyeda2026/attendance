@@ -1196,9 +1196,14 @@
 
     <!-- Records Page -->
     <div id="recordsPage" class="page hidden">
-      <div class="page-header">
-        <h1>רשומות נוכחות</h1>
-        <p>כל הרשומות במערכת</p>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>רשומות נוכחות</h1>
+          <p>כל הרשומות במערכת</p>
+        </div>
+        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+          <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
       
       <div class="content-card">
@@ -1229,9 +1234,14 @@
 
     <!-- Team Records Page (for manager, operations_controller, system_admin) -->
     <div id="teamRecordsPage" class="page hidden">
-      <div class="page-header">
-        <h1>רשומות הצוות</h1>
-        <p id="teamRecordsSubtitle">צפייה ועריכה של רשומות הצוות</p>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>רשומות הצוות</h1>
+          <p id="teamRecordsSubtitle">צפייה ועריכה של רשומות הצוות</p>
+        </div>
+        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+          <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
       
       <div class="content-card">
@@ -1259,10 +1269,15 @@
           <h1>דוחות</h1>
           <p>סיכומים וסטטיסטיקות</p>
         </div>
-        <button class="btn" onclick="exportToExcel()" style="background: #10b981; color: white;">
-          <i class="fas fa-file-excel"></i>
-          ייצוא ל-Excel
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" onclick="exportToExcel()" style="background: #10b981; color: white;">
+            <i class="fas fa-file-excel"></i>
+            ייצוא ל-Excel
+          </button>
+          <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
       </div>
       
       <div class="stats-grid">
@@ -1303,9 +1318,14 @@
 
     <!-- Admin Page (for system_admin only) -->
     <div id="adminPage" class="page hidden">
-      <div class="page-header">
-        <h1>הגדרות מערכת</h1>
-        <p>ניהול משתמשים והגדרות</p>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>הגדרות מערכת</h1>
+          <p>ניהול משתמשים והגדרות</p>
+        </div>
+        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+          <i class="fas fa-arrow-right"></i>
+        </button>
       </div>
       
       <div class="content-card">
