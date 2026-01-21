@@ -108,7 +108,7 @@
     .btn-login {
       width: 100%;
       padding: 12px;
-      background: #1e40af;
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
       color: white;
       border: none;
       border-radius: 10px;
@@ -116,20 +116,20 @@
       font-weight: 600;
       cursor: pointer;
       font-family: 'Heebo', sans-serif;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       margin-top: 8px;
-      box-shadow: 0 3px 10px rgba(30, 64, 175, 0.18);
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .btn-login:hover {
-      background: #1e3a8a;
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(30, 64, 175, 0.35);
+      box-shadow: 0 8px 20px rgba(30, 64, 175, 0.3);
     }
 
     .btn-login:active {
       transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
     }
 
     .login-error {
@@ -307,14 +307,15 @@
       background: white;
       padding: 16px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      border: 1px solid #e2e8f0;
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      border: 1px solid #f1f5f9;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      border-color: #e2e8f0;
     }
 
     .stat-card-header {
@@ -375,11 +376,11 @@
     /* Content Card */
     .content-card {
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      border: 1px solid #f1f5f9;
       overflow: hidden;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
     }
 
     .content-card:hover {
@@ -477,12 +478,13 @@
     }
 
     .btn-primary {
-      background: #3b82f6;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
       color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .btn-primary:hover {
-      background: #2563eb;
+      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
     }
 
     .btn-success {
@@ -1023,14 +1025,35 @@
       
       <!-- כפתורי פעולות -->
       <div style="text-align: center; margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn btn-primary" onclick="showPage(event, 'add-record')" style="font-size: 15px; padding: 12px 24px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        <button class="btn btn-primary" onclick="showPage(event, 'add-record')" style="font-size: 15px; width: 220px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
           <i class="fas fa-plus"></i>
           הוסף רשומה חדשה
         </button>
-        <button class="btn" onclick="exportToExcel()" style="background: #10b981; color: white; font-size: 15px; padding: 12px 24px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+        <button class="btn" onclick="exportToExcel()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-size: 15px; width: 220px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);">
           <i class="fas fa-file-excel"></i>
           ייצוא ל-Excel
         </button>
+      </div>
+
+      <!-- טבלת סיכום -->
+      <div class="content-card" style="margin-top: 40px;">
+        <div class="card-header">
+          <h2 class="card-title"><i class="fas fa-list-alt" style="margin-left: 8px; color: #3b82f6;"></i>סיכום פעילות</h2>
+        </div>
+        <div class="card-body">
+          <table id="summaryTable">
+            <thead>
+              <tr>
+                <th>סוג פעילות</th>
+                <th>סה"כ שעות</th>
+                <th>סה"כ קילומטר</th>
+              </tr>
+            </thead>
+            <tbody id="summaryTableBody">
+              <!-- יתמלא ע"י JavaScript -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -1760,7 +1783,10 @@ function showPage(event, pageName) {
     event.target.closest('.nav-item').classList.add('active');
   }
   
-  if (pageName === 'dashboard') updateDashboard();
+  if (pageName === 'dashboard') {
+    updateDashboard();
+    renderSummaryTable();
+  }
   if (pageName === 'records') renderRecordsTable();
   if (pageName === 'team-records') loadTeamRecords();
   if (pageName === 'reports') loadReports();
@@ -1955,6 +1981,56 @@ async function submitAll() {
   } else {
     showAlert(`⚠️ נשלחו ${success} דיווחים, ${failed} נכשלו`, 'error');
   }
+}
+
+// =============== Summary Table ===============
+function renderSummaryTable() {
+  const summaryData = {};
+  let totalKm = 0;
+
+  records.forEach(rec => {
+    const activity = rec.activity || 'אחר';
+    const hours = parseFloat(rec.hours) || 0;
+    const km = parseFloat(rec.km) || 0;
+
+    if (!summaryData[activity]) {
+      summaryData[activity] = { hours: 0, km: 0 };
+    }
+    summaryData[activity].hours += hours;
+    summaryData[activity].km += km;
+    totalKm += km;
+  });
+
+  const tbody = document.getElementById('summaryTableBody');
+  if (!tbody) return;
+
+  if (Object.keys(summaryData).length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #94a3b8;">אין נתונים להצגה</td></tr>';
+    return;
+  }
+
+  let html = '';
+  for (const [activity, data] of Object.entries(summaryData)) {
+    html += `
+      <tr>
+        <td style="font-weight: 500; color: #1e293b;">${activity}</td>
+        <td>${data.hours.toFixed(2)}</td>
+        <td>${data.km.toFixed(1)}</td>
+      </tr>
+    `;
+  }
+
+  // שורת סיכום סופית
+  const totalHours = records.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+  html += `
+    <tr style="background: #f8fafc; font-weight: 700;">
+      <td style="color: #1e40af;">סה"כ כולל</td>
+      <td style="color: #1e40af;">${totalHours.toFixed(2)}</td>
+      <td style="color: #1e40af;">${totalKm.toFixed(1)}</td>
+    </tr>
+  `;
+
+  tbody.innerHTML = html;
 }
 
 // =============== Statistics ===============
