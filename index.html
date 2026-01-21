@@ -574,12 +574,15 @@
       transition: all 0.2s;
     }
 
-    .form-field input:focus,
-    .form-field select:focus,
-    .form-field textarea:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    .form-field input[type="time"] {
+      cursor: pointer;
+      -webkit-appearance: listbox;
+      position: relative;
+    }
+    
+    /* Fix for time input odd behavior on some mobile browsers */
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
     }
 
     .form-field input:-moz-read-only {
@@ -970,7 +973,7 @@
     <div id="dashboardPage" class="page">
       <div class="page-header">
         <h1>לוח בקרה</h1>
-        <p>סקירה כללית של הנוכחות וההשתייעדות</p>
+        <p>סקירה כללית</p>
       </div>
       
       <div class="stats-grid">
