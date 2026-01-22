@@ -1,0 +1,183 @@
+1) אסור להשתמש ב־/api
+
+המערכת רצה ב־GitHub Pages ולכן אין שרת.
+
+❌ למחוק / לנטרל כל שורה שיש בה:
+
+fetch('/api/
+
+
+דוגמאות שצריך להסיר:
+
+fetch('/api/sync')
+
+כל פונקציה syncFromServer() שעובדת על /api
+
+2) להגדיר קבוע אחד ל־Logic App URL
+
+בראש ה־<script> להוסיף:
+
+const LOGIC_APP_URL = "https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g";
+
+3) התחברות — doLogin() חייב לשלוח action="auth"
+
+לאתר פונקציה קיימת כמו:
+
+doLogin()
+
+login()
+
+ולוודא שבתוכה יש fetch ל־Logic App עם body כזה:
+
+body: JSON.stringify({
+  action: "auth",
+  employeeId: employeeId,
+  personalCode: personalCode
+})
+
+
+⚠️ חובה:
+לא לעשות parseInt() לשדות האלה. לשלוח כ־string.
+
+4) אחרי התחברות מוצלחת — לשמור employeeName ו־employeeId
+
+אחרי:
+
+const data = await response.json();
+
+
+אם הצליח:
+
+localStorage.setItem("employeeId", employeeId);
+localStorage.setItem("employeeName", data.employeeName || "");
+
+
+ואז מיד לקרוא:
+
+await loadMyRecordsFromServer();
+
+5) להוסיף פונקציה חדשה: loadMyRecordsFromServer()
+
+להוסיף בתוך ה־script:
+
+async function loadMyRecordsFromServer() {
+  const employeeId = localStorage.getItem("employeeId");
+  if (!employeeId) return;
+
+  const res = await fetch(LOGIC_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "getMyRecords",
+      employeeId: employeeId
+    })
+  });
+
+  const data = await res.json();
+
+  if (!data.success || !Array.isArray(data.records)) {
+    console.warn("No records or failed:", data);
+    return;
+  }
+
+  // חובה: לנקות את הטבלה ואז למלא מחדש
+  // כאן להתאים לשמות האלמנטים הקיימים בקוד (tbody / table)
+  renderAttendanceTable(data.records);
+}
+
+6) להוסיף פונקציה: renderAttendanceTable(records)
+
+הסוכן חייב לממש פונקציה שמקבלת records ומציגה בטבלה.
+
+דוגמה כללית (להתאים ל־HTML בפועל):
+
+function renderAttendanceTable(records) {
+  const tbody = document.getElementById("attendanceTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  records.forEach((rec) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${rec.attendanceDate || ""}</td>
+      <td>${rec.startTime || ""}</td>
+      <td>${rec.endTime || ""}</td>
+      <td>${rec.activityType || ""}</td>
+      <td>${rec.schoolName || ""}</td>
+      <td>${rec.municipality || ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+
+📌 אם אין לך attendanceTableBody אז הסוכן חייב למצוא את ה־<tbody> הקיים ולשים לו id.
+
+7) שליחת נוכחות — חייב להיות action="submit"
+
+לאתר את המקום שבו שולחים נוכחות (submit/addRecord/submitAll).
+
+ב־payload חייב להיות:
+
+const payload = {
+  action: "submit",
+  employeeId: localStorage.getItem("employeeId"),
+  employeeName: localStorage.getItem("employeeName"),
+
+  attendanceDate,
+  startTime,
+  endTime,
+  activityType,
+  schoolName,
+  municipality
+};
+
+
+שליחה:
+
+const res = await fetch(LOGIC_APP_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
+});
+
+const data = await res.json();
+
+if (data.success) {
+  await loadMyRecordsFromServer();
+}
+
+
+📌 חובה: אחרי כל שליחה מוצלחת לעשות reload מהשרת
+כדי שהנייד והמחשב יהיו זהים תמיד.
+
+8) כניסה אוטומטית אחרי רענון
+
+בתחילת טעינת הדף:
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const employeeId = localStorage.getItem("employeeId");
+  if (employeeId) {
+    // להעביר למסך הראשי אם יש כזה
+    await loadMyRecordsFromServer();
+  }
+});
+
+9) Logout (יציאה)
+
+להוסיף כפתור יציאה (אם אין) עם פונקציה:
+
+function logout() {
+  localStorage.removeItem("employeeId");
+  localStorage.removeItem("employeeName");
+  location.reload();
+}
+
+10) בדיקות שהסוכן חייב לבצע בסוף
+
+התחברות תקינה → שם נשמר ב־localStorage
+
+שליחת נוכחות → מופיע בטבלה מיד
+
+לפתוח אותו קישור במכשיר אחר → התחברות → רואים אותם נתונים (כי נטען מהשרת)

@@ -1727,7 +1727,7 @@
 <script>
 // =============== Configuration ===============
 
-// Logic App URL moved to server-side for security
+const LOGIC_APP_URL = "https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g";
 
 // =============== State ===============
 let records = [];
@@ -1915,11 +1915,74 @@ function generateRecordKey(rec) {
 }
 
 async function syncFromSharePoint(employeeId) {
-  // Initialize empty records - data is managed directly in SharePoint
-  records = [];
-  renderRecordsTable();
-  updateStats();
-  showAlert('✅ מוכן להזנת נתונים', 'success');
+  await loadMyRecordsFromServer();
+}
+
+async function loadMyRecordsFromServer() {
+  const employeeId = localStorage.getItem("employeeId");
+  if (!employeeId) {
+    records = [];
+    renderRecordsTable();
+    updateStats();
+    return;
+  }
+
+  try {
+    showAlert('🔄 טוען רשומות מהשרת...', 'info');
+    
+    const res = await fetch(LOGIC_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "getMyRecords",
+        employeeId: employeeId
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.success || !Array.isArray(data.records)) {
+      console.warn("No records or failed:", data);
+      records = [];
+      renderRecordsTable();
+      updateStats();
+      showAlert('✅ אין רשומות קיימות', 'info');
+      return;
+    }
+
+    // Map server records to local format
+    records = data.records.map(rec => ({
+      id: rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
+      empNum: rec.employeeId?.toString() || employeeId,
+      empName: rec.employeeName || '',
+      date: rec.attendanceDate || '',
+      start: rec.startTime || '',
+      end: rec.endTime || '',
+      hours: rec.workHours || 0,
+      activity: rec.activityType || '',
+      school: rec.schoolName || '',
+      municipality: rec.municipality || '',
+      program: rec.programName || '',
+      session: rec.sessionNumber || '',
+      km: rec.kilometers || 0,
+      totalExpenses: rec.totalExpenses || 0,
+      expensesDetail: rec.expensesDetails || '',
+      notes: rec.notes || '',
+      status: 'נשלח',
+      approved: rec.approved || false,
+      attachments: []
+    }));
+
+    renderRecordsTable();
+    updateStats();
+    showAlert(`✅ נטענו ${records.length} רשומות`, 'success');
+  } catch (error) {
+    console.error('Load records error:', error);
+    records = [];
+    renderRecordsTable();
+    updateStats();
+    showAlert('⚠️ שגיאה בטעינת רשומות', 'error');
+  }
 }
 
 // =============== Login ===============
@@ -1948,17 +2011,15 @@ async function doLogin(event) {
   }
   
   try {
-    const response = await fetch(
-      'https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: "auth",
-          employeeId: employeeId, 
-          personalCode: personalCode 
-        })
-      });
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        action: "auth",
+        employeeId: employeeId, 
+        personalCode: personalCode 
+      })
+    });
     
     const data = await response.json();
     
@@ -2010,6 +2071,8 @@ async function doLogin(event) {
 function logout() {
   if (confirm('האם אתה בטוח שברצונך להתנתק?')) {
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('employeeId');
+    localStorage.removeItem('employeeName');
     currentUser = '';
     location.reload();
   }
@@ -2039,11 +2102,15 @@ function initInactivityTimer() {
   resetInactivityTimer();
 }
 
-// Start inactivity timer when user is logged in
-document.addEventListener('DOMContentLoaded', () => {
+// Start inactivity timer when user is logged in and auto-load records
+document.addEventListener('DOMContentLoaded', async () => {
   const savedUser = localStorage.getItem('currentUser');
-  if (savedUser) {
+  const employeeId = localStorage.getItem('employeeId');
+  
+  if (savedUser && employeeId) {
     initInactivityTimer();
+    // Auto-load records from server on page load
+    await loadMyRecordsFromServer();
   }
 });
 
@@ -2471,13 +2538,9 @@ async function submitAll() {
         attachmentsNames: formatAttachments(rec.attachments || [])
       };
       
-      const response = await fetch(
-  'https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g',
-  {
+      const response = await fetch(LOGIC_APP_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       
@@ -2765,14 +2828,11 @@ async function addRecord() {
   showAlert('🚀 שולח דיווח ל-SharePoint...', 'info');
   
   try {
-    const response = await fetch(
-      'https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }
-    );
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
     
     if (response.ok) {
       clearAddForm();
