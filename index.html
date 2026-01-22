@@ -1835,13 +1835,6 @@ function generateRecordKey(rec) {
 }
 
 async function syncFromSharePoint(employeeId) {
-  // Test users - use local test data
-  const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
-  if (testUserIds.includes(employeeId)) {
-    showAlert('✅ מצב בדיקה - נתונים מקומיים', 'info');
-    return;
-  }
-  
   try {
     showAlert('🔄 טוען נתונים מ-SharePoint...', 'info');
     
@@ -2398,21 +2391,6 @@ async function submitAll() {
     return;
   }
   
-  // Test mode - simulate submission
-  const savedUser = localStorage.getItem('currentUser');
-  const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
-  if (savedUser) {
-    const empData = JSON.parse(savedUser);
-    if (testUserIds.includes(empData.empNum)) {
-      showAlert(`✅ מצב בדיקה - ${pending.length} דיווחים נשמרו מקומית`, 'success');
-      pending.forEach(rec => rec.status = 'נשלח');
-      saveToLocalStorage();
-      renderRecordsTable();
-      updateStats();
-      return;
-    }
-  }
-  
   showAlert(`🚀 שולח ${pending.length} דיווחים...`, 'info');
   
   let success = 0;
@@ -2728,25 +2706,6 @@ async function addRecord() {
     attachments: attachments,
     attachmentsNames: formatAttachments(attachments)
   };
-  
-  // Test users - add locally only
-  const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
-  if (testUserIds.includes(empNum)) {
-    const newRecord = {
-      empNum, empName, date, start: startTime, end: endTime, hours, activity,
-      school, municipality, location: '', program, session, km,
-      totalExpenses, expensesDetail, attachments, notes,
-      status: 'נשלח', approved: false,
-      id: empNum + '_' + date + '_' + Date.now()
-    };
-    records.push(newRecord);
-    clearAddForm();
-    renderRecordsTable();
-    updateStats();
-    showAlert('✅ מצב בדיקה - הדיווח נשמר', 'success');
-    showPage(null, 'dashboard');
-    return;
-  }
   
   // Send to SharePoint
   showAlert('🚀 שולח דיווח ל-SharePoint...', 'info');
