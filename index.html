@@ -1360,13 +1360,9 @@
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
-            <button class="btn" onclick="clearAllData()" style="background: #dc2626; color: white;">
-              <i class="fas fa-trash"></i>
-              איפוס כל הנתונים
-            </button>
-            <button class="btn btn-primary" onclick="submitAll()">
-              <i class="fas fa-paper-plane"></i>
-              שלח דיווח
+            <button class="btn btn-primary" onclick="syncFromSharePoint(JSON.parse(localStorage.getItem('currentUser') || '{}').empNum)">
+              <i class="fas fa-sync"></i>
+              רענן נתונים
             </button>
           </div>
         </div>
@@ -1839,7 +1835,7 @@ function generateRecordKey(rec) {
 }
 
 async function syncFromSharePoint(employeeId) {
-  // Test users - skip sync (Logic App not configured yet)
+  // Test users - use local test data
   const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
   if (testUserIds.includes(employeeId)) {
     showAlert('✅ מצב בדיקה - נתונים מקומיים', 'info');
@@ -1847,7 +1843,7 @@ async function syncFromSharePoint(employeeId) {
   }
   
   try {
-    showAlert('🔄 מסנכרן נתונים...', 'info');
+    showAlert('🔄 טוען נתונים מ-SharePoint...', 'info');
     
     const response = await fetch('/api/sync', {
       method: 'POST',
@@ -1856,19 +1852,25 @@ async function syncFromSharePoint(employeeId) {
     });
     
     if (!response.ok) {
-      showAlert('⚠️ לא ניתן לסנכרן כעת, ממשיך עם נתונים מקומיים', 'error');
+      showAlert('⚠️ לא ניתן לטעון נתונים כעת', 'error');
+      records = [];
+      renderRecordsTable();
+      updateStats();
       return;
     }
     
     const data = await response.json();
     
     if (!data.success) {
-      showAlert('⚠️ הסנכרון נכשל, ממשיך עם נתונים מקומיים', 'error');
+      showAlert('⚠️ טעינת הנתונים נכשלה', 'error');
+      records = [];
+      renderRecordsTable();
+      updateStats();
       return;
     }
     
     if (data.records && Array.isArray(data.records)) {
-      const syncedRecords = data.records.map(rec => ({
+      records = data.records.map(rec => ({
         id: rec.id || generateRecordKey(rec),
         empNum: rec.employeeId?.toString() || employeeId,
         empName: rec.employeeName || '',
@@ -1886,27 +1888,25 @@ async function syncFromSharePoint(employeeId) {
         expensesDetail: rec.expensesDetails || '',
         notes: rec.notes || '',
         status: 'נשלח',
-        approved: false,
+        approved: rec.approved || false,
         attachments: []
       }));
       
-      const existingKeys = new Set(records.map(r => generateRecordKey(r)));
-      const newRecords = syncedRecords.filter(r => !existingKeys.has(generateRecordKey(r)));
-      
-      if (newRecords.length > 0) {
-        records = [...records, ...newRecords];
-        saveToLocalStorage();
-        renderRecordsTable();
-        showAlert(`✅ סונכרנו ${newRecords.length} רשומות חדשות`, 'success');
-      } else {
-        showAlert('✅ הנתונים מעודכנים', 'success');
-      }
+      renderRecordsTable();
+      updateStats();
+      showAlert(`✅ נטענו ${records.length} רשומות`, 'success');
     } else {
-      showAlert('✅ הנתונים מעודכנים', 'success');
+      records = [];
+      renderRecordsTable();
+      updateStats();
+      showAlert('✅ אין רשומות קיימות', 'info');
     }
   } catch (error) {
     console.error('Sync error:', error);
-    showAlert('⚠️ שגיאת סנכרון, ממשיך עם נתונים מקומיים', 'error');
+    showAlert('⚠️ שגיאת טעינה', 'error');
+    records = [];
+    renderRecordsTable();
+    updateStats();
   }
 }
 
