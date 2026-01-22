@@ -1963,9 +1963,7 @@ function loadFromLocalStorage() {
 }
 
 // =============== SharePoint Sync ===============
-function syncFromSharePoint() {
-  showAlert('✅ המערכת מוכנה לעבודה!', 'success');
-}
+// Real syncFromSharePoint is defined above in the login section
 
 function mergeRecords(loadedRecords) {
   const existingIds = new Set(records.map(r => r.id));
