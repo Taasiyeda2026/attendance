@@ -1145,13 +1145,13 @@
              onmouseover="this.style.transform='translateY(-5px)'"
              onmouseout="this.style.transform='translateY(0)'">
           <div class="stat-card-header">
-            <span class="stat-card-title">ממתינות לשליחה</span>
+            <span class="stat-card-title">קילומטרים</span>
             <div class="stat-card-icon">
-              <i class="fas fa-hourglass-half"></i>
+              <i class="fas fa-road"></i>
             </div>
           </div>
           <div class="stat-card-value" id="pendingRecordsStat">0</div>
-          <div class="stat-card-label">רשומות חדשות</div>
+          <div class="stat-card-label">סה"כ נסיעות</div>
         </div>
       </div>
       
@@ -2530,12 +2530,12 @@ function updateStats() {
   const totalRecords = records.length;
   const totalHours = records.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0).toFixed(2);
   const totalExpenses = records.reduce((sum, r) => sum + (parseFloat(r.totalExpenses) || 0), 0).toFixed(2);
-  const pending = records.filter(r => r.status !== 'נשלח').length;
+  const totalKm = records.reduce((sum, r) => sum + (parseFloat(r.km) || 0), 0).toFixed(1);
   
   document.getElementById('totalRecordsStat').textContent = totalRecords;
   document.getElementById('totalHoursStat').textContent = totalHours;
   document.getElementById('totalExpensesStat').textContent = totalExpenses + ' ₪';
-  document.getElementById('pendingRecordsStat').textContent = pending;
+  document.getElementById('pendingRecordsStat').textContent = totalKm + ' ק"מ';
 }
 
 // =============== Dashboard ===============
@@ -2709,34 +2709,73 @@ async function addRecord() {
     return;
   }
   
-  const newRecord = {
-    empNum,
-    empName,
-    date,
-    start: startTime,
-    end: endTime,
-    hours,
-    activity,
-    school,
-    municipality,
-    location: '',
-    program,
-    session,
-    km,
-    totalExpenses,
-    expensesDetail,
-    attachments,
-    notes,
-    status: 'ממתין',
-    approved: false,
-    id: empNum + '_' + date + '_' + Date.now()
+  const payload = {
+    employeeId: empNum,
+    employeeName: empName,
+    attendanceDate: date,
+    startTime: startTime,
+    endTime: endTime,
+    workHours: hours,
+    activityType: activity,
+    schoolName: school,
+    municipality: municipality,
+    programName: program,
+    sessionNumber: session,
+    kilometers: km,
+    totalExpenses: totalExpenses,
+    expensesDetails: expensesDetail,
+    notes: notes,
+    attachments: attachments,
+    attachmentsNames: formatAttachments(attachments)
   };
   
-  records.push(newRecord);
-  saveToLocalStorage();
-  updateStats();
+  // Test users - add locally only
+  const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
+  if (testUserIds.includes(empNum)) {
+    const newRecord = {
+      empNum, empName, date, start: startTime, end: endTime, hours, activity,
+      school, municipality, location: '', program, session, km,
+      totalExpenses, expensesDetail, attachments, notes,
+      status: 'נשלח', approved: false,
+      id: empNum + '_' + date + '_' + Date.now()
+    };
+    records.push(newRecord);
+    clearAddForm();
+    renderRecordsTable();
+    updateStats();
+    showAlert('✅ מצב בדיקה - הדיווח נשמר', 'success');
+    showPage(null, 'dashboard');
+    return;
+  }
   
-  // Clear form
+  // Send to SharePoint
+  showAlert('🚀 שולח דיווח ל-SharePoint...', 'info');
+  
+  try {
+    const response = await fetch(
+      'https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }
+    );
+    
+    if (response.ok) {
+      clearAddForm();
+      await syncFromSharePoint(empNum);
+      showAlert('✅ הדיווח נשלח בהצלחה!', 'success');
+      showPage(null, 'dashboard');
+    } else {
+      showAlert('❌ שגיאה בשליחה: ' + response.status, 'error');
+    }
+  } catch (error) {
+    console.error('Submit error:', error);
+    showAlert('❌ שגיאה בשליחה לשרת', 'error');
+  }
+}
+
+function clearAddForm() {
   document.getElementById('recDate').value = '';
   document.getElementById('startHour').value = '';
   document.getElementById('startMinute').value = '';
@@ -2755,9 +2794,6 @@ async function addRecord() {
   document.getElementById('expensesDetail').value = '';
   if (document.getElementById('attachments')) document.getElementById('attachments').value = '';
   document.getElementById('notesField').value = '';
-  
-  showAlert('✅ הרשומה נוספה בהצלחה! (קבצים מצורפים נשמרים מקומית)', 'success');
-  showPage(null, 'dashboard');
 }
 
 // =============== Records Table ===============
@@ -2785,7 +2821,6 @@ function renderRecordsTable() {
           <th>בית ספר</th>
           <th>רשות</th>
           <th>ק"מ</th>
-          <th>סטטוס</th>
           <th>פעולות</th>
         </tr>
       </thead>
@@ -2801,7 +2836,6 @@ function renderRecordsTable() {
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
             <td>${rec.km}</td>
-            <td><span class="status-badge ${rec.status === 'נשלח' ? 'sent' : 'pending'}">${rec.status}</span></td>
             <td>
               <button class="btn" onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 8px 12px; margin-left: 5px;">
                 <i class="fas fa-edit"></i>
@@ -2817,7 +2851,7 @@ function renderRecordsTable() {
           <td style="color: #3b82f6;">${totalHours.toFixed(2)}</td>
           <td colspan="3"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
-          <td colspan="2"></td>
+          <td></td>
         </tr>
       </tbody>
     </table>
