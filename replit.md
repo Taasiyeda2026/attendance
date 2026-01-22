@@ -32,12 +32,12 @@ Key endpoints:
 - `GET /api/chat/health` - Health check endpoint
 
 ### Data Storage
-- **ORM**: Drizzle ORM with PostgreSQL adapter
-- **Schema Location**: `shared/schema.ts`
-- **Current Schema**: Basic users table with id, username, password
-- **In-Memory Fallback**: MemStorage class in `server/storage.ts` for development
+- **Primary Storage**: SharePoint Lists via Azure Logic Apps (no localStorage)
+- **Data Flow**: All records are sent directly to SharePoint and loaded on each login
+- **Sync Behavior**: When logging in, data is fetched from SharePoint and replaces local state
+- **Cross-Device Sync**: Data is synchronized across all devices via SharePoint
 
-Note: The application is configured for PostgreSQL but the actual authentication is delegated to Azure Logic Apps. The database schema exists but may be extended for local data needs.
+Note: The application does NOT use localStorage for attendance records. All data is stored in SharePoint Lists to ensure synchronization between mobile and desktop devices.
 
 ### Build System
 - Development: `npm run dev` runs tsx with Vite middleware
