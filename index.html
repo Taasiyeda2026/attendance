@@ -1046,12 +1046,6 @@
       font-weight: bold;
     }
 </style>
-  <link rel="manifest" href="./manifest.json">
-  
-  <meta name="theme-color" content="#1e40af">
-  
-  <link rel="icon" type="image/png" href="./logo.png">
-  <link rel="apple-touch-icon" href="./logo.png">
 </head>
 <body>
 <!-- =============== Login Screen =============== -->
@@ -1978,9 +1972,7 @@ async function loadMyRecordsFromServer() {
     showAlert(`✅ נטענו ${records.length} רשומות`, 'success');
   } catch (error) {
     console.error('Load records error:', error);
-    records = [];
-    renderRecordsTable();
-    updateStats();
+    // Don't reset records on error - keep existing data
     showAlert('⚠️ שגיאה בטעינת רשומות', 'error');
   }
 }
@@ -2061,7 +2053,7 @@ async function doLogin(event) {
   } finally {
     if (loginBtn) {
       loginBtn.disabled = false;
-      loginBtn.textContent = 'התחברות';
+      loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> כניסה למערכת';
     }
   }
   
@@ -3202,6 +3194,11 @@ window.addEventListener('DOMContentLoaded', function() {
       loadFromLocalStorage();
       updateStats();
       showPage(null, 'dashboard');
+      
+      // Load records from server
+      if (localStorage.getItem('employeeId')) {
+        loadMyRecordsFromServer();
+      }
     } catch(e) {
       console.error('שגיאה:', e);
     }
