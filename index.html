@@ -1839,6 +1839,13 @@ function generateRecordKey(rec) {
 }
 
 async function syncFromSharePoint(employeeId) {
+  // Test users - skip sync (Logic App not configured yet)
+  const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
+  if (testUserIds.includes(employeeId)) {
+    showAlert('✅ מצב בדיקה - נתונים מקומיים', 'info');
+    return;
+  }
+  
   try {
     showAlert('🔄 מסנכרן נתונים...', 'info');
     
