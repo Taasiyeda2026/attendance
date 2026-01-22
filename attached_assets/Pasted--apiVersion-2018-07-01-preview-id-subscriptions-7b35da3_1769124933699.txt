@@ -1,0 +1,53 @@
+{
+    "apiVersion": "2018-07-01-preview",
+    "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline",
+    "name": "sharepointonline",
+    "type": "microsoft.web/connections",
+    "kind": "V1",
+    "location": "israelcentral",
+    "properties": {
+        "displayName": "idann@think.org.il",
+        "authenticatedUser": {
+            "name": "idann@think.org.il"
+        },
+        "overallStatus": "Connected",
+        "statuses": [
+            {
+                "status": "Connected"
+            }
+        ],
+        "connectionState": "Enabled",
+        "parameterValues": {},
+        "customParameterValues": {},
+        "createdTime": "2026-01-14T16:34:56.581Z",
+        "changedTime": "2026-01-21T12:16:12.903Z",
+        "api": {
+            "name": "sharepointonline",
+            "displayName": "SharePoint",
+            "description": "SharePoint helps organizations share and collaborate with colleagues, partners, and customers. You can connect to SharePoint Online or to an on-premises SharePoint 2016 or 2019 farm using the On-Premises Data Gateway to manage documents and list items.",
+            "iconUri": "https://conn-afd-prod-endpoint-bmc9bqahasf3grgk.b01.azurefd.net/v1.0.1779/1.0.1779.4440/sharepointonline/icon.png",
+            "brandColor": "",
+            "category": "Standard",
+            "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/providers/Microsoft.Web/locations/israelcentral/managedApis/sharepointonline",
+            "type": "Microsoft.Web/locations/managedApis"
+        },
+        "testLinks": [
+            {
+                "requestUri": "https://southindia.management.azure.com:443/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline/extensions/proxy/datasets?api-version=2018-07-01-preview",
+                "method": "get"
+            }
+        ],
+        "testRequests": [
+            {
+                "body": {
+                    "request": {
+                        "method": "get",
+                        "path": "datasets"
+                    }
+                },
+                "requestUri": "https://southindia.management.azure.com:443/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline/dynamicInvoke?api-version=2018-07-01-preview",
+                "method": "POST"
+            }
+        ]
+    }
+}
