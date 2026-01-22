@@ -1991,6 +1991,7 @@ async function doLogin(event) {
       await syncFromSharePoint(empData.empNum);
       
       updateStats();
+      initInactivityTimer();
       showPage(null, 'dashboard');
     } else {
       errorEl.textContent = data.message || 'מספר עובד או קוד אישי שגויים';
@@ -2016,6 +2017,38 @@ function logout() {
     location.reload();
   }
 }
+
+// =============== Inactivity Timeout (30 minutes) ===============
+let inactivityTimer;
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    showAlert('⏰ המערכת ננעלה עקב חוסר פעילות', 'info');
+    setTimeout(() => {
+      localStorage.removeItem('currentUser');
+      currentUser = '';
+      location.reload();
+    }, 2000);
+  }, INACTIVITY_TIMEOUT);
+}
+
+function initInactivityTimer() {
+  // Reset timer on any user activity
+  ['click', 'touchstart', 'keypress', 'scroll', 'mousemove'].forEach(event => {
+    document.addEventListener(event, resetInactivityTimer, { passive: true });
+  });
+  resetInactivityTimer();
+}
+
+// Start inactivity timer when user is logged in
+document.addEventListener('DOMContentLoaded', () => {
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    initInactivityTimer();
+  }
+});
 
 // =============== Mobile Menu ===============
 function toggleMobileMenu() {
