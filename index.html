@@ -1764,12 +1764,14 @@ async function doLogin(event) {
     loginBtn.textContent = 'מתחבר...';
   }
   
-  // Test users for local development (remove when Logic App is fixed)
+  // Test users for local development (based on SharePoint Employees list)
   const testUsers = {
-    '1001': { code: '1234', name: 'ישראל ישראלי', role: 'employee', team: null },
-    '2001': { code: '1234', name: 'משה כהן', role: 'manager', team: 'צוות צפון' },
-    '3001': { code: '1234', name: 'שרה לוי', role: 'operations_controller', team: null },
-    '4001': { code: '1234', name: 'דוד אדמין', role: 'system_admin', team: null }
+    '8000': { code: '2311', name: 'עידן נחום', role: 'system_admin', team: null },
+    '6000': { code: '2222', name: 'גיל נאמן', role: 'manager', team: 'Gil' },
+    '4000': { code: '3333', name: 'לינוי שמואל מזרחי', role: 'manager', team: 'Linoy' },
+    '2000': { code: '4444', name: 'עדן כהן', role: 'operations_controller', team: null },
+    '1500': { code: '2828', name: 'הילה רוזן', role: 'instructor', team: 'Linoy' },
+    '1501': { code: '2222', name: 'סוהא סאלם', role: 'instructor', team: 'Gil' }
   };
   
   try {
