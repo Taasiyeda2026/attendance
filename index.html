@@ -1091,12 +1091,30 @@
               <input type="date" id="recDate" required>
             </div>
             <div class="form-field">
-              <label for="startTime">שעת התחלה <span style="color: #ef4444;">*</span></label>
-              <input type="time" id="startTime" onchange="calculateHours()" required>
+              <label>שעת התחלה <span style="color: #ef4444;">*</span></label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="startHour" onchange="updateTimeField('start'); calculateHours()" style="flex: 1;" required>
+                  <option value="">שעה</option>
+                </select>
+                <span style="font-weight: bold;">:</span>
+                <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" style="flex: 1;" required>
+                  <option value="">דקות</option>
+                </select>
+                <input type="hidden" id="startTime">
+              </div>
             </div>
             <div class="form-field">
-              <label for="endTime">שעת סיום <span style="color: #ef4444;">*</span></label>
-              <input type="time" id="endTime" onchange="calculateHours()" required>
+              <label>שעת סיום <span style="color: #ef4444;">*</span></label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select id="endHour" onchange="updateTimeField('end'); calculateHours()" style="flex: 1;" required>
+                  <option value="">שעה</option>
+                </select>
+                <span style="font-weight: bold;">:</span>
+                <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" style="flex: 1;" required>
+                  <option value="">דקות</option>
+                </select>
+                <input type="hidden" id="endTime">
+              </div>
             </div>
             <div class="form-field">
               <label for="hoursField">סה"כ שעות</label>
@@ -1369,12 +1387,30 @@
             <input type="date" id="editDate" required>
           </div>
           <div class="form-field">
-            <label for="editStartTime" class="required-label">שעת התחלה</label>
-            <input type="time" id="editStartTime" onchange="calculateEditHours()" required>
+            <label class="required-label">שעת התחלה</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="editStartHour" onchange="updateTimeField('editStart'); calculateEditHours()" style="flex: 1;" required>
+                <option value="">שעה</option>
+              </select>
+              <span style="font-weight: bold;">:</span>
+              <select id="editStartMinute" onchange="updateTimeField('editStart'); calculateEditHours()" style="flex: 1;" required>
+                <option value="">דקות</option>
+              </select>
+              <input type="hidden" id="editStartTime">
+            </div>
           </div>
           <div class="form-field">
-            <label for="editEndTime" class="required-label">שעת סיום</label>
-            <input type="time" id="editEndTime" onchange="calculateEditHours()" required>
+            <label class="required-label">שעת סיום</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="editEndHour" onchange="updateTimeField('editEnd'); calculateEditHours()" style="flex: 1;" required>
+                <option value="">שעה</option>
+              </select>
+              <span style="font-weight: bold;">:</span>
+              <select id="editEndMinute" onchange="updateTimeField('editEnd'); calculateEditHours()" style="flex: 1;" required>
+                <option value="">דקות</option>
+              </select>
+              <input type="hidden" id="editEndTime">
+            </div>
           </div>
           <div class="form-field">
             <label for="editHours">סה"כ שעות</label>
@@ -2363,6 +2399,68 @@ function updateDashboard() {
   // הטבלה הוסרה - רק מעדכנים סטטיסטיקה
 }
 
+// =============== Time Picker Functions ===============
+function populateTimeDropdowns() {
+  const hourSelects = ['startHour', 'endHour', 'editStartHour', 'editEndHour'];
+  const minuteSelects = ['startMinute', 'endMinute', 'editStartMinute', 'editEndMinute'];
+  
+  hourSelects.forEach(id => {
+    const select = document.getElementById(id);
+    if (select) {
+      select.innerHTML = '<option value="">שעה</option>';
+      for (let h = 6; h <= 23; h++) {
+        const val = h.toString().padStart(2, '0');
+        select.innerHTML += `<option value="${val}">${val}</option>`;
+      }
+    }
+  });
+  
+  minuteSelects.forEach(id => {
+    const select = document.getElementById(id);
+    if (select) {
+      select.innerHTML = '<option value="">דקות</option>';
+      for (let m = 0; m < 60; m += 5) {
+        const val = m.toString().padStart(2, '0');
+        select.innerHTML += `<option value="${val}">${val}</option>`;
+      }
+    }
+  });
+}
+
+function updateTimeField(prefix) {
+  const hourSelect = document.getElementById(prefix + 'Hour');
+  const minuteSelect = document.getElementById(prefix + 'Minute');
+  const hiddenField = document.getElementById(prefix + 'Time');
+  
+  if (hourSelect && minuteSelect && hiddenField) {
+    const hour = hourSelect.value;
+    const minute = minuteSelect.value;
+    if (hour && minute) {
+      hiddenField.value = hour + ':' + minute;
+    } else {
+      hiddenField.value = '';
+    }
+  }
+}
+
+function setTimeDropdowns(prefix, timeValue) {
+  if (!timeValue) return;
+  const parts = timeValue.split(':');
+  if (parts.length >= 2) {
+    const hour = parts[0].padStart(2, '0');
+    const minute = parts[1].padStart(2, '0');
+    const roundedMinute = (Math.round(parseInt(minute) / 5) * 5).toString().padStart(2, '0');
+    
+    const hourSelect = document.getElementById(prefix + 'Hour');
+    const minuteSelect = document.getElementById(prefix + 'Minute');
+    const hiddenField = document.getElementById(prefix + 'Time');
+    
+    if (hourSelect) hourSelect.value = hour;
+    if (minuteSelect) minuteSelect.value = roundedMinute;
+    if (hiddenField) hiddenField.value = hour + ':' + roundedMinute;
+  }
+}
+
 // =============== Calculate Hours ===============
 function calculateHours() {
   const startTime = document.getElementById('startTime').value;
@@ -2495,7 +2593,11 @@ async function addRecord() {
   
   // Clear form
   document.getElementById('recDate').value = '';
+  document.getElementById('startHour').value = '';
+  document.getElementById('startMinute').value = '';
   document.getElementById('startTime').value = '';
+  document.getElementById('endHour').value = '';
+  document.getElementById('endMinute').value = '';
   document.getElementById('endTime').value = '';
   document.getElementById('hoursField').value = '';
   document.getElementById('activityType').value = '';
@@ -2595,8 +2697,8 @@ function editRecord(index) {
   const rec = records[index];
   
   document.getElementById('editDate').value = rec.date;
-  document.getElementById('editStartTime').value = rec.start || '';
-  document.getElementById('editEndTime').value = rec.end || '';
+  setTimeDropdowns('editStart', rec.start || '');
+  setTimeDropdowns('editEnd', rec.end || '');
   document.getElementById('editHours').value = rec.hours;
   document.getElementById('editActivity').value = rec.activity;
   
@@ -2828,6 +2930,7 @@ function clearAllData() {
 // =============== Initialize ===============
 window.addEventListener('DOMContentLoaded', function() {
   populateSchools();
+  populateTimeDropdowns();
   
   const savedUser = localStorage.getItem('currentUser');
   if (savedUser) {
