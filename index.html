@@ -1932,7 +1932,7 @@ async function loadMyRecordsFromServer() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "getMyRecords",
+        action: "getHistory",
         employeeId: employeeId
       })
     });
@@ -1985,21 +1985,21 @@ async function loadMyRecordsFromServer() {
 async function updateRecordOnServer(updatedRecord) {
   const payload = {
     action: "updateRecord",
-    recordId: updatedRecord.recordId,
-    employeeId: updatedRecord.empNum,
-    attendanceDate: updatedRecord.date,
-    startTime: updatedRecord.start,
-    endTime: updatedRecord.end,
-    workHours: updatedRecord.hours,
-    activityType: updatedRecord.activity,
-    schoolName: updatedRecord.school,
-    municipality: updatedRecord.municipality,
-    programName: updatedRecord.program,
-    sessionNumber: updatedRecord.session,
-    kilometers: updatedRecord.km,
-    totalExpenses: updatedRecord.totalExpenses,
-    expensesDetails: updatedRecord.expensesDetail,
-    notes: updatedRecord.notes
+    employeeId: String(updatedRecord.empNum),
+    employeeName: String(updatedRecord.empName || localStorage.getItem("employeeName") || ''),
+    attendanceDate: String(updatedRecord.date),
+    startTime: String(updatedRecord.start),
+    endTime: String(updatedRecord.end),
+    workHours: Number(updatedRecord.hours) || 0,
+    activityType: String(updatedRecord.activity),
+    schoolName: String(updatedRecord.school),
+    municipality: String(updatedRecord.municipality),
+    programName: String(updatedRecord.program),
+    sessionNumber: Number(updatedRecord.session) || 0,
+    kilometers: Number(updatedRecord.km) || 0,
+    totalExpenses: Number(updatedRecord.totalExpenses) || 0,
+    expensesDetails: String(updatedRecord.expensesDetail || ''),
+    notes: String(updatedRecord.notes || '')
   };
 
   const res = await fetch(LOGIC_APP_URL, {
@@ -2011,13 +2011,15 @@ async function updateRecordOnServer(updatedRecord) {
   return res.ok;
 }
 
-async function deleteRecordOnServer(recordId) {
+async function deleteRecordOnServer(record) {
   const res = await fetch(LOGIC_APP_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "deleteRecord",
-      recordId: recordId
+      employeeId: String(record.empNum || localStorage.getItem("employeeId") || ''),
+      attendanceDate: String(record.date || ''),
+      startTime: String(record.start || '')
     })
   });
 
@@ -2842,28 +2844,23 @@ async function addRecord() {
     return;
   }
   
-  const recordId = generateRecordId();
-  
   const payload = {
     action: "submit",
-    recordId: recordId,
-    employeeId: localStorage.getItem("employeeId") || empNum,
-    employeeName: localStorage.getItem("employeeName") || empName,
-    attendanceDate: date,
-    startTime: startTime,
-    endTime: endTime,
-    workHours: hours,
-    activityType: activity,
-    schoolName: school,
-    municipality: municipality,
-    programName: program,
-    sessionNumber: session,
-    kilometers: km,
-    totalExpenses: totalExpenses,
-    expensesDetails: expensesDetail,
-    notes: notes,
-    attachments: attachments,
-    attachmentsNames: formatAttachments(attachments)
+    employeeId: String(localStorage.getItem("employeeId") || empNum),
+    employeeName: String(localStorage.getItem("employeeName") || empName),
+    attendanceDate: String(date),
+    startTime: String(startTime),
+    endTime: String(endTime),
+    workHours: Number(hours),
+    activityType: String(activity),
+    schoolName: String(school),
+    municipality: String(municipality),
+    programName: String(program),
+    sessionNumber: Number(session) || 0,
+    kilometers: Number(km) || 0,
+    totalExpenses: Number(totalExpenses) || 0,
+    expensesDetails: String(expensesDetail || ''),
+    notes: String(notes || '')
   };
   
   // Send to SharePoint
@@ -2984,7 +2981,7 @@ async function deleteRecord(index) {
   showAlert('🗑️ מוחק רשומה...', 'info');
 
   try {
-    const ok = await deleteRecordOnServer(rec.recordId);
+    const ok = await deleteRecordOnServer(rec);
 
     if (!ok) {
       showAlert('❌ מחיקה נכשלה בשרת', 'error');
