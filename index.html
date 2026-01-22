@@ -2398,6 +2398,21 @@ async function submitAll() {
     return;
   }
   
+  // Test mode - simulate submission
+  const savedUser = localStorage.getItem('currentUser');
+  const testUserIds = ['8000', '6000', '4000', '2000', '1500', '1501'];
+  if (savedUser) {
+    const empData = JSON.parse(savedUser);
+    if (testUserIds.includes(empData.empNum)) {
+      showAlert(`✅ מצב בדיקה - ${pending.length} דיווחים נשמרו מקומית`, 'success');
+      pending.forEach(rec => rec.status = 'נשלח');
+      saveToLocalStorage();
+      renderRecordsTable();
+      updateStats();
+      return;
+    }
+  }
+  
   showAlert(`🚀 שולח ${pending.length} דיווחים...`, 'info');
   
   let success = 0;
@@ -2405,9 +2420,6 @@ async function submitAll() {
   
   for (const rec of pending) {
     try {
-      console.log('=== DEBUG submitToSharePoint ===');
-      console.log('rec:', rec);
-      
       const payload = {
         employeeId: rec.empNum,
         employeeName: rec.empName,
@@ -2427,8 +2439,6 @@ async function submitAll() {
         attachments: rec.attachments || [],
         attachmentsNames: formatAttachments(rec.attachments || [])
       };
-      
-      console.log('=== PAYLOAD ===', JSON.stringify(payload, null, 2));
       
       const response = await fetch(
   'https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g',
