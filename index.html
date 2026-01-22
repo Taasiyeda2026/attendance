@@ -1247,10 +1247,14 @@
       <div class="content-card">
         <div class="card-header">
           <h2 class="card-title">רשומות צוות <span id="teamName"></span></h2>
-          <div style="display: flex; gap: 10px;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button class="btn" onclick="exportTeamToExcel()" style="background: #10b981; color: white;">
               <i class="fas fa-file-excel"></i>
-              ייצוא ל-Excel
+              ייצוא חודשי
+            </button>
+            <button class="btn" onclick="exportApprovedOnly()" style="background: #3b82f6; color: white;">
+              <i class="fas fa-check-circle"></i>
+              ייצוא מאושרות בלבד
             </button>
           </div>
         </div>
@@ -1711,6 +1715,7 @@ async function syncFromSharePoint(employeeId) {
         expensesDetail: rec.expensesDetails || '',
         notes: rec.notes || '',
         status: 'נשלח',
+        approved: false,
         attachments: []
       }));
       
@@ -1900,12 +1905,91 @@ function loadTeamRecords() {
     teamName.textContent = user.team || '';
   }
   
-  document.getElementById('teamRecordsTable').innerHTML = `
-    <p style="text-align: center; color: #64748b; padding: 40px;">
-      <i class="fas fa-info-circle"></i>
-      רשומות הצוות יוצגו כאן לאחר סנכרון מ-SharePoint
-    </p>
+  // Show local records for now (will be replaced with team records after sync)
+  if (records.length === 0) {
+    document.getElementById('teamRecordsTable').innerHTML = `
+      <p style="text-align: center; color: #64748b; padding: 40px;">
+        <i class="fas fa-info-circle"></i>
+        אין רשומות להצגה
+      </p>
+    `;
+    return;
+  }
+  
+  const totalHours = records.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  const approvedCount = records.filter(rec => rec.approved).length;
+  
+  const tableHTML = `
+    <div style="margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+      <span style="color: #64748b;">סה"כ ${records.length} רשומות | ${approvedCount} מאושרות</span>
+      <button class="btn" onclick="approveAllRecords()" style="background: #10b981; color: white; padding: 8px 16px;">
+        <i class="fas fa-check-double"></i> אשר הכל
+      </button>
+      <button class="btn" onclick="unapproveAllRecords()" style="background: #f59e0b; color: white; padding: 8px 16px;">
+        <i class="fas fa-undo"></i> בטל אישורים
+      </button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50px;">אישור</th>
+          <th>תאריך</th>
+          <th>עובד</th>
+          <th>שעות</th>
+          <th>פעילות</th>
+          <th>בית ספר</th>
+          <th>רשות</th>
+          <th>ק"מ</th>
+          <th>הוצאות</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${records.map((rec, idx) => `
+          <tr style="${rec.approved ? 'background: #ecfdf5;' : ''}">
+            <td style="text-align: center;">
+              <input type="checkbox" ${rec.approved ? 'checked' : ''} onchange="toggleApproval(${idx})" style="width: 20px; height: 20px; cursor: pointer;">
+            </td>
+            <td>${rec.date}</td>
+            <td>${rec.empName}</td>
+            <td><strong>${parseFloat(rec.hours).toFixed(2)}</strong></td>
+            <td>${rec.activity}</td>
+            <td>${rec.school || '-'}</td>
+            <td>${rec.municipality}</td>
+            <td>${rec.km || 0}</td>
+            <td>${rec.totalExpenses || 0} ₪</td>
+          </tr>
+        `).join('')}
+        <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
+          <td></td>
+          <td colspan="2" style="text-align: left;">סה"כ:</td>
+          <td style="color: #3b82f6;">${totalHours.toFixed(2)}</td>
+          <td colspan="5"></td>
+        </tr>
+      </tbody>
+    </table>
   `;
+  
+  document.getElementById('teamRecordsTable').innerHTML = tableHTML;
+}
+
+function toggleApproval(index) {
+  records[index].approved = !records[index].approved;
+  saveToLocalStorage();
+  loadTeamRecords();
+}
+
+function approveAllRecords() {
+  records.forEach(rec => rec.approved = true);
+  saveToLocalStorage();
+  loadTeamRecords();
+  showAlert('✅ כל הרשומות אושרו', 'success');
+}
+
+function unapproveAllRecords() {
+  records.forEach(rec => rec.approved = false);
+  saveToLocalStorage();
+  loadTeamRecords();
+  showAlert('⚠️ כל האישורים בוטלו', 'info');
 }
 
 function loadReports() {
@@ -1922,7 +2006,115 @@ function loadReports() {
 }
 
 function exportTeamToExcel() {
-  showAlert('פונקציה זו תהיה זמינה לאחר סנכרון מ-SharePoint', 'info');
+  // Use all records (local records for now, team records when synced)
+  const dataToExport = records;
+  
+  if (dataToExport.length === 0) {
+    showAlert('⚠️ אין נתונים לייצוא', 'error');
+    return;
+  }
+  
+  // Export all records for the monthly report (approved status shown in column)
+  const approvedRecords = dataToExport;
+  
+  // Create workbook with SheetJS (xlsx library)
+  // Since we don't have xlsx library, create a multi-sheet CSV approach
+  // Sheet 1: Detailed records
+  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות,מאושר\n';
+  
+  approvedRecords.forEach(rec => {
+    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}",${rec.approved ? 'כן' : 'לא'}\n`;
+  });
+  
+  // Sheet 2: Summary by activity type (hours only) + general totals
+  let summaryCSV = '\n\n--- גיליון מסכם ---\n\n';
+  summaryCSV += 'סיכום שעות לפי סוג פעילות\n';
+  summaryCSV += 'סוג פעילות,סה"כ שעות\n';
+  
+  // Group hours by activity type
+  const hoursByActivity = {};
+  approvedRecords.forEach(rec => {
+    const activity = rec.activity || 'לא מוגדר';
+    hoursByActivity[activity] = (hoursByActivity[activity] || 0) + (parseFloat(rec.hours) || 0);
+  });
+  
+  Object.entries(hoursByActivity).forEach(([activity, hours]) => {
+    summaryCSV += `${activity},${hours.toFixed(2)}\n`;
+  });
+  
+  // General totals
+  const totalKm = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
+  const totalExpenses = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
+  const totalHours = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  
+  summaryCSV += '\n\nסיכום כללי\n';
+  summaryCSV += `סה"כ שעות,${totalHours.toFixed(2)}\n`;
+  summaryCSV += `סה"כ קילומטר,${totalKm.toFixed(1)}\n`;
+  summaryCSV += `סה"כ הוצאות,${totalExpenses.toFixed(2)} ₪\n`;
+  
+  // Combine both sheets
+  const fullCSV = detailedCSV + summaryCSV;
+  
+  const blob = new Blob(['\ufeff' + fullCSV], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const monthName = new Date().toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+  link.download = `דוח_נוכחות_${monthName}.csv`;
+  link.click();
+  
+  showAlert('✅ הקובץ יוצא בהצלחה!', 'success');
+}
+
+function exportApprovedOnly() {
+  const approvedRecords = records.filter(rec => rec.approved === true);
+  
+  if (approvedRecords.length === 0) {
+    showAlert('⚠️ אין רשומות מאושרות לייצוא', 'error');
+    return;
+  }
+  
+  // Sheet 1: Detailed approved records
+  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
+  
+  approvedRecords.forEach(rec => {
+    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
+  });
+  
+  // Sheet 2: Summary by activity type (hours only) + general totals
+  let summaryCSV = '\n\n--- סיכום ---\n\n';
+  summaryCSV += 'סיכום שעות לפי סוג פעילות\n';
+  summaryCSV += 'סוג פעילות,סה"כ שעות\n';
+  
+  const hoursByActivity = {};
+  approvedRecords.forEach(rec => {
+    const activity = rec.activity || 'לא מוגדר';
+    hoursByActivity[activity] = (hoursByActivity[activity] || 0) + (parseFloat(rec.hours) || 0);
+  });
+  
+  Object.entries(hoursByActivity).forEach(([activity, hours]) => {
+    summaryCSV += `${activity},${hours.toFixed(2)}\n`;
+  });
+  
+  const totalKm = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
+  const totalExpenses = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
+  const totalHours = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  
+  summaryCSV += '\n\nסיכום כללי\n';
+  summaryCSV += `סה"כ שעות,${totalHours.toFixed(2)}\n`;
+  summaryCSV += `סה"כ קילומטר,${totalKm.toFixed(1)}\n`;
+  summaryCSV += `סה"כ הוצאות,${totalExpenses.toFixed(2)} ₪\n`;
+  summaryCSV += `סה"כ רשומות מאושרות,${approvedRecords.length}\n`;
+  
+  const fullCSV = detailedCSV + summaryCSV;
+  
+  const blob = new Blob(['\ufeff' + fullCSV], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const monthName = new Date().toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+  link.download = `דוח_מאושר_${monthName}.csv`;
+  link.click();
+  
+  showAlert(`✅ יוצאו ${approvedRecords.length} רשומות מאושרות!`, 'success');
 }
 
 function viewAllRecords() {
@@ -2268,6 +2460,7 @@ async function addRecord() {
     attachments,
     notes,
     status: 'ממתין',
+    approved: false,
     id: empNum + '_' + date + '_' + Date.now()
   };
   
