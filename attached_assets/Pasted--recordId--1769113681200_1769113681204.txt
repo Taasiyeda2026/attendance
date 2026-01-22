@@ -1,0 +1,196 @@
+מה צריך לעשות?
+
+בכל רשומה שתיווצר, תייצר recordId קבוע ותשלח אותו לשרת.
+
+תוסיף פונקציה אחת למעלה:
+
+שים ליד ה־helpers שלך:
+
+function generateRecordId() {
+  return 'rec_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+}
+
+3) תיקון בקוד: addRecord חייב לשמור recordId ולשלוח אותו לשרת
+
+בתוך addRecord() לפני ה־payload תוסיף:
+
+const recordId = generateRecordId();
+
+
+ובתוך ה־payload תוסיף שדה חדש:
+
+recordId: recordId,
+
+
+כלומר ב־payload:
+
+const payload = {
+  action: "submit",
+  recordId: recordId,
+  employeeId: localStorage.getItem("employeeId") || empNum,
+  employeeName: localStorage.getItem("employeeName") || empName,
+  attendanceDate: date,
+  startTime: startTime,
+  endTime: endTime,
+  workHours: hours,
+  activityType: activity,
+  schoolName: school,
+  municipality: municipality,
+  programName: program,
+  sessionNumber: session,
+  kilometers: km,
+  totalExpenses: totalExpenses,
+  expensesDetails: expensesDetail,
+  notes: notes,
+  attachments: attachments,
+  attachmentsNames: formatAttachments(attachments)
+};
+
+
+⚠️ וגם ב־loadMyRecordsFromServer() צריך לשמור את recordId אם מגיע מהשרת.
+
+שנה את המיפוי ל:
+
+records = data.records.map(rec => ({
+  recordId: rec.recordId || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
+  ...
+}));
+
+4) להוסיף API לעריכה ומחיקה (דרך Logic App)
+
+הקוד שלך צריך לשלוח לשרת גם:
+
+action: "updateRecord"
+
+action: "deleteRecord"
+
+4.1 פונקציה חדשה: updateRecordOnServer
+
+הדבק מתחת ל־loadMyRecordsFromServer():
+
+async function updateRecordOnServer(updatedRecord) {
+  const payload = {
+    action: "updateRecord",
+    recordId: updatedRecord.recordId,
+    employeeId: updatedRecord.empNum,
+    attendanceDate: updatedRecord.date,
+    startTime: updatedRecord.start,
+    endTime: updatedRecord.end,
+    workHours: updatedRecord.hours,
+    activityType: updatedRecord.activity,
+    schoolName: updatedRecord.school,
+    municipality: updatedRecord.municipality,
+    programName: updatedRecord.program,
+    sessionNumber: updatedRecord.session,
+    kilometers: updatedRecord.km,
+    totalExpenses: updatedRecord.totalExpenses,
+    expensesDetails: updatedRecord.expensesDetail,
+    notes: updatedRecord.notes
+  };
+
+  const res = await fetch(LOGIC_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  return res.ok;
+}
+
+4.2 פונקציה חדשה: deleteRecordOnServer
+
+הדבק גם:
+
+async function deleteRecordOnServer(recordId) {
+  const res = await fetch(LOGIC_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "deleteRecord",
+      recordId: recordId
+    })
+  });
+
+  return res.ok;
+}
+
+5) לשנות saveEdit כך שיעדכן גם בשרת
+
+ב־saveEdit() אחרי שאתה בונה את הרשומה החדשה, אתה עושה:
+
+saveToLocalStorage();
+updateStats();
+renderRecordsTable();
+closeEditModal();
+showAlert('✅ הרשומה עודכנה בהצלחה!', 'success');
+
+
+צריך לשנות לזרימה נכונה:
+
+החלף את החלק הזה ב:
+showAlert('🔄 מעדכן רשומה בשרת...', 'info');
+
+try {
+  const ok = await updateRecordOnServer(records[editingIndex]);
+
+  if (!ok) {
+    showAlert('⚠️ העדכון נשמר מקומית אבל נכשל בשרת', 'error');
+    return;
+  }
+
+  await loadMyRecordsFromServer(); // משיכה מחדש = סנכרון מלא
+
+  closeEditModal();
+  showAlert('✅ הרשומה עודכנה בהצלחה ונשמרה בשרת', 'success');
+} catch (e) {
+  console.error(e);
+  showAlert('❌ שגיאה בעדכון הרשומה בשרת', 'error');
+}
+
+6) לשנות deleteRecord כך שימחק גם בשרת
+
+הפונקציה שלך כרגע מוחקת רק מקומית.
+
+החלף את deleteRecord בגרסה הזאת:
+async function deleteRecord(index) {
+  const rec = records[index];
+  if (!rec) return;
+
+  if (!confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) return;
+
+  showAlert('🗑️ מוחק רשומה...', 'info');
+
+  try {
+    const ok = await deleteRecordOnServer(rec.recordId);
+
+    if (!ok) {
+      showAlert('❌ מחיקה נכשלה בשרת', 'error');
+      return;
+    }
+
+    await loadMyRecordsFromServer();
+    showAlert('✅ הרשומה נמחקה מהשרת בהצלחה', 'success');
+  } catch (e) {
+    console.error(e);
+    showAlert('❌ שגיאה במחיקה מהשרת', 'error');
+  }
+}
+
+7) תיקון חשוב: אל תשתמש יותר ב־attendanceRecords כבסיס אמת
+
+כרגע יש לך:
+
+saveToLocalStorage() {
+  localStorage.setItem('attendanceRecords', JSON.stringify(records));
+}
+
+
+זה בסדר רק לקאש זמני, אבל לא כאמת.
+
+✅ ההמלצה שלי:
+
+להשאיר LocalStorage רק להצגת נתונים כשאין אינטרנט
+
+אבל בכל כניסה / כל רענון – תמיד למשוך מהשרת
+
+וזה כבר קיים אצלך: loadMyRecordsFromServer() 👍

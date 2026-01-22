@@ -1908,6 +1908,10 @@ function generateRecordKey(rec) {
   return `${rec.empNum || rec.employeeId}_${rec.date || rec.attendanceDate}_${rec.start || rec.startTime}_${rec.activity || rec.activityType}`;
 }
 
+function generateRecordId() {
+  return 'rec_' + Date.now() + '_' + Math.random().toString(16).slice(2);
+}
+
 async function syncFromSharePoint(employeeId) {
   await loadMyRecordsFromServer();
 }
@@ -1946,6 +1950,7 @@ async function loadMyRecordsFromServer() {
 
     // Map server records to local format
     records = data.records.map(rec => ({
+      recordId: rec.recordId || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
       id: rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
       empNum: rec.employeeId?.toString() || employeeId,
       empName: rec.employeeName || '',
@@ -1975,6 +1980,48 @@ async function loadMyRecordsFromServer() {
     // Don't reset records on error - keep existing data
     showAlert('⚠️ שגיאה בטעינת רשומות', 'error');
   }
+}
+
+async function updateRecordOnServer(updatedRecord) {
+  const payload = {
+    action: "updateRecord",
+    recordId: updatedRecord.recordId,
+    employeeId: updatedRecord.empNum,
+    attendanceDate: updatedRecord.date,
+    startTime: updatedRecord.start,
+    endTime: updatedRecord.end,
+    workHours: updatedRecord.hours,
+    activityType: updatedRecord.activity,
+    schoolName: updatedRecord.school,
+    municipality: updatedRecord.municipality,
+    programName: updatedRecord.program,
+    sessionNumber: updatedRecord.session,
+    kilometers: updatedRecord.km,
+    totalExpenses: updatedRecord.totalExpenses,
+    expensesDetails: updatedRecord.expensesDetail,
+    notes: updatedRecord.notes
+  };
+
+  const res = await fetch(LOGIC_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  return res.ok;
+}
+
+async function deleteRecordOnServer(recordId) {
+  const res = await fetch(LOGIC_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "deleteRecord",
+      recordId: recordId
+    })
+  });
+
+  return res.ok;
 }
 
 // =============== Login ===============
@@ -2795,8 +2842,11 @@ async function addRecord() {
     return;
   }
   
+  const recordId = generateRecordId();
+  
   const payload = {
     action: "submit",
+    recordId: recordId,
     employeeId: localStorage.getItem("employeeId") || empNum,
     employeeName: localStorage.getItem("employeeName") || empName,
     attendanceDate: date,
@@ -2925,13 +2975,27 @@ function renderRecordsTable() {
   document.getElementById('recordsTable').innerHTML = tableHTML;
 }
 
-function deleteRecord(index) {
-  if (confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) {
-    records.splice(index, 1);
-    saveToLocalStorage();
-    updateStats();
-    renderRecordsTable();
-    showAlert('🗑️ הרשומה נמחקה בהצלחה', 'success');
+async function deleteRecord(index) {
+  const rec = records[index];
+  if (!rec) return;
+
+  if (!confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) return;
+
+  showAlert('🗑️ מוחק רשומה...', 'info');
+
+  try {
+    const ok = await deleteRecordOnServer(rec.recordId);
+
+    if (!ok) {
+      showAlert('❌ מחיקה נכשלה בשרת', 'error');
+      return;
+    }
+
+    await loadMyRecordsFromServer();
+    showAlert('✅ הרשומה נמחקה מהשרת בהצלחה', 'success');
+  } catch (e) {
+    console.error(e);
+    showAlert('❌ שגיאה במחיקה מהשרת', 'error');
   }
 }
 
@@ -3084,11 +3148,31 @@ async function saveEdit() {
     status: 'ממתין'
   };
   
-  saveToLocalStorage();
-  updateStats();
-  renderRecordsTable();
-  closeEditModal();
-  showAlert('✅ הרשומה עודכנה בהצלחה!', 'success');
+  showAlert('🔄 מעדכן רשומה בשרת...', 'info');
+
+  try {
+    const ok = await updateRecordOnServer(records[editingIndex]);
+
+    if (!ok) {
+      showAlert('⚠️ העדכון נשמר מקומית אבל נכשל בשרת', 'error');
+      saveToLocalStorage();
+      updateStats();
+      renderRecordsTable();
+      closeEditModal();
+      return;
+    }
+
+    await loadMyRecordsFromServer();
+    closeEditModal();
+    showAlert('✅ הרשומה עודכנה בהצלחה ונשמרה בשרת', 'success');
+  } catch (e) {
+    console.error(e);
+    showAlert('❌ שגיאה בעדכון הרשומה בשרת', 'error');
+    saveToLocalStorage();
+    updateStats();
+    renderRecordsTable();
+    closeEditModal();
+  }
 }
 
 // =============== Schools Functions ===============
