@@ -1982,11 +1982,13 @@ async function loadMyRecordsFromServer() {
   }
 }
 
-async function updateRecordOnServer(updatedRecord) {
+async function updateRecordOnServer(updatedRecord, originalDate, originalStartTime) {
   const payload = {
     action: "updateRecord",
     employeeId: String(updatedRecord.empNum),
     employeeName: String(updatedRecord.empName || localStorage.getItem("employeeName") || ''),
+    originalAttendanceDate: String(originalDate || updatedRecord.date),
+    originalStartTime: String(originalStartTime || updatedRecord.start),
     attendanceDate: String(updatedRecord.date),
     startTime: String(updatedRecord.start),
     endTime: String(updatedRecord.end),
@@ -3073,6 +3075,9 @@ function updateEditMunicipality() {
 async function saveEdit() {
   if (editingIndex === -1) return;
   
+  const originalDate = records[editingIndex].date;
+  const originalStartTime = records[editingIndex].start;
+  
   const date = document.getElementById('editDate').value;
   const startTime = document.getElementById('editStartTime').value;
   const endTime = document.getElementById('editEndTime').value;
@@ -3148,7 +3153,7 @@ async function saveEdit() {
   showAlert('🔄 מעדכן רשומה בשרת...', 'info');
 
   try {
-    const ok = await updateRecordOnServer(records[editingIndex]);
+    const ok = await updateRecordOnServer(records[editingIndex], originalDate, originalStartTime);
 
     if (!ok) {
       showAlert('⚠️ העדכון נשמר מקומית אבל נכשל בשרת', 'error');
