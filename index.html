@@ -630,20 +630,19 @@
 
     /* Time picker dropdowns */
     .time-picker-row {
-      display: inline-flex;
+      display: flex;
       gap: 6px;
       align-items: center;
       direction: ltr;
-    }
-    
-    .form-field:has(.time-picker-row) {
-      text-align: right;
+      width: 180px;
+      max-width: 180px;
     }
 
     .time-picker-row select {
-      width: 80px;
-      min-width: 80px;
-      max-width: 80px;
+      width: 70px;
+      min-width: 70px;
+      max-width: 70px;
+      flex-shrink: 0;
       text-align: center;
       font-weight: 500;
       max-height: 200px;
