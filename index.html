@@ -1362,13 +1362,13 @@
              onmouseover="this.style.transform='translateY(-5px)'"
              onmouseout="this.style.transform='translateY(0)'">
           <div class="stat-card-header">
-            <span class="stat-card-title">סה"כ רשומות</span>
+            <span class="stat-card-title">ימי עבודה</span>
             <div class="stat-card-icon">
-              <i class="fas fa-clipboard-list"></i>
+              <i class="fas fa-calendar-check"></i>
             </div>
           </div>
           <div class="stat-card-value" id="totalRecordsStat">0</div>
-          <div class="stat-card-label">רשומות נוכחות</div>
+          <div class="stat-card-label">תאריכים שונים בחודש</div>
         </div>
         
         <div class="stat-card purple">
@@ -3151,12 +3151,12 @@ function updateStats() {
     return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
   });
   
-  const totalRecords = monthRecords.length;
+  const uniqueDates = new Set(monthRecords.map(r => r.date)).size;
   const totalHours = monthRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0).toFixed(2);
   const totalExpenses = monthRecords.reduce((sum, r) => sum + (parseFloat(r.totalExpenses) || 0), 0).toFixed(2);
   const totalKm = monthRecords.reduce((sum, r) => sum + (parseFloat(r.km) || 0), 0).toFixed(1);
   
-  document.getElementById('totalRecordsStat').textContent = totalRecords;
+  document.getElementById('totalRecordsStat').textContent = uniqueDates;
   document.getElementById('totalHoursStat').textContent = totalHours;
   document.getElementById('totalExpensesStat').textContent = totalExpenses + ' ₪';
   document.getElementById('pendingRecordsStat').textContent = totalKm + ' ק"מ';
