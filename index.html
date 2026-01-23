@@ -1212,11 +1212,11 @@
         <i class="fas fa-table"></i>
         <span>רשומות נוכחות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,payroll_officer,system_admin">
         <i class="fas fa-users"></i>
         <span>רשומות הצוות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,payroll_officer,system_admin">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
       </a>
@@ -1991,7 +1991,8 @@ function getRoleDisplayName(role) {
   const roleNames = {
     'system_admin': 'מנהל מערכת',
     'manager': 'מנהל/ת פעילויות',
-    'operations_controller': 'עוזרת אדמין',
+    'payroll_officer': 'אחראי שכר',
+    'operations_controller': 'מבקר תפעול',
     'instructor': 'מדריך/ה'
   };
   return roleNames[role] || 'משתמש';
@@ -2056,7 +2057,7 @@ function canEditRecord(record) {
   
   const role = user.role;
   
-  if (role === 'system_admin' || role === 'operations_controller') {
+  if (role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer') {
     return true;
   }
   
@@ -2073,7 +2074,7 @@ function canDeleteRecord(record) {
   
   const role = user.role;
   
-  return role === 'system_admin' || role === 'operations_controller';
+  return role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer';
 }
 
 // =============== Sync from SharePoint ===============

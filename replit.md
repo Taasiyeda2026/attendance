@@ -32,10 +32,11 @@ Preferred communication style: Simple, everyday language.
 5. **deleteRecord**: Delete by SharePoint recordId
 
 ### RBAC Roles
-- `employee`: View/submit own records only
-- `manager`: View team records, edit all records
-- `operations_controller`: Full access, delete permission
-- `system_admin`: Full access, all permissions
+- `instructor`: View/submit own records only (מדריך/ה)
+- `manager`: View team records, edit all records (מנהל/ת פעילויות)
+- `payroll_officer`: Full access, delete permission - same as operations_controller (אחראי שכר)
+- `operations_controller`: Full access, delete permission (מבקר תפעול)
+- `system_admin`: Full access, all permissions (מנהל מערכת)
 
 ### Data Flow
 - All records stored in SharePoint Lists
