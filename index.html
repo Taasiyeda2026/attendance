@@ -601,8 +601,11 @@
     .time-picker-row select {
       width: 80px;
       min-width: 80px;
+      max-width: 80px;
       text-align: center;
       font-weight: 500;
+      max-height: 200px;
+      overflow-y: auto;
     }
 
     .time-picker-row .time-separator {
@@ -684,6 +687,13 @@
       }
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Add Record Cards Grid - Mobile */
+    @media (max-width: 900px) {
+      #addRecordPage > div[style*="grid-template-columns: repeat(2"] {
+        grid-template-columns: 1fr !important;
       }
     }
 
@@ -1384,138 +1394,159 @@
         </div>
       </div>
       
-      <div class="content-card">
-        <div class="card-body" style="padding: 16px;">
-          
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-            <div class="form-field">
-              <label for="recDate">תאריך <span style="color: #ef4444;">*</span></label>
-              <input type="date" id="recDate" required>
-            </div>
-            <div style="visibility: hidden;"></div>
-            <div style="visibility: hidden;"></div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+        
+        <div class="content-card">
+          <div class="card-header" style="padding: 12px 16px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);">
+            <h3 class="card-title" style="font-size: 15px; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-clock"></i>
+              זמנים
+            </h3>
           </div>
-          
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-            <div class="form-field">
-              <label>שעת התחלה <span style="color: #ef4444;">*</span></label>
-              <div class="time-picker-row">
-                <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
-                  <option value="">שעה</option>
-                </select>
-                <span class="time-separator">:</span>
-                <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" required>
-                  <option value="">דקות</option>
-                </select>
-                <input type="hidden" id="startTime">
-              </div>
+          <div class="card-body" style="padding: 16px;">
+            <div class="form-field" style="margin-bottom: 12px;">
+              <label for="recDate">תאריך <span style="color: #ef4444;">*</span></label>
+              <input type="date" id="recDate" required style="max-width: 180px;">
             </div>
-            <div class="form-field">
-              <label>שעת סיום <span style="color: #ef4444;">*</span></label>
-              <div class="time-picker-row">
-                <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
-                  <option value="">שעה</option>
-                </select>
-                <span class="time-separator">:</span>
-                <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" required>
-                  <option value="">דקות</option>
-                </select>
-                <input type="hidden" id="endTime">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-field">
+                <label>שעת התחלה <span style="color: #ef4444;">*</span></label>
+                <div class="time-picker-row">
+                  <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
+                    <option value="">שעה</option>
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" required>
+                    <option value="">דקות</option>
+                  </select>
+                  <input type="hidden" id="startTime">
+                </div>
+              </div>
+              <div class="form-field">
+                <label>שעת סיום <span style="color: #ef4444;">*</span></label>
+                <div class="time-picker-row">
+                  <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
+                    <option value="">שעה</option>
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" required>
+                    <option value="">דקות</option>
+                  </select>
+                  <input type="hidden" id="endTime">
+                </div>
               </div>
             </div>
             <div class="form-field">
               <label for="hoursField">סה"כ שעות</label>
-              <input type="number" id="hoursField" step="0.01" min="0" max="24" readonly style="background: #f1f5f9; cursor: not-allowed;">
+              <input type="number" id="hoursField" step="0.01" min="0" max="24" readonly style="background: #f1f5f9; cursor: not-allowed; max-width: 100px; font-weight: 700; font-size: 16px; text-align: center;">
             </div>
           </div>
-          
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-            <div class="form-field">
-              <label for="activityType">סוג פעילות <span style="color: #ef4444;">*</span></label>
-              <select id="activityType" required>
-                <option value="">בחר</option>
-                <option value="ביטול זמן">ביטול זמן</option>
-                <option value="הכשרה">הכשרה</option>
-                <option value="סדנה">סדנה</option>
-                <option value="סיור">סיור</option>
-                <option value="קורס">קורס</option>
-                <option value="תפעול">תפעול</option>
-              </select>
+        </div>
+        
+        <div class="content-card">
+          <div class="card-header" style="padding: 12px 16px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+            <h3 class="card-title" style="font-size: 15px; color: #166534; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-briefcase"></i>
+              פרטי פעילות
+            </h3>
+          </div>
+          <div class="card-body" style="padding: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-field">
+                <label for="activityType">סוג פעילות <span style="color: #ef4444;">*</span></label>
+                <select id="activityType" required style="max-width: 100%;">
+                  <option value="">בחר</option>
+                  <option value="ביטול זמן">ביטול זמן</option>
+                  <option value="הכשרה">הכשרה</option>
+                  <option value="סדנה">סדנה</option>
+                  <option value="סיור">סיור</option>
+                  <option value="קורס">קורס</option>
+                  <option value="תפעול">תפעול</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="schoolField">בית ספר <span style="color: #ef4444;">*</span></label>
+                <select id="schoolField" onchange="updateMunicipalityFromSchool()" required style="max-width: 100%;">
+                  <option value="">בחר בית ספר</option>
+                </select>
+              </div>
             </div>
-            <div class="form-field">
-              <label for="schoolField">בית ספר <span style="color: #ef4444;">*</span></label>
-              <select id="schoolField" onchange="updateMunicipalityFromSchool()" required>
-                <option value="">בחר בית ספר</option>
-              </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-field">
+                <label for="municipality">רשות <span style="color: #ef4444;">*</span></label>
+                <input type="text" id="municipality" readonly required style="background: #f1f5f9; max-width: 100%;">
+              </div>
+              <div class="form-field">
+                <label for="programField">תוכנית <span style="color: #ef4444;">*</span></label>
+                <select id="programField" required style="max-width: 100%;">
+                  <option value="">בחר תוכנית</option>
+                  <option value="השמיים אינם הגבול">השמיים אינם הגבול</option>
+                  <option value="התנסות בתעשייה">התנסות בתעשייה</option>
+                  <option value="ביומימיקרי">ביומימיקרי</option>
+                  <option value="ביומימיקרי לחטיבות">ביומימיקרי לחטיבות</option>
+                  <option value="בינה מלאכותית">בינה מלאכותית</option>
+                  <option value="יישומי AI">יישומי AI</option>
+                  <option value="מייקרים טכנו-כיף">מייקרים טכנו-כיף</option>
+                  <option value="מנהיגות ירוקה">מנהיגות ירוקה</option>
+                  <option value="מקורות">מקורות</option>
+                  <option value="משחקי קופסה">משחקי קופסה</option>
+                  <option value="פורצות דרך">פורצות דרך</option>
+                  <option value="רוקחים עולם">רוקחים עולם</option>
+                  <option value="טכנולוגיות החלל">טכנולוגיות החלל</option>
+                  <option value="תמיר">תמיר</option>
+                </select>
+              </div>
             </div>
-            <div class="form-field">
-              <label for="municipality">רשות <span style="color: #ef4444;">*</span></label>
-              <input type="text" id="municipality" readonly required style="background: #f1f5f9;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-field">
+                <label for="sessionNum">מספר מפגש <span style="color: #ef4444;">*</span></label>
+                <select id="sessionNum" required style="max-width: 120px;">
+                  <option value="">בחר</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                  <option value="13">13</option>
+                  <option value="14">14</option>
+                  <option value="15">15</option>
+                  <option value="16">16</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="kmField">קילומטר</label>
+                <input type="number" id="kmField" step="0.1" min="0" placeholder="הלוך חזור" style="max-width: 120px;">
+              </div>
             </div>
           </div>
-          
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-            <div class="form-field">
-              <label for="programField">תוכנית <span style="color: #ef4444;">*</span></label>
-              <select id="programField" required>
-                <option value="">בחר תוכנית</option>
-                <option value="השמיים אינם הגבול">השמיים אינם הגבול</option>
-                <option value="התנסות בתעשייה">התנסות בתעשייה</option>
-                <option value="ביומימיקרי">ביומימיקרי</option>
-                <option value="ביומימיקרי לחטיבות">ביומימיקרי לחטיבות</option>
-                <option value="בינה מלאכותית">בינה מלאכותית</option>
-                <option value="יישומי AI">יישומי AI</option>
-                <option value="מייקרים טכנו-כיף">מייקרים טכנו-כיף</option>
-                <option value="מנהיגות ירוקה">מנהיגות ירוקה</option>
-                <option value="מקורות">מקורות</option>
-                <option value="משחקי קופסה">משחקי קופסה</option>
-                <option value="פורצות דרך">פורצות דרך</option>
-                <option value="רוקחים עולם">רוקחים עולם</option>
-                <option value="טכנולוגיות החלל">טכנולוגיות החלל</option>
-                <option value="תמיר">תמיר</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label for="sessionNum">מספר מפגש <span style="color: #ef4444;">*</span></label>
-              <select id="sessionNum" required>
-                <option value="">בחר</option>
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="11">11</option>
-                <option value="12">12</option>
-                <option value="13">13</option>
-                <option value="14">14</option>
-                <option value="15">15</option>
-                <option value="16">16</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label for="kmField">קילומטר</label>
-              <input type="number" id="kmField" step="0.1" min="0" placeholder="הלוך חזור">
-            </div>
+        </div>
+        
+        <div class="content-card">
+          <div class="card-header" style="padding: 12px 16px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);">
+            <h3 class="card-title" style="font-size: 15px; color: #92400e; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-receipt"></i>
+              הוצאות
+            </h3>
           </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 16px;">
-            <div class="form-field">
-              <label for="totalExpenses">סה"כ הוצאות (₪)</label>
-              <input type="number" id="totalExpenses" step="0.01" min="0" placeholder="0.00">
+          <div class="card-body" style="padding: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div class="form-field">
+                <label for="totalExpenses">סה"כ הוצאות (₪)</label>
+                <input type="number" id="totalExpenses" step="0.01" min="0" placeholder="0.00" style="max-width: 120px;">
+              </div>
+              <div class="form-field">
+                <label for="expensesDetail">פירוט הוצאות</label>
+                <input type="text" id="expensesDetail" placeholder="פרט את ההוצאות" style="max-width: 100%;">
+              </div>
             </div>
-            <div class="form-field">
-              <label for="expensesDetail">פירוט הוצאות</label>
-              <input type="text" id="expensesDetail" placeholder="פרט את ההוצאות">
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label for="attachments">צרף מסמכים/תמונות</label>
               <div class="file-upload-container" onclick="document.getElementById('attachments').click()" id="fileDropZone" style="padding: 12px;">
@@ -1526,13 +1557,24 @@
               <input type="file" id="attachments" multiple accept="image/*,.pdf,.doc,.docx,.xlsx" style="display: none;" onchange="handleFileSelect(event)">
               <div id="fileList" class="file-list"></div>
             </div>
+          </div>
+        </div>
+        
+        <div class="content-card">
+          <div class="card-header" style="padding: 12px 16px; background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);">
+            <h3 class="card-title" style="font-size: 15px; color: #6b21a8; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-sticky-note"></i>
+              הערות
+            </h3>
+          </div>
+          <div class="card-body" style="padding: 16px;">
             <div class="form-field">
-              <label for="notesField">הערות</label>
-              <textarea id="notesField" rows="3" style="height: 80px;"></textarea>
+              <label for="notesField">הערות נוספות</label>
+              <textarea id="notesField" rows="4" style="height: 100px; max-width: 100%;"></textarea>
             </div>
           </div>
-          
         </div>
+        
       </div>
     </div>
 
@@ -2596,6 +2638,14 @@ function showPage(event, pageName) {
   if (pageName === 'records') renderRecordsTable();
   if (pageName === 'team-records') loadTeamRecords();
   if (pageName === 'reports') initReportsPage();
+  if (pageName === 'add-record') {
+    // Populate employee info in header
+    const user = getCurrentUserData();
+    if (user) {
+      document.getElementById('displayEmpNum').textContent = user.empNum || '';
+      document.getElementById('displayEmpName').textContent = user.empName || '';
+    }
+  }
 }
 
 // =============== Team Records Functions ===============
