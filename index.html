@@ -4107,7 +4107,7 @@ async function loadReportData() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'getAllRecords',
+        action: 'getHistory',
         employeeId: user.empNum,
         role: user.role,
         team: user.team
