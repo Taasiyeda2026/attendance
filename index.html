@@ -2275,13 +2275,17 @@ async function doLogin(event) {
     
     if (data.success) {
       currentUser = data.employeeName;
+      // Check both "role" and "Role" field names
+      const rawRole = data.role || data.Role || data.ROLE || 'instructor';
+      console.log('Raw role value:', rawRole);
       const empData = {
         empNum: employeeId,
         empName: data.employeeName,
-        role: normalizeRole(data.role),
-        team: data.team || null,
-        employmentType: data.employmentType || null
+        role: normalizeRole(rawRole),
+        team: data.team || data.Team || null,
+        employmentType: data.employmentType || data.EmploymentType || null
       };
+      console.log('Normalized role:', empData.role);
       localStorage.setItem('currentUser', JSON.stringify(empData));
       localStorage.setItem('employeeName', data.employeeName);
       localStorage.setItem('employeeId', employeeId);
