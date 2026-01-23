@@ -3160,6 +3160,46 @@ function updateTimeField(prefix) {
       hiddenField.value = '';
     }
   }
+  
+  // Update end time minimum when start time changes
+  if (prefix === 'start') {
+    updateEndTimeMinimum('start', 'end');
+  } else if (prefix === 'editStart') {
+    updateEndTimeMinimum('editStart', 'editEnd');
+  }
+}
+
+function updateEndTimeMinimum(startPrefix, endPrefix) {
+  const startHourSelect = document.getElementById(startPrefix + 'Hour');
+  const endHourSelect = document.getElementById(endPrefix + 'Hour');
+  
+  if (!startHourSelect || !endHourSelect) return;
+  
+  const startHour = parseInt(startHourSelect.value) || 0;
+  const currentEndHour = endHourSelect.value;
+  
+  // Save current selection
+  const savedEndHour = currentEndHour;
+  
+  // Clear and rebuild end hour options
+  endHourSelect.innerHTML = '<option value="">שעה</option>';
+  
+  for (let h = startHour; h <= 23; h++) {
+    const hStr = h.toString().padStart(2, '0');
+    const option = document.createElement('option');
+    option.value = hStr;
+    option.textContent = hStr;
+    endHourSelect.appendChild(option);
+  }
+  
+  // Restore selection if still valid
+  if (savedEndHour && parseInt(savedEndHour) >= startHour) {
+    endHourSelect.value = savedEndHour;
+  } else if (startHour) {
+    // Auto-select start hour as minimum
+    endHourSelect.value = startHour.toString().padStart(2, '0');
+    updateTimeField(endPrefix);
+  }
 }
 
 function setTimeDropdowns(prefix, timeValue) {
