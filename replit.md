@@ -10,12 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 2026)
 
+- **Add Record Page Redesign**: Reorganized into 4 colored cards:
+  - Card 1 (blue): Date, Start Time, End Time, Total Hours
+  - Card 2 (green): Activity Type, School, Municipality, Program, Session, Kilometers
+  - Card 3 (yellow): Total Expenses, Expenses Detail, Attach Documents
+  - Card 4 (purple): Notes
+- **Time Dropdown Fix**: Limited height with scroll to prevent overflow
+- **Employee Info Display**: Now shows employee number and name in header when adding record
+- **Hours Field**: Smaller, centered, bold display; formatted as simple numbers for SharePoint
 - **Approval Workflow**: Approve/reject buttons for managers and above; status badges (pending/approved/rejected); reject modal with comment field
 - **Reports Page Enhanced**: Filters for team, EmploymentType, activity type; stats for hours, km, expenses
 - **Excel Export Options**: All rows (detailed) or grouped by employee (summary) via export modal
 - **RBAC Permissions**: Edit allowed for manager/ops_controller/admin; Delete only for ops_controller/admin; Approve for non-instructors
 - **EmploymentType**: Stored in localStorage on login, sent in submit/update payloads
-- **Mobile Responsive**: Horizontal table scroll, sticky first column (RTL), mobile-optimized headers/buttons
+- **Mobile Responsive**: Horizontal table scroll, sticky first column (RTL), mobile-optimized headers/buttons, cards grid adapts to 1 column on mobile
 - **File Upload UI**: Drag-and-drop support, 5MB validation (actual SharePoint upload pending Logic App config)
 
 ## System Architecture
