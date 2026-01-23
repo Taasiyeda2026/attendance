@@ -1607,7 +1607,7 @@
           <p>סיכומים וסטטיסטיקות</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn" onclick="exportReportToExcel()" style="background: #10b981; color: white;">
+          <button class="btn" onclick="openExportModal()" style="background: #10b981; color: white;">
             <i class="fas fa-file-excel"></i>
             ייצוא ל-Excel
           </button>
@@ -1646,6 +1646,12 @@
                 <option value="2027">2027</option>
               </select>
             </div>
+            <div class="form-group" style="margin: 0; min-width: 120px;">
+              <label style="font-size: 12px; margin-bottom: 4px;">צוות</label>
+              <select id="reportTeam" class="form-input" onchange="loadReportData()" style="padding: 8px;">
+                <option value="all">הכל</option>
+              </select>
+            </div>
             <div class="form-group" style="margin: 0; min-width: 140px;" id="employmentTypeFilterContainer">
               <label style="font-size: 12px; margin-bottom: 4px;">סוג העסקה</label>
               <select id="reportEmploymentType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
@@ -1654,6 +1660,18 @@
                 <option value="מעוף">מעוף</option>
                 <option value="מנפאואר">מנפאואר</option>
                 <option value="עצמאי">עצמאי</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0; min-width: 120px;">
+              <label style="font-size: 12px; margin-bottom: 4px;">סוג פעילות</label>
+              <select id="reportActivityType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
+                <option value="all">הכל</option>
+                <option value="ביטול זמן">ביטול זמן</option>
+                <option value="הכשרה">הכשרה</option>
+                <option value="סדנה">סדנה</option>
+                <option value="סיור">סיור</option>
+                <option value="קורס">קורס</option>
+                <option value="תפעול">תפעול</option>
               </select>
             </div>
             <button class="btn btn-primary" onclick="loadReportData()" style="height: 38px; margin-top: 18px;">
@@ -1678,6 +1696,13 @@
             <div class="stat-card-icon"><i class="fas fa-clock"></i></div>
           </div>
           <div class="stat-card-value" id="teamTotalHours">0</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-card-header">
+            <span class="stat-card-title">סה"כ ק"מ</span>
+            <div class="stat-card-icon"><i class="fas fa-road"></i></div>
+          </div>
+          <div class="stat-card-value" id="teamTotalKm">0</div>
         </div>
         <div class="stat-card green">
           <div class="stat-card-header">
@@ -1874,6 +1899,65 @@
           <button class="btn btn-success" onclick="saveEdit()">
             <i class="fas fa-save"></i>
             שמירה
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal">
+      <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3>ייצוא לאקסל</h3>
+          <button class="close-btn" onclick="closeExportModal()">×</button>
+        </div>
+        
+        <div style="padding: 20px;">
+          <p style="margin-bottom: 15px; color: #64748b;">בחר סוג ייצוא:</p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn" onclick="exportReportToExcel('all')" style="background: #3b82f6; color: white; padding: 15px;">
+              <i class="fas fa-list"></i>
+              כל השורות (מפורט)
+            </button>
+            <button class="btn" onclick="exportReportToExcel('grouped')" style="background: #10b981; color: white; padding: 15px;">
+              <i class="fas fa-chart-bar"></i>
+              מקובץ לפי עובד (סיכום)
+            </button>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn" onclick="closeExportModal()" style="background: #e2e8f0; color: #475569;">
+            <i class="fas fa-times"></i>
+            ביטול
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="modal">
+      <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3>דחיית רשומה</h3>
+          <button class="close-btn" onclick="closeRejectModal()">×</button>
+        </div>
+        
+        <div style="padding: 20px;">
+          <div class="form-field">
+            <label for="rejectReason">סיבת הדחייה (אופציונלי)</label>
+            <textarea id="rejectReason" rows="3" placeholder="הזן סיבת דחייה..."></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn" onclick="closeRejectModal()" style="background: #e2e8f0; color: #475569;">
+            <i class="fas fa-times"></i>
+            ביטול
+          </button>
+          <button class="btn" onclick="confirmReject()" style="background: #ef4444; color: white;">
+            <i class="fas fa-times-circle"></i>
+            דחייה
           </button>
         </div>
       </div>
@@ -2131,6 +2215,25 @@ function canDeleteRecord(record) {
   const role = user.role;
   
   return role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer';
+}
+
+function canApproveRecord(record) {
+  const user = getCurrentUserData();
+  if (!user) return false;
+  
+  const role = user.role;
+  
+  return role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer' || role === 'manager';
+}
+
+function getStatusBadge(status) {
+  const statusMap = {
+    'pending': { text: 'ממתין', class: 'status-pending', color: '#f59e0b', bg: '#fef3c7' },
+    'approved': { text: 'מאושר', class: 'status-approved', color: '#10b981', bg: '#d1fae5' },
+    'rejected': { text: 'נדחה', class: 'status-rejected', color: '#ef4444', bg: '#fee2e2' }
+  };
+  const s = statusMap[status] || statusMap['pending'];
+  return `<span style="background: ${s.bg}; color: ${s.color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${s.text}</span>`;
 }
 
 // =============== Sync from SharePoint ===============
@@ -3172,6 +3275,8 @@ function renderRecordsTable() {
     return;
   }
   
+  const showApprovalColumn = canApproveRecord({});
+  
   const tableHTML = `
     <table>
       <thead>
@@ -3185,6 +3290,7 @@ function renderRecordsTable() {
           <th>בית ספר</th>
           <th>רשות</th>
           <th>ק"מ</th>
+          <th>סטטוס</th>
           <th>פעולות</th>
         </tr>
       </thead>
@@ -3201,24 +3307,37 @@ function renderRecordsTable() {
             <td>${rec.municipality}</td>
             <td>${rec.km}</td>
             <td>
+              ${getStatusBadge(rec.status || 'pending')}
+              ${rec.approvedBy ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">${rec.approvedBy}</div>` : ''}
+            </td>
+            <td style="white-space: nowrap;">
+              ${showApprovalColumn && rec.status !== 'approved' ? `
+              <button class="btn" onclick="approveRecord(${idx})" style="background: #d1fae5; color: #059669; padding: 6px 10px; margin-left: 4px;" title="אישור">
+                <i class="fas fa-check"></i>
+              </button>
+              ` : ''}
+              ${showApprovalColumn && rec.status !== 'rejected' ? `
+              <button class="btn" onclick="openRejectModal(${idx})" style="background: #fee2e2; color: #dc2626; padding: 6px 10px; margin-left: 4px;" title="דחייה">
+                <i class="fas fa-times"></i>
+              </button>
+              ` : ''}
               ${canEditRecord(rec) ? `
-              <button class="btn" onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 8px 12px; margin-left: 5px;" title="עריכה">
+              <button class="btn" onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 6px 10px; margin-left: 4px;" title="עריכה">
                 <i class="fas fa-edit"></i>
               </button>
               ` : ''}
               ${canDeleteRecord(rec) ? `
-              <button class="btn" onclick="deleteRecord(${idx})" style="background: #fee2e2; color: #dc2626; padding: 8px 12px;" title="מחיקה">
+              <button class="btn" onclick="deleteRecord(${idx})" style="background: #fecaca; color: #b91c1c; padding: 6px 10px;" title="מחיקה">
                 <i class="fas fa-trash"></i>
               </button>
               ` : ''}
-              ${!canEditRecord(rec) && !canDeleteRecord(rec) ? '<span style="color: #94a3b8;">-</span>' : ''}
             </td>
           </tr>
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td colspan="4" style="text-align: left; padding-right: 20px;">סה"כ:</td>
           <td style="color: #3b82f6;">${totalHours.toFixed(2)}</td>
-          <td colspan="3"></td>
+          <td colspan="4"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
           <td></td>
         </tr>
@@ -3255,6 +3374,104 @@ async function deleteRecord(index) {
   } catch (e) {
     console.error(e);
     showAlert('❌ שגיאה במחיקה מהשרת', 'error');
+  }
+}
+
+// =============== Approve/Reject Records ===============
+let rejectingIndex = null;
+
+async function approveRecord(index) {
+  const rec = records[index];
+  if (!rec) return;
+  
+  if (!canApproveRecord(rec)) {
+    showAlert('❌ אין לך הרשאה לאשר רשומות', 'error');
+    return;
+  }
+  
+  showAlert('✅ מאשר רשומה...', 'info');
+  
+  try {
+    const user = getCurrentUserData();
+    const now = new Date().toISOString();
+    
+    const updatePayload = {
+      ...rec,
+      status: 'approved',
+      approvedBy: user.empName,
+      approvedDate: now,
+      rejectReason: ''
+    };
+    
+    const ok = await updateRecordOnServer(updatePayload);
+    
+    if (!ok) {
+      showAlert('❌ אישור נכשל בשרת', 'error');
+      return;
+    }
+    
+    await loadMyRecordsFromServer();
+    showAlert('✅ הרשומה אושרה בהצלחה', 'success');
+  } catch (e) {
+    console.error(e);
+    showAlert('❌ שגיאה באישור הרשומה', 'error');
+  }
+}
+
+function openRejectModal(index) {
+  rejectingIndex = index;
+  document.getElementById('rejectReason').value = '';
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+
+function closeRejectModal() {
+  rejectingIndex = null;
+  document.getElementById('rejectModal').style.display = 'none';
+}
+
+async function confirmReject() {
+  if (rejectingIndex === null) return;
+  
+  const rec = records[rejectingIndex];
+  if (!rec) return;
+  
+  const reason = document.getElementById('rejectReason').value.trim();
+  
+  if (!canApproveRecord(rec)) {
+    showAlert('❌ אין לך הרשאה לדחות רשומות', 'error');
+    closeRejectModal();
+    return;
+  }
+  
+  showAlert('❌ דוחה רשומה...', 'info');
+  
+  try {
+    const user = getCurrentUserData();
+    const now = new Date().toISOString();
+    
+    const updatePayload = {
+      ...rec,
+      status: 'rejected',
+      approvedBy: user.empName,
+      approvedDate: now,
+      rejectReason: reason
+    };
+    
+    const ok = await updateRecordOnServer(updatePayload);
+    
+    if (!ok) {
+      showAlert('❌ דחייה נכשלה בשרת', 'error');
+      closeRejectModal();
+      return;
+    }
+    
+    await loadMyRecordsFromServer();
+    closeRejectModal();
+    showAlert('✅ הרשומה נדחתה', 'success');
+  } catch (e) {
+    console.error(e);
+    showAlert('❌ שגיאה בדחיית הרשומה', 'error');
+    closeRejectModal();
   }
 }
 
@@ -3512,7 +3729,56 @@ function initReportsPage() {
   const now = new Date();
   document.getElementById('reportMonth').value = now.getMonth() + 1;
   document.getElementById('reportYear').value = now.getFullYear();
+  populateTeamFilter();
   loadReportData();
+}
+
+function populateTeamFilter() {
+  const teamSelect = document.getElementById('reportTeam');
+  if (!teamSelect) return;
+  
+  const teams = new Set();
+  records.forEach(rec => {
+    if (rec.team) teams.add(rec.team);
+  });
+  
+  const currentValue = teamSelect.value;
+  teamSelect.innerHTML = '<option value="all">הכל</option>';
+  
+  Array.from(teams).sort().forEach(team => {
+    const option = document.createElement('option');
+    option.value = team;
+    option.textContent = team;
+    teamSelect.appendChild(option);
+  });
+  
+  if (currentValue && teams.has(currentValue)) {
+    teamSelect.value = currentValue;
+  }
+}
+
+function populateTeamFilterFromRecords(recordsList) {
+  const teamSelect = document.getElementById('reportTeam');
+  if (!teamSelect) return;
+  
+  const teams = new Set();
+  recordsList.forEach(rec => {
+    if (rec.team) teams.add(rec.team);
+  });
+  
+  const currentValue = teamSelect.value;
+  teamSelect.innerHTML = '<option value="all">הכל</option>';
+  
+  Array.from(teams).sort().forEach(team => {
+    const option = document.createElement('option');
+    option.value = team;
+    option.textContent = team;
+    teamSelect.appendChild(option);
+  });
+  
+  if (currentValue && teams.has(currentValue)) {
+    teamSelect.value = currentValue;
+  }
 }
 
 function getFilteredRecordsByMonth(recordsList, month, year) {
@@ -3527,6 +3793,8 @@ async function loadReportData() {
   const month = document.getElementById('reportMonth').value;
   const year = document.getElementById('reportYear').value;
   const employmentType = document.getElementById('reportEmploymentType')?.value || 'all';
+  const team = document.getElementById('reportTeam')?.value || 'all';
+  const activityType = document.getElementById('reportActivityType')?.value || 'all';
   
   const user = getCurrentUserData();
   if (!user) return;
@@ -3567,7 +3835,11 @@ async function loadReportData() {
           totalExpenses: rec.totalExpenses || 0,
           expensesDetail: rec.expensesDetails,
           notes: rec.notes,
-          employmentType: rec.employmentType
+          employmentType: rec.employmentType,
+          team: rec.team,
+          status: rec.status || 'pending',
+          approvedBy: rec.approvedBy,
+          approvedDate: rec.approvedDate
         }));
       } else {
         reportRecords = getFilteredRecordsByMonth(records, month, year);
@@ -3576,8 +3848,18 @@ async function loadReportData() {
     
     reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
     
+    populateTeamFilterFromRecords(reportRecords);
+    
     if (employmentType !== 'all') {
       reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
+    }
+    
+    if (team !== 'all') {
+      reportRecords = reportRecords.filter(rec => rec.team === team);
+    }
+    
+    if (activityType !== 'all') {
+      reportRecords = reportRecords.filter(rec => rec.activity === activityType);
     }
     
     updateReportStats();
@@ -3594,10 +3876,12 @@ async function loadReportData() {
 function updateReportStats() {
   const totalRecords = reportRecords.length;
   const totalHours = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  const totalKm = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
   const totalExpenses = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
   
   document.getElementById('teamTotalRecords').textContent = totalRecords;
   document.getElementById('teamTotalHours').textContent = totalHours.toFixed(1);
+  document.getElementById('teamTotalKm').textContent = totalKm.toFixed(1);
   document.getElementById('teamTotalExpenses').textContent = `${totalExpenses.toFixed(0)} ₪`;
 }
 
@@ -3674,7 +3958,19 @@ function renderReportByEmployee() {
   container.innerHTML = html;
 }
 
-function exportReportToExcel() {
+function openExportModal() {
+  if (reportRecords.length === 0) {
+    showAlert('⚠️ אין נתונים לייצוא', 'error');
+    return;
+  }
+  document.getElementById('exportModal').style.display = 'flex';
+}
+
+function closeExportModal() {
+  document.getElementById('exportModal').style.display = 'none';
+}
+
+function exportReportToExcel(type = 'all') {
   if (reportRecords.length === 0) {
     showAlert('⚠️ אין נתונים לייצוא', 'error');
     return;
@@ -3684,18 +3980,52 @@ function exportReportToExcel() {
   const year = document.getElementById('reportYear').value;
   const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   
-  let csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
+  let csv = '';
+  let filename = '';
   
-  reportRecords.forEach(rec => {
-    csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
-  });
+  if (type === 'all') {
+    csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות,סטטוס\n';
+    
+    reportRecords.forEach(rec => {
+      const status = rec.status === 'approved' ? 'מאושר' : (rec.status === 'rejected' ? 'נדחה' : 'ממתין');
+      csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}",${status}\n`;
+    });
+    
+    filename = `דוח_נוכחות_מלא_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  } else {
+    csv = 'שם עובד,מספר רשומות,סה"כ שעות,סה"כ ק"מ,סה"כ הוצאות\n';
+    
+    const byEmployee = {};
+    reportRecords.forEach(rec => {
+      const key = rec.empName || 'לא ידוע';
+      if (!byEmployee[key]) {
+        byEmployee[key] = { hours: 0, km: 0, expenses: 0, count: 0 };
+      }
+      byEmployee[key].hours += parseFloat(rec.hours) || 0;
+      byEmployee[key].km += parseFloat(rec.km) || 0;
+      byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
+      byEmployee[key].count++;
+    });
+    
+    Object.entries(byEmployee).forEach(([name, data]) => {
+      csv += `${name},${data.count},${data.hours.toFixed(2)},${data.km.toFixed(1)},${data.expenses.toFixed(2)}\n`;
+    });
+    
+    const totalHours = reportRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+    const totalKm = reportRecords.reduce((sum, r) => sum + (parseFloat(r.km) || 0), 0);
+    const totalExpenses = reportRecords.reduce((sum, r) => sum + (parseFloat(r.totalExpenses) || 0), 0);
+    csv += `סה"כ,${reportRecords.length},${totalHours.toFixed(2)},${totalKm.toFixed(1)},${totalExpenses.toFixed(2)}\n`;
+    
+    filename = `דוח_נוכחות_מקובץ_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  }
   
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `דוח_נוכחות_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  link.download = filename;
   link.click();
   
+  closeExportModal();
   showAlert('✅ הדוח יוצא בהצלחה!', 'success');
 }
 

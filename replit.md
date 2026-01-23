@@ -10,9 +10,11 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 2026)
 
-- **RBAC Permissions**: Edit allowed for manager/ops_controller/admin; Delete only for ops_controller/admin
+- **Approval Workflow**: Approve/reject buttons for managers and above; status badges (pending/approved/rejected); reject modal with comment field
+- **Reports Page Enhanced**: Filters for team, EmploymentType, activity type; stats for hours, km, expenses
+- **Excel Export Options**: All rows (detailed) or grouped by employee (summary) via export modal
+- **RBAC Permissions**: Edit allowed for manager/ops_controller/admin; Delete only for ops_controller/admin; Approve for non-instructors
 - **EmploymentType**: Stored in localStorage on login, sent in submit/update payloads
-- **Reports Page**: Monthly filtering by month/year/employmentType, employee summaries, Excel export
 - **Mobile Responsive**: Horizontal table scroll, sticky first column (RTL), mobile-optimized headers/buttons
 - **File Upload UI**: Drag-and-drop support, 5MB validation (actual SharePoint upload pending Logic App config)
 
