@@ -34,8 +34,8 @@ Preferred communication style: Simple, everyday language.
 ### RBAC Roles
 - `instructor`: View/submit own records only (מדריך/ה)
 - `manager`: View team records, edit all records (מנהל/ת פעילויות)
-- `payroll_officer`: Full access, delete permission - same as operations_controller (אחראי שכר)
-- `operations_controller`: Full access, delete permission (מבקר תפעול)
+- `payroll_officer`: Full access, delete permission - same as operations_controller (אחראית שכר)
+- `operations_controller`: Full access, delete permission (מבקרת תפעול)
 - `system_admin`: Full access, all permissions (מנהל מערכת)
 
 ### Data Flow
