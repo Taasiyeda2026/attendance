@@ -2510,8 +2510,6 @@ async function doLogin(event) {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
       
-      document.getElementById('empNum').value = empData.empNum;
-      document.getElementById('empName').value = empData.empName;
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role);
       
@@ -4261,8 +4259,6 @@ window.addEventListener('DOMContentLoaded', function() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
       
-      document.getElementById('empNum').value = empData.empNum;
-      document.getElementById('empName').value = empData.empName;
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role || 'instructor');
       
