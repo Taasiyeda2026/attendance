@@ -2525,6 +2525,7 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     expensesDetails: String(updatedRecord.expensesDetail || ''),
     notes: String(updatedRecord.notes || ''),
     employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || 'תעשיידע'),
+    team: String(updatedRecord.team || localStorage.getItem("team") || ''),
     status: String(updatedRecord.status || 'pending'),
     approvedBy: String(updatedRecord.approvedBy || ''),
     approvedDate: String(updatedRecord.approvedDate || ''),
@@ -2615,6 +2616,7 @@ async function doLogin(event) {
       localStorage.setItem('employeeName', data.employeeName);
       localStorage.setItem('employeeId', employeeId);
       localStorage.setItem('employmentType', data.employmentType || 'תעשיידע');
+      localStorage.setItem('team', data.team || data.Team || '');
       
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
@@ -3130,6 +3132,8 @@ async function submitAll() {
         notes: rec.notes || '',
         attachments: rec.attachments || [],
         attachmentsNames: formatAttachments(rec.attachments || []),
+        employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
+        team: String(localStorage.getItem("team") || ''),
         status: "pending"
       };
       
@@ -3467,6 +3471,8 @@ async function addRecord() {
   const currentUserData = getCurrentUserData();
   const employmentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
   
+  const team = localStorage.getItem("team") || '';
+  
   const payload = {
     action: "submit",
     employeeId: String(localStorage.getItem("employeeId") || empNum),
@@ -3485,6 +3491,7 @@ async function addRecord() {
     expensesDetails: String(expensesDetail || ''),
     notes: String(notes || ''),
     employmentType: String(employmentType),
+    team: String(team),
     status: "pending"
   };
   
