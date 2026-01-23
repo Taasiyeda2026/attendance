@@ -1990,6 +1990,19 @@ schoolsData.unshift({"רשות":"זום","בית ספר":"זום"});
 function normalizeRole(role) {
   if (!role) return 'instructor';
   
+  // Handle SharePoint object format: {"Value": "System Admin", ...}
+  let roleValue = role;
+  if (typeof role === 'object' && role.Value) {
+    roleValue = role.Value;
+  } else if (typeof role === 'string' && role.includes('"Value"')) {
+    try {
+      const parsed = JSON.parse(role);
+      roleValue = parsed.Value || role;
+    } catch(e) {
+      roleValue = role;
+    }
+  }
+  
   const roleMap = {
     'System Admin': 'system_admin',
     'system admin': 'system_admin',
@@ -2006,7 +2019,8 @@ function normalizeRole(role) {
     'instructor': 'instructor'
   };
   
-  return roleMap[role] || roleMap[role.trim()] || 'instructor';
+  const normalizedValue = typeof roleValue === 'string' ? roleValue.trim() : String(roleValue);
+  return roleMap[normalizedValue] || 'instructor';
 }
 
 function getRoleDisplayName(role) {
