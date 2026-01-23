@@ -639,21 +639,40 @@
     }
 
     .time-picker-row select {
-      width: 70px;
-      min-width: 70px;
-      max-width: 70px;
+      width: 72px;
+      min-width: 72px;
+      max-width: 72px;
       flex-shrink: 0;
       text-align: center;
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 15px;
       max-height: 200px;
       overflow-y: auto;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 8px;
+      color: #1e40af;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .time-picker-row select:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+    }
+    
+    .time-picker-row select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
     .time-picker-row .time-separator {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
-      color: #475569;
-      width: 10px;
+      color: #3b82f6;
+      width: 12px;
       text-align: center;
     }
 
@@ -1474,13 +1493,23 @@
             </h3>
           </div>
           <div class="card-body" style="padding: 16px;">
-            <div class="form-field" style="margin-bottom: 12px;">
-              <label for="recDate">תאריך <span style="color: #ef4444;">*</span></label>
-              <input type="date" id="recDate" required style="max-width: 180px;">
-            </div>
-            <div style="display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;">
-              <div class="form-field" style="flex: 0 0 auto;">
-                <label>שעת התחלה <span style="color: #ef4444;">*</span></label>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: end;">
+              <!-- תאריך -->
+              <div class="form-field" style="margin: 0;">
+                <label for="recDate" style="display: block; margin-bottom: 6px;">תאריך <span style="color: #ef4444;">*</span></label>
+                <input type="date" id="recDate" required style="width: 100%; max-width: 160px;">
+              </div>
+              <!-- סה"כ שעות -->
+              <div class="form-field" style="margin: 0; text-align: center;">
+                <label for="hoursField" style="display: block; margin-bottom: 6px;">סה"כ שעות</label>
+                <div style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 8px 20px; min-width: 80px;">
+                  <span id="hoursDisplay" style="font-size: 22px; font-weight: 700; color: #1e40af;">0.00</span>
+                </div>
+                <input type="hidden" id="hoursField" step="0.01" min="0" max="24" readonly>
+              </div>
+              <!-- שעת התחלה -->
+              <div class="form-field" style="margin: 0;">
+                <label style="display: block; margin-bottom: 6px;">שעת התחלה <span style="color: #ef4444;">*</span></label>
                 <div class="time-picker-row">
                   <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
                     <option value="">שעה</option>
@@ -1492,8 +1521,9 @@
                   <input type="hidden" id="startTime">
                 </div>
               </div>
-              <div class="form-field" style="flex: 0 0 auto;">
-                <label>שעת סיום <span style="color: #ef4444;">*</span></label>
+              <!-- שעת סיום -->
+              <div class="form-field" style="margin: 0;">
+                <label style="display: block; margin-bottom: 6px;">שעת סיום <span style="color: #ef4444;">*</span></label>
                 <div class="time-picker-row">
                   <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
                     <option value="">שעה</option>
@@ -1505,10 +1535,6 @@
                   <input type="hidden" id="endTime">
                 </div>
               </div>
-            </div>
-            <div class="form-field">
-              <label for="hoursField">סה"כ שעות</label>
-              <input type="number" id="hoursField" step="0.01" min="0" max="24" readonly style="background: #f1f5f9; cursor: not-allowed; max-width: 100px; font-weight: 700; font-size: 16px; text-align: center;">
             </div>
           </div>
         </div>
@@ -3335,7 +3361,14 @@ function calculateHours() {
       diff += 24;
     }
     
-    document.getElementById('hoursField').value = diff.toFixed(2);
+    const formatted = diff.toFixed(2);
+    document.getElementById('hoursField').value = formatted;
+    const hoursDisplay = document.getElementById('hoursDisplay');
+    if (hoursDisplay) hoursDisplay.textContent = formatted;
+  } else {
+    document.getElementById('hoursField').value = '';
+    const hoursDisplay = document.getElementById('hoursDisplay');
+    if (hoursDisplay) hoursDisplay.textContent = '0.00';
   }
 }
 
