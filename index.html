@@ -2414,8 +2414,11 @@ async function loadMyRecordsFromServer() {
       totalExpenses: rec.totalExpenses || 0,
       expensesDetail: rec.expensesDetails || '',
       notes: rec.notes || '',
-      status: 'נשלח',
-      approved: rec.approved || false,
+      status: rec.status || 'pending',
+      approvedBy: rec.approvedBy || '',
+      approvedDate: rec.approvedDate || '',
+      rejectReason: rec.rejectReason || '',
+      employmentType: rec.employmentType || '',
       attachments: []
     }));
 
