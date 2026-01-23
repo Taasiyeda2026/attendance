@@ -1,4 +1,4 @@
-const CACHE_NAME = 'taasiyeda-attendance-v1';
+const CACHE_NAME = 'taasiyeda-attendance-v2';
 
 // רשימת נכסים מעודכנת עם נתיבים יחסיים ושמות קבצים תואמים
 const ASSETS_TO_CACHE = [
