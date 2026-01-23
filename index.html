@@ -1888,7 +1888,7 @@ function hasPermission(action, targetTeam = null) {
     case 'view_all':
       return ['operations_controller', 'system_admin'].includes(role);
     case 'edit_own':
-      return true;
+      return false;
     case 'edit_team':
       if (role === 'manager') {
         return user.team === targetTeam;
@@ -1896,11 +1896,39 @@ function hasPermission(action, targetTeam = null) {
       return ['operations_controller', 'system_admin'].includes(role);
     case 'edit_all':
       return ['operations_controller', 'system_admin'].includes(role);
+    case 'delete':
+      return ['operations_controller', 'system_admin'].includes(role);
     case 'admin':
       return role === 'system_admin';
     default:
       return false;
   }
+}
+
+function canEditRecord(record) {
+  const user = getCurrentUserData();
+  if (!user) return false;
+  
+  const role = user.role;
+  
+  if (role === 'system_admin' || role === 'operations_controller') {
+    return true;
+  }
+  
+  if (role === 'manager') {
+    return true;
+  }
+  
+  return false;
+}
+
+function canDeleteRecord(record) {
+  const user = getCurrentUserData();
+  if (!user) return false;
+  
+  const role = user.role;
+  
+  return role === 'system_admin' || role === 'operations_controller';
 }
 
 // =============== Sync from SharePoint ===============
@@ -1950,8 +1978,8 @@ async function loadMyRecordsFromServer() {
 
     // Map server records to local format
     records = data.records.map(rec => ({
-      recordId: rec.recordId || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
-      id: rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
+      recordId: rec.ID || rec.Id || rec.id || rec.recordId || null,
+      id: rec.ID || rec.Id || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
       empNum: rec.employeeId?.toString() || employeeId,
       empName: rec.employeeName || '',
       date: rec.attendanceDate || '',
@@ -1983,12 +2011,16 @@ async function loadMyRecordsFromServer() {
 }
 
 async function updateRecordOnServer(updatedRecord, originalDate, originalStartTime) {
+  if (!updatedRecord.recordId) {
+    console.error('Cannot update record: missing recordId');
+    return false;
+  }
+  
   const payload = {
     action: "updateRecord",
+    recordId: Number(updatedRecord.recordId),
     employeeId: String(updatedRecord.empNum),
     employeeName: String(updatedRecord.empName || localStorage.getItem("employeeName") || ''),
-    originalAttendanceDate: String(originalDate || updatedRecord.date),
-    originalStartTime: String(originalStartTime || updatedRecord.start),
     attendanceDate: String(updatedRecord.date),
     startTime: String(updatedRecord.start),
     endTime: String(updatedRecord.end),
@@ -2014,14 +2046,17 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
 }
 
 async function deleteRecordOnServer(record) {
+  if (!record.recordId) {
+    console.error('Cannot delete record: missing recordId');
+    return false;
+  }
+  
   const res = await fetch(LOGIC_APP_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "deleteRecord",
-      employeeId: String(record.empNum || localStorage.getItem("employeeId") || ''),
-      attendanceDate: String(record.date || ''),
-      startTime: String(record.start || '')
+      recordId: Number(record.recordId)
     })
   });
 
@@ -2951,12 +2986,17 @@ function renderRecordsTable() {
             <td>${rec.municipality}</td>
             <td>${rec.km}</td>
             <td>
-              <button class="btn" onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 8px 12px; margin-left: 5px;">
+              ${canEditRecord(rec) ? `
+              <button class="btn" onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 8px 12px; margin-left: 5px;" title="עריכה">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn" onclick="deleteRecord(${idx})" style="background: #fee2e2; color: #dc2626; padding: 8px 12px;">
+              ` : ''}
+              ${canDeleteRecord(rec) ? `
+              <button class="btn" onclick="deleteRecord(${idx})" style="background: #fee2e2; color: #dc2626; padding: 8px 12px;" title="מחיקה">
                 <i class="fas fa-trash"></i>
               </button>
+              ` : ''}
+              ${!canEditRecord(rec) && !canDeleteRecord(rec) ? '<span style="color: #94a3b8;">-</span>' : ''}
             </td>
           </tr>
         `).join('')}
@@ -2977,6 +3017,11 @@ function renderRecordsTable() {
 async function deleteRecord(index) {
   const rec = records[index];
   if (!rec) return;
+
+  if (!canDeleteRecord(rec)) {
+    showAlert('❌ אין לך הרשאה למחוק רשומות', 'error');
+    return;
+  }
 
   if (!confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) return;
 
@@ -3000,8 +3045,14 @@ async function deleteRecord(index) {
 
 // =============== Edit Record ===============
 function editRecord(index) {
-  editingIndex = index;
   const rec = records[index];
+  
+  if (!canEditRecord(rec)) {
+    showAlert('❌ אין לך הרשאה לערוך רשומות', 'error');
+    return;
+  }
+  
+  editingIndex = index;
   
   document.getElementById('editDate').value = rec.date;
   setTimeDropdowns('editStart', rec.start || '');
