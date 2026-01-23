@@ -161,9 +161,9 @@
                                             "body": {
                                                 "success": true,
                                                 "employeeName": "@{first(body('Get_Employee')?['value'])?['EmployeeName']}",
-                                                "role": "@{first(body('Get_Employee')?['value'])?['role']}",
-                                                "team": "@{first(body('Get_Employee')?['value'])?['Team']}",
-                                                "employmentType": "@{first(body('Get_Employee')?['value'])?['EmploymentType']}"
+                                                "role": "@{first(body('Get_Employee')?['value'])?['role']?['Value']}",
+                                                "team": "@{first(body('Get_Employee')?['value'])?['Team']?['Value']}",
+                                                "employmentType": "@{first(body('Get_Employee')?['value'])?['EmploymentType']?['Value']}"
                                             }
                                         }
                                     }
