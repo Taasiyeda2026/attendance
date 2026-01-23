@@ -966,6 +966,99 @@
       .card-body {
         padding: 14px;
       }
+
+      /* Mobile Table Scroll */
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      
+      table th, table td {
+        padding: 8px 6px;
+        min-width: 60px;
+      }
+      
+      table th:first-child, table td:first-child {
+        position: sticky;
+        right: 0;
+        background: white;
+        z-index: 1;
+      }
+      
+      /* Mobile buttons */
+      .btn {
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+      
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .page-header > div:last-child {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+
+    /* File Upload Styles */
+    .file-upload-container {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .file-upload-container:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .file-upload-container.dragover {
+      border-color: #3b82f6;
+      background: #dbeafe;
+    }
+    
+    .file-list {
+      margin-top: 10px;
+    }
+    
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    
+    .file-item-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    
+    .file-item-remove {
+      background: #fee2e2;
+      color: #dc2626;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* Edit Modal */
@@ -1401,8 +1494,13 @@
             </div>
             <div class="form-field">
               <label for="attachments">צרף מסמכים/תמונות</label>
-              <input type="file" id="attachments" multiple accept="image/*,.pdf,.doc,.docx">
-              <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">ניתן להעלות מספר קבצים</small>
+              <div class="file-upload-container" onclick="document.getElementById('attachments').click()" id="fileDropZone">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 32px; color: #3b82f6; margin-bottom: 10px;"></i>
+                <p style="margin: 0; color: #64748b;">לחץ או גרור קבצים לכאן</p>
+                <small style="color: #94a3b8;">תמונות, PDF, Word - עד 5MB לקובץ</small>
+              </div>
+              <input type="file" id="attachments" multiple accept="image/*,.pdf,.doc,.docx,.xlsx" style="display: none;" onchange="handleFileSelect(event)">
+              <div id="fileList" class="file-list"></div>
             </div>
             <div class="form-field">
               <label for="notesField">הערות</label>
@@ -1484,19 +1582,66 @@
 
     <!-- Reports Page (for manager, operations_controller, system_admin) -->
     <div id="reportsPage" class="page hidden">
-      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div>
           <h1>דוחות</h1>
           <p>סיכומים וסטטיסטיקות</p>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn" onclick="exportToExcel()" style="background: #10b981; color: white;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn" onclick="exportReportToExcel()" style="background: #10b981; color: white;">
             <i class="fas fa-file-excel"></i>
             ייצוא ל-Excel
           </button>
           <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
             <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
           </button>
+        </div>
+      </div>
+      
+      <!-- Filters Section -->
+      <div class="content-card" style="margin-bottom: 20px;">
+        <div class="card-body" style="padding: 15px;">
+          <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <div class="form-group" style="margin: 0; min-width: 120px;">
+              <label style="font-size: 12px; margin-bottom: 4px;">חודש</label>
+              <select id="reportMonth" class="form-input" onchange="loadReportData()" style="padding: 8px;">
+                <option value="1">ינואר</option>
+                <option value="2">פברואר</option>
+                <option value="3">מרץ</option>
+                <option value="4">אפריל</option>
+                <option value="5">מאי</option>
+                <option value="6">יוני</option>
+                <option value="7">יולי</option>
+                <option value="8">אוגוסט</option>
+                <option value="9">ספטמבר</option>
+                <option value="10">אוקטובר</option>
+                <option value="11">נובמבר</option>
+                <option value="12">דצמבר</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0; min-width: 100px;">
+              <label style="font-size: 12px; margin-bottom: 4px;">שנה</label>
+              <select id="reportYear" class="form-input" onchange="loadReportData()" style="padding: 8px;">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0; min-width: 140px;" id="employmentTypeFilterContainer">
+              <label style="font-size: 12px; margin-bottom: 4px;">סוג העסקה</label>
+              <select id="reportEmploymentType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
+                <option value="all">הכל</option>
+                <option value="תעשיידע">תעשיידע</option>
+                <option value="מעוף">מעוף</option>
+                <option value="מנפאואר">מנפאואר</option>
+                <option value="עצמאי">עצמאי</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="loadReportData()" style="height: 38px; margin-top: 18px;">
+              <i class="fas fa-sync-alt"></i>
+              רענן
+            </button>
+          </div>
         </div>
       </div>
       
@@ -2033,7 +2178,8 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     kilometers: Number(updatedRecord.km) || 0,
     totalExpenses: Number(updatedRecord.totalExpenses) || 0,
     expensesDetails: String(updatedRecord.expensesDetail || ''),
-    notes: String(updatedRecord.notes || '')
+    notes: String(updatedRecord.notes || ''),
+    employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || 'תעשיידע')
   };
 
   const res = await fetch(LOGIC_APP_URL, {
@@ -2113,6 +2259,7 @@ async function doLogin(event) {
       localStorage.setItem('currentUser', JSON.stringify(empData));
       localStorage.setItem('employeeName', data.employeeName);
       localStorage.setItem('employeeId', employeeId);
+      localStorage.setItem('employmentType', data.employmentType || 'תעשיידע');
       
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
@@ -2277,7 +2424,7 @@ function showPage(event, pageName) {
   }
   if (pageName === 'records') renderRecordsTable();
   if (pageName === 'team-records') loadTeamRecords();
-  if (pageName === 'reports') loadReports();
+  if (pageName === 'reports') initReportsPage();
 }
 
 // =============== Team Records Functions ===============
@@ -2882,6 +3029,9 @@ async function addRecord() {
     return;
   }
   
+  const currentUserData = getCurrentUserData();
+  const employmentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
+  
   const payload = {
     action: "submit",
     employeeId: String(localStorage.getItem("employeeId") || empNum),
@@ -2898,7 +3048,8 @@ async function addRecord() {
     kilometers: Number(km) || 0,
     totalExpenses: Number(totalExpenses) || 0,
     expensesDetails: String(expensesDetail || ''),
-    notes: String(notes || '')
+    notes: String(notes || ''),
+    employmentType: String(employmentType)
   };
   
   // Send to SharePoint
@@ -3291,6 +3442,305 @@ function exportToExcel() {
   showAlert('✅ הקובץ יוצא בהצלחה!', 'success');
 }
 
+// =============== Reports Functions ===============
+let reportRecords = [];
+
+function initReportsPage() {
+  const now = new Date();
+  document.getElementById('reportMonth').value = now.getMonth() + 1;
+  document.getElementById('reportYear').value = now.getFullYear();
+  loadReportData();
+}
+
+function getFilteredRecordsByMonth(recordsList, month, year) {
+  return recordsList.filter(rec => {
+    if (!rec.date) return false;
+    const recDate = new Date(rec.date);
+    return recDate.getMonth() + 1 === parseInt(month) && recDate.getFullYear() === parseInt(year);
+  });
+}
+
+async function loadReportData() {
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value;
+  const employmentType = document.getElementById('reportEmploymentType')?.value || 'all';
+  
+  const user = getCurrentUserData();
+  if (!user) return;
+  
+  showAlert('טוען נתוני דוח...', 'info');
+  
+  try {
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'getAllRecords',
+        employeeId: user.empNum,
+        role: user.role,
+        team: user.team
+      })
+    });
+    
+    if (!response.ok) {
+      reportRecords = getFilteredRecordsByMonth(records, month, year);
+    } else {
+      const data = await response.json();
+      if (data.success && Array.isArray(data.records)) {
+        reportRecords = data.records.map(rec => ({
+          recordId: rec.ID || rec.Id || rec.id,
+          empNum: rec.employeeId,
+          empName: rec.employeeName,
+          date: rec.attendanceDate,
+          start: rec.startTime,
+          end: rec.endTime,
+          hours: rec.workHours || 0,
+          activity: rec.activityType,
+          school: rec.schoolName,
+          municipality: rec.municipality,
+          program: rec.programName,
+          session: rec.sessionNumber,
+          km: rec.kilometers || 0,
+          totalExpenses: rec.totalExpenses || 0,
+          expensesDetail: rec.expensesDetails,
+          notes: rec.notes,
+          employmentType: rec.employmentType
+        }));
+      } else {
+        reportRecords = getFilteredRecordsByMonth(records, month, year);
+      }
+    }
+    
+    reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
+    
+    if (employmentType !== 'all') {
+      reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
+    }
+    
+    updateReportStats();
+    renderReportByEmployee();
+    showAlert(`נטענו ${reportRecords.length} רשומות לחודש ${month}/${year}`, 'success');
+  } catch (error) {
+    console.error('Load report data error:', error);
+    reportRecords = getFilteredRecordsByMonth(records, month, year);
+    updateReportStats();
+    renderReportByEmployee();
+  }
+}
+
+function updateReportStats() {
+  const totalRecords = reportRecords.length;
+  const totalHours = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  const totalExpenses = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
+  
+  document.getElementById('teamTotalRecords').textContent = totalRecords;
+  document.getElementById('teamTotalHours').textContent = totalHours.toFixed(1);
+  document.getElementById('teamTotalExpenses').textContent = `${totalExpenses.toFixed(0)} ₪`;
+}
+
+function renderReportByEmployee() {
+  const container = document.getElementById('reportsByEmployee');
+  
+  if (reportRecords.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות לתקופה הנבחרת</p>';
+    return;
+  }
+  
+  const byEmployee = {};
+  reportRecords.forEach(rec => {
+    const key = rec.empName || 'לא ידוע';
+    if (!byEmployee[key]) {
+      byEmployee[key] = { empNum: rec.empNum, hours: 0, km: 0, expenses: 0, count: 0 };
+    }
+    byEmployee[key].hours += parseFloat(rec.hours) || 0;
+    byEmployee[key].km += parseFloat(rec.km) || 0;
+    byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
+    byEmployee[key].count++;
+  });
+  
+  let html = `
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>שם עובד</th>
+            <th>מספר עובד</th>
+            <th>רשומות</th>
+            <th>שעות</th>
+            <th>ק"מ</th>
+            <th>הוצאות</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  Object.keys(byEmployee).sort().forEach(name => {
+    const emp = byEmployee[name];
+    html += `
+      <tr>
+        <td>${name}</td>
+        <td>${emp.empNum}</td>
+        <td>${emp.count}</td>
+        <td><strong>${emp.hours.toFixed(1)}</strong></td>
+        <td>${emp.km.toFixed(0)}</td>
+        <td>${emp.expenses.toFixed(0)} ₪</td>
+      </tr>
+    `;
+  });
+  
+  const totals = {
+    count: reportRecords.length,
+    hours: reportRecords.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0),
+    km: reportRecords.reduce((s, r) => s + (parseFloat(r.km) || 0), 0),
+    expenses: reportRecords.reduce((s, r) => s + (parseFloat(r.totalExpenses) || 0), 0)
+  };
+  
+  html += `
+      <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
+        <td colspan="2">סה"כ</td>
+        <td>${totals.count}</td>
+        <td style="color: #3b82f6;">${totals.hours.toFixed(1)}</td>
+        <td style="color: #3b82f6;">${totals.km.toFixed(0)}</td>
+        <td style="color: #3b82f6;">${totals.expenses.toFixed(0)} ₪</td>
+      </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+function exportReportToExcel() {
+  if (reportRecords.length === 0) {
+    showAlert('⚠️ אין נתונים לייצוא', 'error');
+    return;
+  }
+  
+  const month = document.getElementById('reportMonth').value;
+  const year = document.getElementById('reportYear').value;
+  const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  
+  let csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
+  
+  reportRecords.forEach(rec => {
+    csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
+  });
+  
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `דוח_נוכחות_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  link.click();
+  
+  showAlert('✅ הדוח יוצא בהצלחה!', 'success');
+}
+
+// =============== File Upload Functions ===============
+let selectedFiles = [];
+
+function initFileUpload() {
+  const dropZone = document.getElementById('fileDropZone');
+  if (!dropZone) return;
+  
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+  
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    addFiles(files);
+  });
+}
+
+function handleFileSelect(event) {
+  const files = event.target.files;
+  addFiles(files);
+}
+
+function addFiles(fileList) {
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i];
+    
+    if (file.size > maxSize) {
+      showAlert(`הקובץ ${file.name} גדול מדי (מקסימום 5MB)`, 'error');
+      continue;
+    }
+    
+    if (!selectedFiles.find(f => f.name === file.name)) {
+      selectedFiles.push(file);
+    }
+  }
+  
+  renderFileList();
+}
+
+function renderFileList() {
+  const container = document.getElementById('fileList');
+  if (!container) return;
+  
+  if (selectedFiles.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  const getIcon = (name) => {
+    const ext = name.split('.').pop().toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'fa-image';
+    if (ext === 'pdf') return 'fa-file-pdf';
+    if (['doc', 'docx'].includes(ext)) return 'fa-file-word';
+    if (['xls', 'xlsx'].includes(ext)) return 'fa-file-excel';
+    return 'fa-file';
+  };
+  
+  container.innerHTML = selectedFiles.map((file, idx) => `
+    <div class="file-item">
+      <div class="file-item-name">
+        <i class="fas ${getIcon(file.name)}" style="color: #3b82f6;"></i>
+        <span>${file.name}</span>
+        <small style="color: #94a3b8;">(${(file.size / 1024).toFixed(1)} KB)</small>
+      </div>
+      <button type="button" class="file-item-remove" onclick="removeFile(${idx})">
+        <i class="fas fa-times" style="font-size: 12px;"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderFileList();
+}
+
+function clearSelectedFiles() {
+  selectedFiles = [];
+  renderFileList();
+  const input = document.getElementById('attachments');
+  if (input) input.value = '';
+}
+
+async function uploadFilesToSharePoint(recordId) {
+  if (selectedFiles.length === 0) return true;
+  
+  // Note: File upload to SharePoint requires additional Logic App configuration
+  // For now, we'll store file names as references
+  const fileNames = selectedFiles.map(f => f.name).join(', ');
+  console.log('Files to upload:', fileNames);
+  
+  // TODO: Implement actual file upload when Logic App is configured
+  showAlert(`${selectedFiles.length} קבצים מוכנים להעלאה`, 'info');
+  return true;
+}
+
 function clearAllData() {
   if (!confirm('⚠️ אזהרה! פעולה זו תמחק את כל הנתונים!\n\nהאם אתה בטוח לחלוטין?')) {
     return;
@@ -3313,6 +3763,7 @@ function clearAllData() {
 window.addEventListener('DOMContentLoaded', function() {
   populateSchools();
   populateTimeDropdowns();
+  initFileUpload();
   
   const savedUser = localStorage.getItem('currentUser');
   if (savedUser) {
