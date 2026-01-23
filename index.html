@@ -567,12 +567,17 @@
     .form-field select,
     .form-field textarea {
       width: 100%;
+      max-width: 350px;
       padding: 8px 10px;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
       font-size: 14px;
       font-family: 'Heebo', sans-serif;
       transition: all 0.2s;
+    }
+
+    .form-field textarea {
+      max-width: 100%;
     }
 
     .form-field input[type="time"] {
@@ -1361,8 +1366,14 @@
 
     <!-- Add Record Page -->
     <div id="addRecordPage" class="page hidden">
-      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-        <h1 style="flex: 1;">הוספת רשומה חדשה</h1>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <h1 style="margin: 0; font-size: 24px;">הוספת רשומה חדשה</h1>
+          <div id="formUserInfoHeader" style="display: flex; gap: 15px; background: #f1f5f9; padding: 6px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;">
+            <span>מספר עובד: <span id="displayEmpNum"></span></span>
+            <span>שם עובד: <span id="displayEmpName"></span></span>
+          </div>
+        </div>
         <div style="display: flex; gap: 10px;">
           <button class="btn btn-success" onclick="addRecord()" title="הוסף רשומה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
             <i class="fas fa-check" style="font-size: 18px;"></i>
@@ -1378,17 +1389,11 @@
           
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
-              <label for="empNum">מספר עובד</label>
-              <input type="text" id="empNum" readonly>
-            </div>
-            <div class="form-field">
-              <label for="empName">שם עובד</label>
-              <input type="text" id="empName" readonly>
-            </div>
-            <div class="form-field">
               <label for="recDate">תאריך <span style="color: #ef4444;">*</span></label>
               <input type="date" id="recDate" required>
             </div>
+            <div style="visibility: hidden;"></div>
+            <div style="visibility: hidden;"></div>
           </div>
           
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
@@ -2909,14 +2914,14 @@ async function submitAll() {
   
   for (const rec of pending) {
     try {
-      const payload = {
+    const payload = {
         action: "submit",
         employeeId: localStorage.getItem("employeeId") || rec.empNum,
         employeeName: localStorage.getItem("employeeName") || rec.empName,
         attendanceDate: rec.date,
         startTime: rec.start || '',
         endTime: rec.end || '',
-        workHours: rec.hours,
+        workHours: rec.hours ? Number(rec.hours).toFixed(2) : '0',
         activityType: rec.activity,
         schoolName: rec.school || '',
         municipality: rec.municipality || '',
@@ -3400,7 +3405,9 @@ async function approveRecord(index) {
       status: 'approved',
       approvedBy: user.empName,
       approvedDate: now,
-      rejectReason: ''
+      rejectReason: '',
+      // Ensure hours are formatted simply for SharePoint
+      hours: rec.hours ? Number(rec.hours).toFixed(2) : '0'
     };
     
     const ok = await updateRecordOnServer(updatePayload);
