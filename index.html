@@ -2150,6 +2150,14 @@ let records = [];
 let currentUser = '';
 let editingIndex = -1;
 
+// =============== Helper: Decimal Hours to HH:MM Format ===============
+function formatHoursDisplay(decimalHours) {
+  const num = parseFloat(decimalHours) || 0;
+  const hours = Math.floor(num);
+  const minutes = Math.round((num - hours) * 60);
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}
+
 // =============== Users ===============
 // Authentication moved to server-side for security
 
