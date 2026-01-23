@@ -3461,7 +3461,9 @@ async function confirmReject() {
       status: 'rejected',
       approvedBy: user.empName,
       approvedDate: now,
-      rejectReason: reason
+      rejectReason: reason,
+      // Ensure hours are formatted simply for SharePoint
+      hours: rec.hours ? Number(rec.hours).toFixed(2) : '0'
     };
     
     const ok = await updateRecordOnServer(updatePayload);
