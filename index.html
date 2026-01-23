@@ -2270,6 +2270,8 @@ async function doLogin(event) {
     });
     
     const data = await response.json();
+    console.log('Login response:', JSON.stringify(data));
+    console.log('Role from server:', data.role, '| Role field:', data.Role);
     
     if (data.success) {
       currentUser = data.employeeName;
