@@ -1503,7 +1503,7 @@
               <div class="form-field" style="margin: 0; text-align: center;">
                 <label for="hoursField" style="display: block; margin-bottom: 6px;">סה"כ שעות</label>
                 <div style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 8px 20px; min-width: 80px;">
-                  <span id="hoursDisplay" style="font-size: 22px; font-weight: 700; color: #1e40af;">0.00</span>
+                  <span id="hoursDisplay" style="font-size: 22px; font-weight: 700; color: #1e40af;">0:00</span>
                 </div>
                 <input type="hidden" id="hoursField" step="0.01" min="0" max="24" readonly>
               </div>
@@ -2853,7 +2853,7 @@ function loadTeamRecords() {
             </td>
             <td>${rec.date}</td>
             <td>${rec.empName}</td>
-            <td><strong>${parseFloat(rec.hours).toFixed(2)}</strong></td>
+            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
             <td>${rec.activity}</td>
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
@@ -2864,7 +2864,7 @@ function loadTeamRecords() {
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td></td>
           <td colspan="2" style="text-align: left;">סה"כ:</td>
-          <td style="color: #3b82f6;">${totalHours.toFixed(2)}</td>
+          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
           <td colspan="5"></td>
         </tr>
       </tbody>
@@ -2896,7 +2896,7 @@ function unapproveAllRecords() {
 
 function loadReports() {
   document.getElementById('teamTotalRecords').textContent = '0';
-  document.getElementById('teamTotalHours').textContent = '0';
+  document.getElementById('teamTotalHours').textContent = '0:00';
   document.getElementById('teamTotalExpenses').textContent = '0 ₪';
   
   document.getElementById('reportsByEmployee').innerHTML = `
@@ -3195,7 +3195,7 @@ function renderSummaryTable() {
     html += `
       <tr>
         <td style="font-weight: 500; color: #1e293b;">${activity}</td>
-        <td>${data.hours.toFixed(2)}</td>
+        <td>${formatHoursDisplay(data.hours)}</td>
         <td>${data.km.toFixed(1)}</td>
       </tr>
     `;
@@ -3206,7 +3206,7 @@ function renderSummaryTable() {
   html += `
     <tr style="background: #f8fafc; font-weight: 700;">
       <td style="color: #1e40af;">סה"כ כולל</td>
-      <td style="color: #1e40af;">${totalHours.toFixed(2)}</td>
+      <td style="color: #1e40af;">${formatHoursDisplay(totalHours)}</td>
       <td style="color: #1e40af;">${totalKm.toFixed(1)}</td>
     </tr>
   `;
@@ -3230,12 +3230,12 @@ function updateStats() {
   });
   
   const uniqueDates = new Set(monthRecords.map(r => r.date)).size;
-  const totalHours = monthRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0).toFixed(2);
+  const totalHoursNum = monthRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
   const totalExpenses = monthRecords.reduce((sum, r) => sum + (parseFloat(r.totalExpenses) || 0), 0).toFixed(2);
   const totalKm = monthRecords.reduce((sum, r) => sum + (parseFloat(r.km) || 0), 0).toFixed(1);
   
   document.getElementById('totalRecordsStat').textContent = uniqueDates;
-  document.getElementById('totalHoursStat').textContent = totalHours;
+  document.getElementById('totalHoursStat').textContent = formatHoursDisplay(totalHoursNum);
   document.getElementById('totalExpensesStat').textContent = totalExpenses + ' ₪';
   document.getElementById('pendingRecordsStat').textContent = totalKm + ' ק"מ';
   
@@ -3372,11 +3372,11 @@ function calculateHours() {
     const formatted = diff.toFixed(2);
     document.getElementById('hoursField').value = formatted;
     const hoursDisplay = document.getElementById('hoursDisplay');
-    if (hoursDisplay) hoursDisplay.textContent = formatted;
+    if (hoursDisplay) hoursDisplay.textContent = formatHoursDisplay(diff);
   } else {
     document.getElementById('hoursField').value = '';
     const hoursDisplay = document.getElementById('hoursDisplay');
-    if (hoursDisplay) hoursDisplay.textContent = '0.00';
+    if (hoursDisplay) hoursDisplay.textContent = '0:00';
   }
 }
 
@@ -3571,7 +3571,7 @@ function renderRecordsTable() {
             <td>${rec.empName}</td>
             <td>${rec.start || '-'}</td>
             <td>${rec.end || '-'}</td>
-            <td><strong>${parseFloat(rec.hours).toFixed(2)}</strong></td>
+            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
             <td>${rec.activity}</td>
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
@@ -3606,7 +3606,7 @@ function renderRecordsTable() {
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td colspan="4" style="text-align: left; padding-right: 20px;">סה"כ:</td>
-          <td style="color: #3b82f6;">${totalHours.toFixed(2)}</td>
+          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
           <td colspan="4"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
           <td></td>
@@ -4154,7 +4154,7 @@ function updateReportStats() {
   const totalExpenses = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
   
   document.getElementById('teamTotalRecords').textContent = totalRecords;
-  document.getElementById('teamTotalHours').textContent = totalHours.toFixed(1);
+  document.getElementById('teamTotalHours').textContent = formatHoursDisplay(totalHours);
   document.getElementById('teamTotalKm').textContent = totalKm.toFixed(1);
   document.getElementById('teamTotalExpenses').textContent = `${totalExpenses.toFixed(0)} ₪`;
 }
@@ -4202,7 +4202,7 @@ function renderReportByEmployee() {
         <td>${name}</td>
         <td>${emp.empNum}</td>
         <td>${emp.count}</td>
-        <td><strong>${emp.hours.toFixed(1)}</strong></td>
+        <td><strong>${formatHoursDisplay(emp.hours)}</strong></td>
         <td>${emp.km.toFixed(0)}</td>
         <td>${emp.expenses.toFixed(0)} ₪</td>
       </tr>
