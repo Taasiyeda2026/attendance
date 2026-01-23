@@ -1987,7 +1987,30 @@ schoolsData.sort((a, b) => a['בית ספר'].localeCompare(b['בית ספר'], 
 schoolsData.unshift({"רשות":"זום","בית ספר":"זום"});
 
 // =============== Role Management ===============
+function normalizeRole(role) {
+  if (!role) return 'instructor';
+  
+  const roleMap = {
+    'System Admin': 'system_admin',
+    'system admin': 'system_admin',
+    'system_admin': 'system_admin',
+    'Manager': 'manager',
+    'manager': 'manager',
+    'Payroll Officer': 'payroll_officer',
+    'payroll officer': 'payroll_officer',
+    'payroll_officer': 'payroll_officer',
+    'Operations Controller': 'operations_controller',
+    'operations controller': 'operations_controller',
+    'operations_controller': 'operations_controller',
+    'Instructor': 'instructor',
+    'instructor': 'instructor'
+  };
+  
+  return roleMap[role] || roleMap[role.trim()] || 'instructor';
+}
+
 function getRoleDisplayName(role) {
+  const normalizedRole = normalizeRole(role);
   const roleNames = {
     'system_admin': 'מנהל מערכת',
     'manager': 'מנהל/ת פעילויות',
@@ -1995,7 +2018,7 @@ function getRoleDisplayName(role) {
     'operations_controller': 'מבקרת תפעול',
     'instructor': 'מדריך/ה'
   };
-  return roleNames[role] || 'משתמש';
+  return roleNames[normalizedRole] || 'משתמש';
 }
 
 function getCurrentUserData() {
@@ -2253,7 +2276,7 @@ async function doLogin(event) {
       const empData = {
         empNum: employeeId,
         empName: data.employeeName,
-        role: data.role || 'instructor',
+        role: normalizeRole(data.role),
         team: data.team || null,
         employmentType: data.employmentType || null
       };
