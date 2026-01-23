@@ -1371,8 +1371,9 @@
       </div>
       
       <div class="content-card">
-        <div class="card-body">
-          <div class="form-grid">
+        <div class="card-body" style="padding: 16px;">
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label for="empNum">מספר עובד</label>
               <input type="text" id="empNum" readonly>
@@ -1385,6 +1386,9 @@
               <label for="recDate">תאריך <span style="color: #ef4444;">*</span></label>
               <input type="date" id="recDate" required>
             </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label>שעת התחלה <span style="color: #ef4444;">*</span></label>
               <div class="time-picker-row">
@@ -1415,6 +1419,9 @@
               <label for="hoursField">סה"כ שעות</label>
               <input type="number" id="hoursField" step="0.01" min="0" max="24" readonly style="background: #f1f5f9; cursor: not-allowed;">
             </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label for="activityType">סוג פעילות <span style="color: #ef4444;">*</span></label>
               <select id="activityType" required>
@@ -1437,6 +1444,9 @@
               <label for="municipality">רשות <span style="color: #ef4444;">*</span></label>
               <input type="text" id="municipality" readonly required style="background: #f1f5f9;">
             </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label for="programField">תוכנית <span style="color: #ef4444;">*</span></label>
               <select id="programField" required>
@@ -1484,27 +1494,33 @@
               <label for="kmField">קילומטר</label>
               <input type="number" id="kmField" step="0.1" min="0" placeholder="הלוך חזור">
             </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label for="totalExpenses">סה"כ הוצאות (₪)</label>
               <input type="number" id="totalExpenses" step="0.01" min="0" placeholder="0.00">
             </div>
             <div class="form-field">
               <label for="expensesDetail">פירוט הוצאות</label>
-              <textarea id="expensesDetail" rows="2" placeholder="פרט את ההוצאות"></textarea>
+              <input type="text" id="expensesDetail" placeholder="פרט את ההוצאות">
             </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
             <div class="form-field">
               <label for="attachments">צרף מסמכים/תמונות</label>
-              <div class="file-upload-container" onclick="document.getElementById('attachments').click()" id="fileDropZone">
-                <i class="fas fa-cloud-upload-alt" style="font-size: 32px; color: #3b82f6; margin-bottom: 10px;"></i>
-                <p style="margin: 0; color: #64748b;">לחץ או גרור קבצים לכאן</p>
-                <small style="color: #94a3b8;">תמונות, PDF, Word - עד 5MB לקובץ</small>
+              <div class="file-upload-container" onclick="document.getElementById('attachments').click()" id="fileDropZone" style="padding: 12px;">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #3b82f6; margin-bottom: 6px;"></i>
+                <p style="margin: 0; color: #64748b; font-size: 13px;">לחץ או גרור קבצים לכאן</p>
+                <small style="color: #94a3b8; font-size: 11px;">תמונות, PDF, Word - עד 5MB לקובץ</small>
               </div>
               <input type="file" id="attachments" multiple accept="image/*,.pdf,.doc,.docx,.xlsx" style="display: none;" onchange="handleFileSelect(event)">
               <div id="fileList" class="file-list"></div>
             </div>
             <div class="form-field">
               <label for="notesField">הערות</label>
-              <textarea id="notesField" rows="3"></textarea>
+              <textarea id="notesField" rows="3" style="height: 80px;"></textarea>
             </div>
           </div>
           
