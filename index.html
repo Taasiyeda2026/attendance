@@ -2415,7 +2415,11 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     totalExpenses: Number(updatedRecord.totalExpenses) || 0,
     expensesDetails: String(updatedRecord.expensesDetail || ''),
     notes: String(updatedRecord.notes || ''),
-    employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || 'תעשיידע')
+    employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || 'תעשיידע'),
+    status: String(updatedRecord.status || 'pending'),
+    approvedBy: String(updatedRecord.approvedBy || ''),
+    approvedDate: String(updatedRecord.approvedDate || ''),
+    rejectReason: String(updatedRecord.rejectReason || '')
   };
 
   const res = await fetch(LOGIC_APP_URL, {
@@ -3011,7 +3015,8 @@ async function submitAll() {
         expensesDetails: rec.expensesDetail || '',
         notes: rec.notes || '',
         attachments: rec.attachments || [],
-        attachmentsNames: formatAttachments(rec.attachments || [])
+        attachmentsNames: formatAttachments(rec.attachments || []),
+        status: "pending"
       };
       
       const response = await fetch(LOGIC_APP_URL, {
@@ -3299,7 +3304,8 @@ async function addRecord() {
     totalExpenses: Number(totalExpenses) || 0,
     expensesDetails: String(expensesDetail || ''),
     notes: String(notes || ''),
-    employmentType: String(employmentType)
+    employmentType: String(employmentType),
+    status: "pending"
   };
   
   // Send to SharePoint
