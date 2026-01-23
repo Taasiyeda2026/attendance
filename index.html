@@ -2107,7 +2107,8 @@ async function doLogin(event) {
         empNum: employeeId,
         empName: data.employeeName,
         role: data.role || 'instructor',
-        team: data.team || null
+        team: data.team || null,
+        employmentType: data.employmentType || null
       };
       localStorage.setItem('currentUser', JSON.stringify(empData));
       localStorage.setItem('employeeName', data.employeeName);
