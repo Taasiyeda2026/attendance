@@ -2158,6 +2158,24 @@ function formatHoursDisplay(decimalHours) {
   return `${hours}:${minutes.toString().padStart(2, '0')}`;
 }
 
+// =============== Helper: Extract SharePoint Lookup Value ===============
+function extractLookupValue(field, defaultValue = '') {
+  if (!field) return defaultValue;
+  if (typeof field === 'string') {
+    try {
+      const parsed = JSON.parse(field);
+      if (parsed && parsed.Value) return parsed.Value;
+      return field;
+    } catch (e) {
+      return field;
+    }
+  }
+  if (typeof field === 'object' && field.Value) {
+    return field.Value;
+  }
+  return defaultValue;
+}
+
 // =============== Users ===============
 // Authentication moved to server-side for security
 
@@ -2608,15 +2626,15 @@ async function doLogin(event) {
         empNum: employeeId,
         empName: data.employeeName,
         role: normalizeRole(rawRole),
-        team: data.team || data.Team || null,
-        employmentType: data.employmentType || data.EmploymentType || null
+        team: extractLookupValue(data.team || data.Team, ''),
+        employmentType: extractLookupValue(data.employmentType || data.EmploymentType, 'תעשיידע')
       };
       console.log('Normalized role:', empData.role);
       localStorage.setItem('currentUser', JSON.stringify(empData));
       localStorage.setItem('employeeName', data.employeeName);
       localStorage.setItem('employeeId', employeeId);
-      localStorage.setItem('employmentType', data.employmentType || 'תעשיידע');
-      localStorage.setItem('team', data.team || data.Team || '');
+      localStorage.setItem('employmentType', extractLookupValue(data.employmentType, 'תעשיידע'));
+      localStorage.setItem('team', extractLookupValue(data.team || data.Team, ''));
       
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
@@ -3469,9 +3487,11 @@ async function addRecord() {
   }
   
   const currentUserData = getCurrentUserData();
-  const employmentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
+  const rawEmploymentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
+  const employmentType = extractLookupValue(rawEmploymentType, 'תעשיידע');
   
-  const team = localStorage.getItem("team") || '';
+  const rawTeam = localStorage.getItem("team") || '';
+  const team = extractLookupValue(rawTeam, '');
   
   const payload = {
     action: "submit",
