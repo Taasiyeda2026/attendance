@@ -748,21 +748,17 @@
                                         }
                                     },
                                     "Response_Team_Summary": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 200,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*"
-                                            },
-                                            "body": {
-                                                "success": true,
-                                                "records": "@variables('teamSummary')"
-                                            }
+                                      "type": "Response",
+                                      "kind": "Http",
+                                      "inputs": {
+                                        "statusCode": 200,
+                                        "headers": {
+                                          "Access-Control-Allow-Origin": "*"
                                         },
                                         "runAfter": {
                                             "For_each_Summary_Record": ["Succeeded", "Skipped"]
                                         }
+                                      }
                                     }
                                 },
                                 "case": "getTeamSummary"
