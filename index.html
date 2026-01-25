@@ -2290,6 +2290,7 @@ function buildTeamSummaryPayload(user, periodFrom, periodTo) {
     action: 'getTeamSummary',
     periodFrom: String(periodFrom || ''),
     periodTo: String(periodTo || ''),
+    employeeId: String(user.empNum || ''),
     role: String(user.role || ''),
     team: String(user.team || '')
   };
@@ -2321,6 +2322,11 @@ function extractLookupValue(field, defaultValue = '') {
     return field.Value;
   }
   return defaultValue;
+}
+
+function normalizeText(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).trim().toLowerCase();
 }
 
 // =============== Users ===============
@@ -4435,11 +4441,13 @@ async function loadReportData() {
     populateTeamFilterFromRecords(reportRecords);
     
     if (employmentType !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
+      const targetEmployment = normalizeText(employmentType);
+      reportRecords = reportRecords.filter(rec => normalizeText(rec.employmentType) === targetEmployment);
     }
     
     if (team !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.team === team);
+      const targetTeam = normalizeText(team);
+      reportRecords = reportRecords.filter(rec => normalizeText(rec.team) === targetTeam);
     }
     
     updateReportStats();
