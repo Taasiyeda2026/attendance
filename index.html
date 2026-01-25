@@ -3004,74 +3004,336 @@ function showPage(event, pageName) {
 }
 
 // =============== Team Records Functions ===============
-function loadTeamRecords() {
+let teamRecordsCache = [];
+let expandedEmployees = {};
+
+async function loadTeamRecords() {
   const user = getCurrentUserData();
   if (!user) return;
-  
+
   const teamName = document.getElementById('teamName');
-  if (user.role === 'system_admin' || user.role === 'operations_controller') {
+  if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'payroll_officer') {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
   }
-  
-  // Show local records for now (will be replaced with team records after sync)
-  if (records.length === 0) {
+
+  // Show loading
+  document.getElementById('teamRecordsTable').innerHTML = `
+    <p style="text-align: center; color: #64748b; padding: 40px;">
+      <i class="fas fa-spinner fa-spin"></i> טוען נתונים...
+    </p>
+  `;
+
+  try {
+    // Get summary data from server
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'getSummary',
+        employeeId: user.empNum,
+        role: user.role,
+        team: user.team
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success && Array.isArray(data.records)) {
+      teamRecordsCache = data.records;
+      renderTeamSummary(data.records);
+    } else {
+      document.getElementById('teamRecordsTable').innerHTML = `
+        <p style="text-align: center; color: #64748b; padding: 40px;">
+          <i class="fas fa-info-circle"></i> אין רשומות להצגה
+        </p>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading team records:', error);
+    // Fallback to local records
+    renderTeamSummary(records);
+  }
+}
+
+function renderTeamSummary(recordsList) {
+  if (!recordsList || recordsList.length === 0) {
     document.getElementById('teamRecordsTable').innerHTML = `
       <p style="text-align: center; color: #64748b; padding: 40px;">
-        <i class="fas fa-info-circle"></i>
-        אין רשומות להצגה
+        <i class="fas fa-info-circle"></i> אין רשומות להצגה
       </p>
     `;
     return;
   }
-  
-  const totalHours = records.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  
+
+  // Group by employee and calculate summary
+  const employeeSummary = {};
+  recordsList.forEach(rec => {
+    const empId = rec.employeeId || rec.empNum || rec.EmployeeId;
+    const empName = rec.employeeName || rec.empName || rec.EmployeeName || '';
+    const team = rec.team || rec.Team || '';
+    const empType = rec.employmentType || rec.EmploymentType || '';
+    const hours = parseFloat(rec.workHours || rec.hours || rec.WorkHours || 0);
+    const km = parseFloat(rec.kilometers || rec.km || rec.Kilometers || 0);
+    const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
+
+    if (!employeeSummary[empId]) {
+      employeeSummary[empId] = {
+        empId,
+        empName,
+        team,
+        employmentType: empType,
+        totalRecords: 0,
+        totalHours: 0,
+        totalKm: 0,
+        totalExpenses: 0
+      };
+    }
+
+    employeeSummary[empId].totalRecords++;
+    employeeSummary[empId].totalHours += hours;
+    employeeSummary[empId].totalKm += km;
+    employeeSummary[empId].totalExpenses += expenses;
+  });
+
+  const summaryList = Object.values(employeeSummary);
+  const grandTotalHours = summaryList.reduce((sum, emp) => sum + emp.totalHours, 0);
+  const grandTotalKm = summaryList.reduce((sum, emp) => sum + emp.totalKm, 0);
+  const grandTotalExpenses = summaryList.reduce((sum, emp) => sum + emp.totalExpenses, 0);
+  const grandTotalRecords = summaryList.reduce((sum, emp) => sum + emp.totalRecords, 0);
+
   const tableHTML = `
     <div style="margin-bottom: 15px;">
-      <span style="color: #64748b;">סה"כ ${records.length} רשומות</span>
+      <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים | ${grandTotalRecords} רשומות</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>תאריך</th>
-          <th>עובד</th>
+          <th style="width: 30px;"></th>
+          <th>שם עובד</th>
           <th>צוות</th>
-          <th>שעות</th>
-          <th>פעילות</th>
-          <th>בית ספר</th>
-          <th>רשות</th>
           <th>סוג העסקה</th>
-          <th>ק"מ</th>
-          <th>הוצאות</th>
+          <th>רשומות</th>
+          <th>סה"כ שעות</th>
+          <th>סה"כ ק"מ</th>
+          <th>סה"כ הוצאות</th>
         </tr>
       </thead>
       <tbody>
-        ${records.map((rec, idx) => `
-          <tr>
-            <td>${rec.date}</td>
-            <td>${rec.empName}</td>
-            <td>${rec.team || '-'}</td>
-            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
-            <td>${rec.activity}</td>
-            <td>${rec.school || '-'}</td>
-            <td>${rec.municipality}</td>
-            <td>${rec.employmentType || '-'}</td>
-            <td>${rec.km || 0}</td>
-            <td>${rec.totalExpenses || 0} ₪</td>
+        ${summaryList.map(emp => `
+          <tr class="employee-summary-row" onclick="toggleEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
+            <td><i class="fas fa-chevron-left" id="chevron-${emp.empId}" style="transition: transform 0.3s;"></i></td>
+            <td><strong style="color: #3b82f6;">${emp.empName}</strong></td>
+            <td>${emp.team || '-'}</td>
+            <td>${emp.employmentType || '-'}</td>
+            <td>${emp.totalRecords}</td>
+            <td><strong>${formatHoursDisplay(emp.totalHours)}</strong></td>
+            <td>${emp.totalKm.toFixed(1)}</td>
+            <td>${emp.totalExpenses.toFixed(2)} ₪</td>
+          </tr>
+          <tr id="details-${emp.empId}" class="employee-details-row" style="display: none;">
+            <td colspan="8" style="padding: 0; background: #f8fafc;">
+              <div id="details-content-${emp.empId}" style="padding: 15px;">
+                <i class="fas fa-spinner fa-spin"></i> טוען פרטים...
+              </div>
+            </td>
           </tr>
         `).join('')}
-        <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td colspan="3" style="text-align: left;">סה"כ:</td>
-          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="6"></td>
+        <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
+          <td colspan="4" style="text-align: left;">סה"כ:</td>
+          <td>${grandTotalRecords}</td>
+          <td style="color: #3b82f6;">${formatHoursDisplay(grandTotalHours)}</td>
+          <td>${grandTotalKm.toFixed(1)}</td>
+          <td>${grandTotalExpenses.toFixed(2)} ₪</td>
         </tr>
       </tbody>
     </table>
   `;
-  
+
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
+}
+
+async function toggleEmployeeDetails(empId) {
+  const detailsRow = document.getElementById(`details-${empId}`);
+  const chevron = document.getElementById(`chevron-${empId}`);
+  const detailsContent = document.getElementById(`details-content-${empId}`);
+
+  if (expandedEmployees[empId]) {
+    // Collapse
+    detailsRow.style.display = 'none';
+    chevron.style.transform = 'rotate(0deg)';
+    expandedEmployees[empId] = false;
+  } else {
+    // Expand
+    detailsRow.style.display = 'table-row';
+    chevron.style.transform = 'rotate(-90deg)';
+    expandedEmployees[empId] = true;
+
+    // Load details if not already loaded
+    if (!detailsContent.dataset.loaded) {
+      try {
+        const user = getCurrentUserData();
+        const response = await fetch(LOGIC_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'getEmployeeRecords',
+            employeeId: empId
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.records)) {
+          renderEmployeeDetails(empId, data.records);
+          detailsContent.dataset.loaded = 'true';
+        } else {
+          detailsContent.innerHTML = '<p style="color: #94a3b8;">אין רשומות</p>';
+        }
+      } catch (error) {
+        console.error('Error loading employee details:', error);
+        // Fallback: filter from cached records
+        const empRecords = teamRecordsCache.filter(r =>
+          (r.employeeId || r.empNum || r.EmployeeId) === empId
+        );
+        renderEmployeeDetails(empId, empRecords);
+      }
+    }
+  }
+}
+
+function renderEmployeeDetails(empId, records) {
+  const detailsContent = document.getElementById(`details-content-${empId}`);
+  const user = getCurrentUserData();
+  const canEdit = user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'manager';
+  const canDelete = user.role === 'system_admin' || user.role === 'operations_controller';
+
+  if (!records || records.length === 0) {
+    detailsContent.innerHTML = '<p style="color: #94a3b8;">אין רשומות</p>';
+    return;
+  }
+
+  const detailsHTML = `
+    <table style="width: 100%; font-size: 13px; margin: 0;">
+      <thead>
+        <tr style="background: #e2e8f0;">
+          <th>תאריך</th>
+          <th>התחלה</th>
+          <th>סיום</th>
+          <th>שעות</th>
+          <th>פעילות</th>
+          <th>בית ספר</th>
+          <th>רשות</th>
+          <th>ק"מ</th>
+          <th>הוצאות</th>
+          <th>הערות</th>
+          ${canEdit || canDelete ? '<th>פעולות</th>' : ''}
+        </tr>
+      </thead>
+      <tbody>
+        ${records.map(rec => {
+          const recordId = rec.ID || rec.Id || rec.id || rec.recordId;
+          const date = rec.attendanceDate || rec.date || rec.AttendanceDate || '';
+          const start = rec.startTime || rec.start || rec.StartTime || '';
+          const end = rec.endTime || rec.end || rec.EndTime || '';
+          const hours = rec.workHours || rec.hours || rec.WorkHours || 0;
+          const activity = rec.activityType || rec.activity || rec.ActivityType || '';
+          const school = rec.schoolName || rec.school || rec.SchoolName || '';
+          const municipality = rec.municipality || rec.Municipality || '';
+          const km = rec.kilometers || rec.km || rec.Kilometers || 0;
+          const expenses = rec.totalExpenses || rec.TotalExpenses || 0;
+          const notes = rec.notes || rec.Notes || '';
+
+          return `
+            <tr>
+              <td>${date}</td>
+              <td>${start}</td>
+              <td>${end}</td>
+              <td><strong>${formatHoursDisplay(hours)}</strong></td>
+              <td>${activity}</td>
+              <td>${school || '-'}</td>
+              <td>${municipality || '-'}</td>
+              <td>${km}</td>
+              <td>${expenses} ₪</td>
+              <td>${notes || '-'}</td>
+              ${canEdit || canDelete ? `
+                <td>
+                  ${canEdit ? `<button onclick="editTeamRecord(${recordId})" class="btn-icon" title="עריכה"><i class="fas fa-edit"></i></button>` : ''}
+                  ${canDelete ? `<button onclick="deleteTeamRecord(${recordId})" class="btn-icon" style="color: #dc2626;" title="מחיקה"><i class="fas fa-trash"></i></button>` : ''}
+                </td>
+              ` : ''}
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  detailsContent.innerHTML = detailsHTML;
+}
+
+function editTeamRecord(recordId) {
+  // Find record in cache and open edit modal
+  const record = teamRecordsCache.find(r =>
+    (r.ID || r.Id || r.id || r.recordId) == recordId
+  );
+  if (record) {
+    // Map to local format and edit
+    const localRecord = {
+      recordId: recordId,
+      empNum: record.employeeId || record.EmployeeId,
+      empName: record.employeeName || record.EmployeeName,
+      date: record.attendanceDate || record.AttendanceDate,
+      start: record.startTime || record.StartTime,
+      end: record.endTime || record.EndTime,
+      hours: record.workHours || record.WorkHours,
+      activity: record.activityType || record.ActivityType,
+      school: record.schoolName || record.SchoolName,
+      municipality: record.municipality || record.Municipality,
+      program: record.programName || record.ProgramName,
+      session: record.sessionNumber || record.SessionNumber,
+      km: record.kilometers || record.Kilometers,
+      totalExpenses: record.totalExpenses || record.TotalExpenses,
+      expensesDetail: record.expensesDetails || record.ExpensesDetails,
+      notes: record.notes || record.Notes,
+      team: record.team || record.Team,
+      employmentType: record.employmentType || record.EmploymentType
+    };
+
+    const idx = records.findIndex(r => r.recordId == recordId);
+    if (idx >= 0) {
+      editRecord(idx);
+    } else {
+      // Add to records temporarily and edit
+      records.push(localRecord);
+      editRecord(records.length - 1);
+    }
+  }
+}
+
+async function deleteTeamRecord(recordId) {
+  if (!confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) return;
+
+  try {
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'deleteRecord',
+        recordId: recordId
+      })
+    });
+
+    if (response.ok) {
+      showAlert('הרשומה נמחקה בהצלחה', 'success');
+      loadTeamRecords(); // Reload
+    } else {
+      showAlert('שגיאה במחיקה', 'error');
+    }
+  } catch (error) {
+    showAlert('שגיאה במחיקה', 'error');
+  }
 }
 
 function loadReports() {

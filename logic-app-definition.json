@@ -30,7 +30,9 @@
             "employmentType": { "type": "string" },
             "team": { "type": "string" },
             "role": { "type": "string" },
-            "recordId": { "type": "integer" }
+            "recordId": { "type": "integer" },
+            "month": { "type": "integer" },
+            "year": { "type": "integer" }
           }
         }
       }
@@ -143,6 +145,159 @@
                 "body": {
                   "success": true,
                   "recordId": "@{body('Create_Attendance_Record')?['ID']}"
+                }
+              }
+            }
+          }
+        },
+        "getSummary": {
+          "case": "getSummary",
+          "actions": {
+            "Init_Summary_Filter": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [{
+                  "name": "summaryFilter",
+                  "type": "string",
+                  "value": ""
+                }]
+              }
+            },
+            "Build_Summary_Filter": {
+              "type": "Compose",
+              "runAfter": { "Init_Summary_Filter": ["Succeeded"] },
+              "inputs": "@if(and(not(equals(triggerBody()?['month'], null)), not(equals(triggerBody()?['year'], null))), concat('month(AttendanceDate) eq ', triggerBody()?['month'], ' and year(AttendanceDate) eq ', triggerBody()?['year']), '')"
+            },
+            "Set_Summary_Role_Filter": {
+              "type": "Switch",
+              "runAfter": { "Build_Summary_Filter": ["Succeeded"] },
+              "expression": "@triggerBody()?['role']",
+              "cases": {
+                "instructor": {
+                  "case": "instructor",
+                  "actions": {
+                    "Set_Instructor_Summary_Filter": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "summaryFilter",
+                        "value": "@{if(equals(outputs('Build_Summary_Filter'), ''), concat('EmployeeId eq ''', triggerBody()?['employeeId'], ''''), concat('EmployeeId eq ''', triggerBody()?['employeeId'], ''' and ', outputs('Build_Summary_Filter')))}"
+                      }
+                    }
+                  }
+                },
+                "manager": {
+                  "case": "manager",
+                  "actions": {
+                    "Set_Manager_Summary_Filter": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "summaryFilter",
+                        "value": "@{if(equals(outputs('Build_Summary_Filter'), ''), concat('Team eq ''', triggerBody()?['team'], ''''), concat('Team eq ''', triggerBody()?['team'], ''' and ', outputs('Build_Summary_Filter')))}"
+                      }
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {
+                  "Set_Admin_Summary_Filter": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "summaryFilter",
+                      "value": "@{outputs('Build_Summary_Filter')}"
+                    }
+                  }
+                }
+              }
+            },
+            "Get_Summary_Records": {
+              "type": "ApiConnection",
+              "runAfter": { "Set_Summary_Role_Filter": ["Succeeded"] },
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "get",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Attendance')}/items",
+                "queries": {
+                  "$filter": "@variables('summaryFilter')",
+                  "$select": "EmployeeId,EmployeeName,Team,EmploymentType,WorkHours,Kilometers,TotalExpenses",
+                  "$top": "5000"
+                }
+              }
+            },
+            "Response_Summary": {
+              "type": "Response",
+              "runAfter": { "Get_Summary_Records": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*"
+                },
+                "body": {
+                  "success": true,
+                  "records": "@body('Get_Summary_Records')?['value']"
+                }
+              }
+            }
+          }
+        },
+        "getEmployeeRecords": {
+          "case": "getEmployeeRecords",
+          "actions": {
+            "Init_Employee_Filter": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [{
+                  "name": "employeeFilter",
+                  "type": "string",
+                  "value": "EmployeeId eq '@{triggerBody()?['employeeId']}'"
+                }]
+              }
+            },
+            "Add_Date_Filter": {
+              "type": "If",
+              "runAfter": { "Init_Employee_Filter": ["Succeeded"] },
+              "expression": {
+                "and": [
+                  { "not": { "equals": ["@triggerBody()?['month']", null] } },
+                  { "not": { "equals": ["@triggerBody()?['year']", null] } }
+                ]
+              },
+              "actions": {
+                "Set_Filter_With_Date": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "employeeFilter",
+                    "value": "EmployeeId eq '@{triggerBody()?['employeeId']}' and month(AttendanceDate) eq @{triggerBody()?['month']} and year(AttendanceDate) eq @{triggerBody()?['year']}"
+                  }
+                }
+              }
+            },
+            "Get_Employee_Records": {
+              "type": "ApiConnection",
+              "runAfter": { "Add_Date_Filter": ["Succeeded"] },
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "get",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Attendance')}/items",
+                "queries": {
+                  "$filter": "@variables('employeeFilter')",
+                  "$orderby": "AttendanceDate desc"
+                }
+              }
+            },
+            "Response_Employee_Records": {
+              "type": "Response",
+              "runAfter": { "Get_Employee_Records": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*"
+                },
+                "body": {
+                  "success": true,
+                  "records": "@body('Get_Employee_Records')?['value']"
                 }
               }
             }
