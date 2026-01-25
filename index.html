@@ -1341,7 +1341,7 @@
   </div>
   
   <!-- Mobile Menu Toggle -->
-  <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+  <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" data-roles="instructor,manager,operations_controller,system_admin">
     <i class="fas fa-bars" id="mobileMenuIcon"></i>
   </button>
   
@@ -1402,23 +1402,23 @@
   <!-- Mobile Bottom Navigation -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav">
     <div class="mobile-bottom-nav-inner">
-      <button class="mobile-nav-item active" onclick="mobileNavTo('dashboard')" id="mobileNavDashboard">
+      <button class="mobile-nav-item active" onclick="mobileNavTo('dashboard')" id="mobileNavDashboard" data-roles="all">
         <i class="fas fa-home"></i>
         <span>ראשי</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('add-record')" id="mobileNavAdd">
+      <button class="mobile-nav-item" onclick="mobileNavTo('add-record')" id="mobileNavAdd" data-roles="instructor">
         <i class="fas fa-plus-circle"></i>
         <span>הוספה</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords">
+      <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor">
         <i class="fas fa-list"></i>
         <span>רשומות</span>
       </button>
-      <button class="mobile-nav-item" onclick="toggleMobileMenu()" id="mobileNavMenu">
+      <button class="mobile-nav-item" onclick="toggleMobileMenu()" id="mobileNavMenu" data-roles="instructor,manager,operations_controller,system_admin">
         <i class="fas fa-bars"></i>
         <span>תפריט</span>
       </button>
-      <button class="mobile-nav-item" onclick="logout()" style="color: #dc2626;">
+      <button class="mobile-nav-item" onclick="logout()" style="color: #dc2626;" data-roles="all">
         <i class="fas fa-sign-out-alt"></i>
         <span>יציאה</span>
       </button>
@@ -2458,6 +2458,7 @@ function getCurrentUserData() {
 }
 
 function updateMenuByRole(role) {
+  // Handle sidebar nav items via data-roles
   const navItems = document.querySelectorAll('#sidebarNav .nav-item');
   navItems.forEach(item => {
     const allowedRoles = item.getAttribute('data-roles');
@@ -2468,37 +2469,37 @@ function updateMenuByRole(role) {
       item.style.display = roles.includes(role) ? 'flex' : 'none';
     }
   });
-  
-  // Hide mobile "add" button for non-instructors
-  const mobileAddBtn = document.getElementById('mobileNavAdd');
-  if (mobileAddBtn) {
-    mobileAddBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
-  }
-  
-  // Hide mobile "records" button for non-instructors (they use team-records instead)
-  const mobileRecordsBtn = document.getElementById('mobileNavRecords');
-  if (mobileRecordsBtn) {
-    mobileRecordsBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
-  }
-  
-  // Hide mobile "menu" button for payroll_officer (they only see dashboard)
-  const mobileMenuBtn = document.getElementById('mobileNavMenu');
-  if (mobileMenuBtn) {
-    mobileMenuBtn.style.display = (role === 'payroll_officer') ? 'none' : 'flex';
-  }
-  
-  // Hide top mobile menu toggle for payroll_officer
+
+  // Handle mobile bottom nav items via data-roles
+  const mobileNavItems = document.querySelectorAll('#mobileBottomNav .mobile-nav-item');
+  mobileNavItems.forEach(item => {
+    const allowedRoles = item.getAttribute('data-roles');
+    if (!allowedRoles || allowedRoles === 'all') {
+      item.style.display = 'flex';
+    } else {
+      const roles = allowedRoles.split(',');
+      item.style.display = roles.includes(role) ? 'flex' : 'none';
+    }
+  });
+
+  // Handle mobile menu toggle via data-roles
   const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
   if (mobileMenuToggle) {
-    mobileMenuToggle.style.display = (role === 'payroll_officer') ? 'none' : 'flex';
+    const allowedRoles = mobileMenuToggle.getAttribute('data-roles');
+    if (!allowedRoles || allowedRoles === 'all') {
+      mobileMenuToggle.style.display = 'flex';
+    } else {
+      const roles = allowedRoles.split(',');
+      mobileMenuToggle.style.display = roles.includes(role) ? 'flex' : 'none';
+    }
   }
-  
+
   // Hide dashboard "add record" button for non-instructors
   const dashboardAddBtn = document.getElementById('dashboardAddRecordBtn');
   if (dashboardAddBtn) {
     dashboardAddBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
   }
-  
+
   // Show payroll dashboard for payroll_officer, hide regular dashboard elements
   const payrollDashboard = document.getElementById('payrollDashboard');
   const regularDashboardContent = document.getElementById('regularDashboardContent');
@@ -2525,7 +2526,7 @@ function hasPermission(action, targetTeam = null) {
     case 'view_all':
       return ['operations_controller', 'system_admin', 'payroll_officer'].includes(role);
     case 'edit_own':
-      return false;
+      return role === 'instructor';
     case 'edit_team':
       if (role === 'manager') {
         return user.team === targetTeam;
@@ -2545,18 +2546,46 @@ function hasPermission(action, targetTeam = null) {
 function canEditRecord(record) {
   const user = getCurrentUserData();
   if (!user) return false;
-  
+
   const role = user.role;
-  
-  // payroll_officer = view only, no edit
+
+  // system_admin and operations_controller can edit all records
   if (role === 'system_admin' || role === 'operations_controller') {
     return true;
   }
-  
+
+  // manager can edit team records
   if (role === 'manager') {
     return true;
   }
-  
+
+  // instructor can edit only their own records until end of record's month
+  if (role === 'instructor') {
+    const recordEmpNum = record.empNum || record.employeeId;
+    const userEmpNum = user.empNum || localStorage.getItem('employeeId');
+
+    // Must be own record
+    if (String(recordEmpNum) !== String(userEmpNum)) {
+      return false;
+    }
+
+    // Check if still within the record's month
+    const recordDateStr = record.date || record.attendanceDate;
+    if (!recordDateStr) return false;
+
+    const recordDate = new Date(recordDateStr);
+    const now = new Date();
+
+    // Get the last day of the record's month (day 0 of next month = last day of this month)
+    const recordYear = recordDate.getFullYear();
+    const recordMonth = recordDate.getMonth();
+    const lastDayOfRecordMonth = new Date(recordYear, recordMonth + 1, 0);
+    lastDayOfRecordMonth.setHours(23, 59, 59, 999);
+
+    return now <= lastDayOfRecordMonth;
+  }
+
+  // payroll_officer and others = view only, no edit
   return false;
 }
 
