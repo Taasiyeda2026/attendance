@@ -3299,7 +3299,43 @@ async function exportTeamToExcel() {
     teamSummaryPeriod = getCurrentMonthPeriod();
   }
   
-  const dataToExport = teamSummaryRecords;
+  let dataToExport = teamDetailRecords;
+  
+  if (dataToExport.length === 0) {
+    showAlert('טוען רשומות לצורך ייצוא...', 'info');
+    try {
+      const response = await fetch(LOGIC_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildHistoryPayload(user))
+      });
+      
+      const data = await response.json();
+      if (data.success && Array.isArray(data.records)) {
+        dataToExport = data.records
+          .filter(rec => isDateWithinRange(rec.attendanceDate || '', teamSummaryPeriod.periodFrom, teamSummaryPeriod.periodTo))
+          .map(rec => ({
+            empNum: rec.employeeId,
+            empName: extractLookupValue(rec.employeeName || rec.EmployeeName, ''),
+            date: rec.attendanceDate || '',
+            start: rec.startTime || '',
+            end: rec.endTime || '',
+            hours: rec.workHours || 0,
+            activity: extractLookupValue(rec.activityType || rec.ActivityType, ''),
+            school: extractLookupValue(rec.schoolName || rec.SchoolName, ''),
+            municipality: extractLookupValue(rec.municipality || rec.Municipality, ''),
+            program: extractLookupValue(rec.programName || rec.ProgramName, ''),
+            session: rec.sessionNumber || '',
+            km: rec.kilometers || 0,
+            totalExpenses: rec.totalExpenses || 0,
+            expensesDetail: rec.expensesDetails || '',
+            notes: rec.notes || ''
+          }));
+      }
+    } catch (error) {
+      console.error('Export load error:', error);
+    }
+  }
   
   if (dataToExport.length === 0) {
     showAlert('⚠️ אין נתונים לייצוא', 'error');

@@ -723,26 +723,6 @@
                                             "Set_Team_Summary_Empty": ["Succeeded"]
                                         }
                                     },
-                                    "Select_Summary_Output": {
-                                        "type": "Select",
-                                        "inputs": {
-                                            "from": "@variables('teamSummary')",
-                                            "select": {
-                                                "employeeId": "@item()?['employeeId']",
-                                                "employeeName": "@item()?['employeeName']",
-                                                "employmentType": "@item()?['employmentType']",
-                                                "team": "@item()?['team']",
-                                                "workDays": "@item()?['workDays']",
-                                                "courseHours": "@item()?['courseHours']",
-                                                "trainingHours": "@item()?['trainingHours']",
-                                                "cancelHours": "@item()?['cancelHours']",
-                                                "kilometers": "@item()?['kilometers']"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "For_each_Summary_Record": ["Succeeded"]
-                                        }
-                                    },
                                     "Response_Team_Summary": {
                                         "type": "Response",
                                         "kind": "Http",
