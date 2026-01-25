@@ -414,7 +414,7 @@
                                                             "type": "Query",
                                                             "inputs": {
                                                                 "from": "@body('Get_All_For_Team_Filter')?['value']",
-                                                                "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
+                                                                "where": "@equals(toLower(trim(coalesce(item()?['team']?['Value'], item()?['team'], ''))), toLower(trim(coalesce(triggerBody()?['team'], ''))))"
                                                             },
                                                             "runAfter": {
                                                                 "Get_All_For_Team_Filter": ["Succeeded"]
@@ -627,21 +627,53 @@
                                         "actions": {},
                                         "else": {
                                             "actions": {
-                                                "Filter_By_Team_For_Summary": {
-                                                    "type": "Query",
-                                                    "inputs": {
-                                                        "from": "@variables('summaryRecords')",
-                                                        "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
-                                                    }
-                                                },
-                                                "Set_Summary_Records_To_Team": {
-                                                    "type": "SetVariable",
-                                                    "inputs": {
-                                                        "name": "summaryRecords",
-                                                        "value": "@body('Filter_By_Team_For_Summary')"
+                                                "Check_Summary_Manager": {
+                                                    "type": "If",
+                                                    "expression": {
+                                                        "equals": [
+                                                            "@triggerBody()?['role']",
+                                                            "manager"
+                                                        ]
                                                     },
-                                                    "runAfter": {
-                                                        "Filter_By_Team_For_Summary": ["Succeeded"]
+                                                    "actions": {
+                                                        "Filter_By_Team_For_Summary": {
+                                                            "type": "Query",
+                                                            "inputs": {
+                                                                "from": "@variables('summaryRecords')",
+                                                                "where": "@equals(toLower(trim(coalesce(item()?['team']?['Value'], item()?['team'], ''))), toLower(trim(coalesce(triggerBody()?['team'], ''))))"
+                                                            }
+                                                        },
+                                                        "Set_Summary_Records_To_Team": {
+                                                            "type": "SetVariable",
+                                                            "inputs": {
+                                                                "name": "summaryRecords",
+                                                                "value": "@body('Filter_By_Team_For_Summary')"
+                                                            },
+                                                            "runAfter": {
+                                                                "Filter_By_Team_For_Summary": ["Succeeded"]
+                                                            }
+                                                        }
+                                                    },
+                                                    "else": {
+                                                        "actions": {
+                                                            "Filter_By_Employee_For_Summary": {
+                                                                "type": "Query",
+                                                                "inputs": {
+                                                                    "from": "@variables('summaryRecords')",
+                                                                    "where": "@equals(string(item()?['employeeId']), string(triggerBody()?['employeeId']))"
+                                                                }
+                                                            },
+                                                            "Set_Summary_Records_To_Employee": {
+                                                                "type": "SetVariable",
+                                                                "inputs": {
+                                                                    "name": "summaryRecords",
+                                                                    "value": "@body('Filter_By_Employee_For_Summary')"
+                                                                },
+                                                                "runAfter": {
+                                                                    "Filter_By_Employee_For_Summary": ["Succeeded"]
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
