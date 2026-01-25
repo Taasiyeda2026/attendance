@@ -2231,19 +2231,19 @@ function isManagerRole(role) {
 function buildHistoryPayload(user) {
   return {
     action: 'getHistory',
-    employeeId: user.empNum,
-    role: user.role,
-    team: user.team
+    employeeId: String(user.empNum || ''),
+    role: String(user.role || ''),
+    team: String(user.team || '')
   };
 }
 
 function buildTeamSummaryPayload(user, periodFrom, periodTo) {
   return {
     action: 'getTeamSummary',
-    periodFrom,
-    periodTo,
-    role: user.role,
-    team: user.team
+    periodFrom: String(periodFrom || ''),
+    periodTo: String(periodTo || ''),
+    role: String(user.role || ''),
+    team: String(user.team || '')
   };
 }
 let currentUser = '';
@@ -3324,12 +3324,7 @@ async function exportTeamToExcel() {
       const response = await fetch(LOGIC_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'getHistory',
-          employeeId: user.empNum,
-          role: user.role,
-          team: user.team
-        })
+        body: JSON.stringify(buildHistoryPayload(user))
       });
       
       const data = await response.json();
@@ -3509,23 +3504,21 @@ async function submitAll() {
     try {
     const payload = {
         action: "submit",
-        employeeId: localStorage.getItem("employeeId") || rec.empNum,
-        employeeName: localStorage.getItem("employeeName") || rec.empName,
-        attendanceDate: rec.date,
-        startTime: rec.start || '',
-        endTime: rec.end || '',
-        workHours: rec.hours ? Number(rec.hours).toFixed(2) : '0',
-        activityType: rec.activity,
-        schoolName: rec.school || '',
-        municipality: rec.municipality || '',
-        programName: rec.program || '',
-        sessionNumber: rec.session || '',
-        kilometers: rec.km || 0,
-        totalExpenses: rec.totalExpenses || 0,
-        expensesDetails: rec.expensesDetail || '',
-        notes: rec.notes || '',
-        attachments: rec.attachments || [],
-        attachmentsNames: formatAttachments(rec.attachments || []),
+        employeeId: String(localStorage.getItem("employeeId") || rec.empNum || ''),
+        employeeName: String(localStorage.getItem("employeeName") || rec.empName || ''),
+        attendanceDate: String(rec.date || ''),
+        startTime: String(rec.start || ''),
+        endTime: String(rec.end || ''),
+        workHours: Number(rec.hours) || 0,
+        activityType: String(rec.activity || ''),
+        schoolName: String(rec.school || ''),
+        municipality: String(rec.municipality || ''),
+        programName: String(rec.program || ''),
+        sessionNumber: Number(rec.session) || 0,
+        kilometers: Number(rec.km) || 0,
+        totalExpenses: Number(rec.totalExpenses) || 0,
+        expensesDetails: String(rec.expensesDetail || ''),
+        notes: String(rec.notes || ''),
         employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
         team: String(localStorage.getItem("team") || '')
       };

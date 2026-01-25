@@ -373,7 +373,7 @@
                                                             "type": "Query",
                                                             "inputs": {
                                                                 "from": "@body('Get_All_For_Team_Filter')?['value']",
-                                                                "where": "@equals(item()?['team'], triggerBody()?['team'])"
+                                                                "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
                                                             },
                                                             "runAfter": {
                                                                 "Get_All_For_Team_Filter": ["Succeeded"]
@@ -583,7 +583,7 @@
                                                     "type": "Query",
                                                     "inputs": {
                                                         "from": "@variables('summaryRecords')",
-                                                        "where": "@equals(item()?['team'], triggerBody()?['team'])"
+                                                        "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
                                                     }
                                                 },
                                                 "Set_Summary_Records_To_Team": {
