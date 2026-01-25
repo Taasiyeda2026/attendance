@@ -701,7 +701,7 @@
                                                             "workDays": "@{length(if(contains(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), items('For_each_Summary_Record')?['attendanceDate']), coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), union(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), createArray(items('For_each_Summary_Record')?['attendanceDate']))))}",
                                                             "courseHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['courseHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'course'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
                                                             "trainingHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['trainingHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'training'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
-                                                            "cancelHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['cancelHours'], 0)), if(or(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancel_time'), equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancellation')), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
+                                                            "cancelHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['cancelHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancel_time'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
                                                             "kilometers": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['kilometers'], 0)), float(coalesce(items('For_each_Summary_Record')?['kilometers'], 0)))}"
                                                         }
                                                     },
@@ -731,7 +731,7 @@
                                                                     "workDays": 1,
                                                                     "courseHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'course'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
                                                                     "trainingHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'training'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
-                                                                    "cancelHours": "@{if(or(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancel_time'), equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancellation')), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
+                                                                    "cancelHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancel_time'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
                                                                     "kilometers": "@{float(coalesce(items('For_each_Summary_Record')?['kilometers'], 0))}"
                                                                 }
                                                             }
@@ -745,26 +745,6 @@
                                         },
                                         "runAfter": {
                                             "Set_Team_Summary_Empty": ["Succeeded"]
-                                        }
-                                    },
-                                    "Select_Summary_Output": {
-                                        "type": "Select",
-                                        "inputs": {
-                                            "from": "@variables('teamSummary')",
-                                            "select": {
-                                                "employeeId": "@item()?['employeeId']",
-                                                "employeeName": "@item()?['employeeName']",
-                                                "employmentType": "@item()?['employmentType']",
-                                                "team": "@item()?['team']",
-                                                "workDays": "@item()?['workDays']",
-                                                "courseHours": "@item()?['courseHours']",
-                                                "trainingHours": "@item()?['trainingHours']",
-                                                "cancelHours": "@item()?['cancelHours']",
-                                                "kilometers": "@item()?['kilometers']"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "For_each_Summary_Record": ["Succeeded"]
                                         }
                                     },
                                     "Response_Team_Summary": {
