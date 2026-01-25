@@ -2220,6 +2220,9 @@ const LOGIC_APP_URL = "https://prod-23.israelcentral.logic.azure.com:443/workflo
 
 // =============== State ===============
 let records = [];
+let teamSummaryRecords = [];
+let teamDetailRecords = [];
+let teamSummaryPeriod = { periodFrom: '', periodTo: '' };
 let currentUser = '';
 let editingIndex = -1;
 
@@ -2599,10 +2602,16 @@ async function loadMyRecordsFromServer() {
   }
 
   try {
-    showAlert('🔄 טוען רשומות מהשרת...', 'info');
-    
     const role = localStorage.getItem("role") || '';
     const team = localStorage.getItem("team") || '';
+    if (role === 'manager' || role === 'system_admin') {
+      records = [];
+      renderRecordsTable();
+      updateStats();
+      return;
+    }
+
+    showAlert('🔄 טוען רשומות מהשרת...', 'info');
     
     const res = await fetch(LOGIC_APP_URL, {
       method: "POST",
@@ -2985,64 +2994,273 @@ function loadTeamRecords() {
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
   }
+
+  loadTeamSummary();
+}
+
+function formatDateToISO(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthPeriod() {
+  const now = new Date();
+  const periodFrom = formatDateToISO(new Date(now.getFullYear(), now.getMonth(), 1));
+  const periodTo = formatDateToISO(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  return { periodFrom, periodTo };
+}
+
+async function loadTeamSummary() {
+  const user = getCurrentUserData();
+  if (!user) return;
   
-  // Show local records for now (will be replaced with team records after sync)
-  if (records.length === 0) {
+  const { periodFrom, periodTo } = getCurrentMonthPeriod();
+  teamSummaryPeriod = { periodFrom, periodTo };
+  teamSummaryRecords = [];
+  teamDetailRecords = [];
+  
+  document.getElementById('teamRecordsTable').innerHTML = `
+    <p style="text-align: center; color: #94a3b8; padding: 40px;">טוען סיכום צוות...</p>
+  `;
+  
+  try {
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'getTeamSummary',
+        employeeId: user.empNum,
+        role: user.role,
+        team: user.team,
+        periodFrom,
+        periodTo
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Summary request failed');
+    }
+    
+    const data = await response.json();
+    if (data.success && Array.isArray(data.records)) {
+      teamSummaryRecords = data.records.map(rec => ({
+        employeeId: rec.employeeId,
+        employeeName: rec.employeeName,
+        totalHours: rec.totalHours || 0,
+        workDays: rec.workDays || 0,
+        totalExpenses: rec.totalExpenses || 0,
+        kilometers: rec.kilometers || 0
+      }));
+    }
+    
+    renderTeamSummaryTable();
+  } catch (error) {
+    console.error('Load team summary error:', error);
+    document.getElementById('teamRecordsTable').innerHTML = `
+      <p style="text-align: center; color: #ef4444; padding: 40px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        שגיאה בטעינת סיכום הצוות
+      </p>
+    `;
+  }
+}
+
+function renderTeamSummaryTable() {
+  if (teamSummaryRecords.length === 0) {
     document.getElementById('teamRecordsTable').innerHTML = `
       <p style="text-align: center; color: #64748b; padding: 40px;">
         <i class="fas fa-info-circle"></i>
-        אין רשומות להצגה
+        אין נתונים להצגה
       </p>
     `;
     return;
   }
   
-  const totalHours = records.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  const totalHours = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalHours) || 0), 0);
+  const totalExpenses = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
+  const totalKm = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.kilometers) || 0), 0);
   
   const tableHTML = `
-    <div style="margin-bottom: 15px;">
-      <span style="color: #64748b;">סה"כ ${records.length} רשומות</span>
+    <div style="margin-bottom: 15px; color: #64748b;">
+      תקופה: ${teamSummaryPeriod.periodFrom} עד ${teamSummaryPeriod.periodTo}
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>תאריך</th>
-          <th>עובד</th>
-          <th>צוות</th>
-          <th>שעות</th>
-          <th>פעילות</th>
-          <th>בית ספר</th>
-          <th>רשות</th>
-          <th>סוג העסקה</th>
-          <th>ק"מ</th>
-          <th>הוצאות</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${records.map((rec, idx) => `
+    <div style="margin-bottom: 15px;">
+      <span style="color: #64748b;">סה"כ ${teamSummaryRecords.length} עובדים</span>
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
           <tr>
-            <td>${rec.date}</td>
-            <td>${rec.empName}</td>
-            <td>${rec.team || '-'}</td>
-            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
-            <td>${rec.activity}</td>
-            <td>${rec.school || '-'}</td>
-            <td>${rec.municipality}</td>
-            <td>${rec.employmentType || '-'}</td>
-            <td>${rec.km || 0}</td>
-            <td>${rec.totalExpenses || 0} ₪</td>
+            <th>שם עובד</th>
+            <th>ימי עבודה</th>
+            <th>סה"כ שעות</th>
+            <th>ק"מ</th>
+            <th>הוצאות</th>
           </tr>
-        `).join('')}
-        <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td colspan="3" style="text-align: left;">סה"כ:</td>
-          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="6"></td>
-        </tr>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          ${teamSummaryRecords.map(rec => `
+            <tr data-employee-id="${rec.employeeId}" data-employee-name="${rec.employeeName || ''}" style="cursor: pointer;">
+              <td>${rec.employeeName || '-'}</td>
+              <td>${rec.workDays || 0}</td>
+              <td><strong>${formatHoursDisplay(rec.totalHours)}</strong></td>
+              <td>${(parseFloat(rec.kilometers) || 0).toFixed(1)}</td>
+              <td>${(parseFloat(rec.totalExpenses) || 0).toFixed(0)} ₪</td>
+            </tr>
+          `).join('')}
+          <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
+            <td>סה"כ</td>
+            <td>${teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.workDays) || 0), 0)}</td>
+            <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
+            <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
+            <td style="color: #3b82f6;">${totalExpenses.toFixed(0)} ₪</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="teamRecordDetails" style="margin-top: 20px;"></div>
   `;
   
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
+  
+  document.querySelectorAll('#teamRecordsTable tr[data-employee-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      const employeeId = row.dataset.employeeId;
+      const employeeName = row.dataset.employeeName || '';
+      loadTeamMemberDetails(employeeId, employeeName);
+    });
+  });
+}
+
+function isDateWithinRange(dateValue, periodFrom, periodTo) {
+  if (!dateValue) return false;
+  const dateOnly = dateValue.split('T')[0];
+  return dateOnly >= periodFrom && dateOnly <= periodTo;
+}
+
+async function loadTeamMemberDetails(employeeId, employeeName) {
+  const user = getCurrentUserData();
+  if (!user) return;
+  
+  const detailsContainer = document.getElementById('teamRecordDetails');
+  if (!detailsContainer) return;
+  
+  detailsContainer.innerHTML = `
+    <p style="text-align: center; color: #94a3b8; padding: 20px;">טוען פירוט עבור ${employeeName || employeeId}...</p>
+  `;
+  
+  try {
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'getHistory',
+        employeeId: user.empNum,
+        role: user.role,
+        team: user.team
+      })
+    });
+    
+    const data = await response.json();
+    if (!data.success || !Array.isArray(data.records)) {
+      throw new Error('No detail records');
+    }
+    
+    teamDetailRecords = data.records
+      .filter(rec => String(rec.employeeId) === String(employeeId))
+      .filter(rec => isDateWithinRange(rec.attendanceDate || '', teamSummaryPeriod.periodFrom, teamSummaryPeriod.periodTo))
+      .map(rec => ({
+        recordId: rec.ID || rec.Id || rec.id || rec.recordId || null,
+        empNum: rec.employeeId,
+        empName: extractLookupValue(rec.employeeName || rec.EmployeeName, ''),
+        team: extractLookupValue(rec.team || rec.Team, ''),
+        date: rec.attendanceDate || '',
+        start: rec.startTime || '',
+        end: rec.endTime || '',
+        hours: rec.workHours || 0,
+        activity: extractLookupValue(rec.activityType || rec.ActivityType, ''),
+        school: extractLookupValue(rec.schoolName || rec.SchoolName, ''),
+        municipality: extractLookupValue(rec.municipality || rec.Municipality, ''),
+        program: extractLookupValue(rec.programName || rec.ProgramName, ''),
+        session: rec.sessionNumber || '',
+        km: rec.kilometers || 0,
+        totalExpenses: rec.totalExpenses || 0,
+        expensesDetail: rec.expensesDetails || '',
+        notes: rec.notes || '',
+        employmentType: extractLookupValue(rec.employmentType || rec.EmploymentType, '')
+      }));
+    
+    renderTeamMemberDetails(employeeName, employeeId);
+  } catch (error) {
+    console.error('Load team member details error:', error);
+    detailsContainer.innerHTML = `
+      <p style="text-align: center; color: #ef4444; padding: 20px;">
+        <i class="fas fa-exclamation-triangle"></i>
+        שגיאה בטעינת פירוט העובד
+      </p>
+    `;
+  }
+}
+
+function renderTeamMemberDetails(employeeName, employeeId) {
+  const detailsContainer = document.getElementById('teamRecordDetails');
+  if (!detailsContainer) return;
+  
+  if (teamDetailRecords.length === 0) {
+    detailsContainer.innerHTML = `
+      <p style="text-align: center; color: #64748b; padding: 20px;">
+        אין רשומות עבור ${employeeName || employeeId}
+      </p>
+    `;
+    return;
+  }
+  
+  const totalHours = teamDetailRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  
+  detailsContainer.innerHTML = `
+    <div style="margin-bottom: 10px; font-weight: 600;">
+      פירוט עבור ${employeeName || employeeId}
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>תאריך</th>
+            <th>שעת התחלה</th>
+            <th>שעת סיום</th>
+            <th>שעות</th>
+            <th>פעילות</th>
+            <th>בית ספר</th>
+            <th>רשות</th>
+            <th>ק"מ</th>
+            <th>הוצאות</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${teamDetailRecords.map(rec => `
+            <tr>
+              <td>${rec.date}</td>
+              <td>${rec.start}</td>
+              <td>${rec.end}</td>
+              <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
+              <td>${rec.activity || '-'}</td>
+              <td>${rec.school || '-'}</td>
+              <td>${rec.municipality || '-'}</td>
+              <td>${rec.km || 0}</td>
+              <td>${rec.totalExpenses || 0} ₪</td>
+            </tr>
+          `).join('')}
+          <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
+            <td colspan="3" style="text-align: left;">סה"כ:</td>
+            <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
+            <td colspan="5"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function loadReports() {
@@ -3058,9 +3276,56 @@ function loadReports() {
   `;
 }
 
-function exportTeamToExcel() {
-  // Use all records (local records for now, team records when synced)
-  const dataToExport = records;
+async function exportTeamToExcel() {
+  const user = getCurrentUserData();
+  if (!user) return;
+  
+  if (!teamSummaryPeriod.periodFrom || !teamSummaryPeriod.periodTo) {
+    teamSummaryPeriod = getCurrentMonthPeriod();
+  }
+  
+  let dataToExport = teamDetailRecords;
+  
+  if (dataToExport.length === 0) {
+    showAlert('טוען רשומות לצורך ייצוא...', 'info');
+    try {
+      const response = await fetch(LOGIC_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getHistory',
+          employeeId: user.empNum,
+          role: user.role,
+          team: user.team
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success && Array.isArray(data.records)) {
+        dataToExport = data.records
+          .filter(rec => isDateWithinRange(rec.attendanceDate || '', teamSummaryPeriod.periodFrom, teamSummaryPeriod.periodTo))
+          .map(rec => ({
+            empNum: rec.employeeId,
+            empName: extractLookupValue(rec.employeeName || rec.EmployeeName, ''),
+            date: rec.attendanceDate || '',
+            start: rec.startTime || '',
+            end: rec.endTime || '',
+            hours: rec.workHours || 0,
+            activity: extractLookupValue(rec.activityType || rec.ActivityType, ''),
+            school: extractLookupValue(rec.schoolName || rec.SchoolName, ''),
+            municipality: extractLookupValue(rec.municipality || rec.Municipality, ''),
+            program: extractLookupValue(rec.programName || rec.ProgramName, ''),
+            session: rec.sessionNumber || '',
+            km: rec.kilometers || 0,
+            totalExpenses: rec.totalExpenses || 0,
+            expensesDetail: rec.expensesDetails || '',
+            notes: rec.notes || ''
+          }));
+      }
+    } catch (error) {
+      console.error('Export load error:', error);
+    }
+  }
   
   if (dataToExport.length === 0) {
     showAlert('⚠️ אין נתונים לייצוא', 'error');
