@@ -2857,6 +2857,7 @@ async function doLogin(event) {
       localStorage.setItem('currentUser', JSON.stringify(empData));
       localStorage.setItem('employeeName', data.employeeName);
       localStorage.setItem('employeeId', employeeId);
+      localStorage.setItem('role', empData.role);
       localStorage.setItem('employmentType', extractLookupValue(data.employmentType, 'תעשיידע'));
       localStorage.setItem('team', extractLookupValue(data.team || data.Team, ''));
       
