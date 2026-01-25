@@ -2430,19 +2430,46 @@ function normalizeRole(role) {
   }
   
   const roleMap = {
+    // System Admin variations
     'System Admin': 'system_admin',
     'system admin': 'system_admin',
     'system_admin': 'system_admin',
+    'Admin': 'system_admin',
+    'admin': 'system_admin',
+    'Administrator': 'system_admin',
+    'administrator': 'system_admin',
+    'מנהל מערכת': 'system_admin',
+    'אדמין': 'system_admin',
+    // Manager variations
     'Manager': 'manager',
     'manager': 'manager',
+    'מנהל': 'manager',
+    'מנהלת': 'manager',
+    'מנהל פעילויות': 'manager',
+    'מנהלת פעילויות': 'manager',
+    'מנהל/ת פעילויות': 'manager',
+    // Payroll Officer variations
     'Payroll Officer': 'payroll_officer',
     'payroll officer': 'payroll_officer',
     'payroll_officer': 'payroll_officer',
+    'Payroll': 'payroll_officer',
+    'payroll': 'payroll_officer',
+    'אחראית שכר': 'payroll_officer',
+    'אחראי שכר': 'payroll_officer',
+    // Operations Controller variations
     'Operations Controller': 'operations_controller',
     'operations controller': 'operations_controller',
     'operations_controller': 'operations_controller',
+    'Controller': 'operations_controller',
+    'controller': 'operations_controller',
+    'מבקרת תפעול': 'operations_controller',
+    'מבקר תפעול': 'operations_controller',
+    // Instructor variations
     'Instructor': 'instructor',
-    'instructor': 'instructor'
+    'instructor': 'instructor',
+    'מדריך': 'instructor',
+    'מדריכה': 'instructor',
+    'מדריך/ה': 'instructor'
   };
   
   const normalizedValue = typeof roleValue === 'string' ? roleValue.trim() : String(roleValue);
