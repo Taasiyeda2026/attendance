@@ -93,6 +93,35 @@
             }
         },
         "actions": {
+            "Initialize_Summary_Records": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "summaryRecords",
+                            "type": "Array",
+                            "value": []
+                        }
+                    ]
+                }
+            },
+            "Initialize_Team_Summary": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "teamSummary",
+                            "type": "Array",
+                            "value": []
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "Initialize_Summary_Records": [
+                        "Succeeded"
+                    ]
+                }
+            },
             "Check_If_Action_Exists": {
                 "type": "If",
                 "expression": {
@@ -373,7 +402,7 @@
                                                             "type": "Query",
                                                             "inputs": {
                                                                 "from": "@body('Get_All_For_Team_Filter')?['value']",
-                                                                "where": "@equals(item()?['team'], triggerBody()?['team'])"
+                                                                "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
                                                             },
                                                             "runAfter": {
                                                                 "Get_All_For_Team_Filter": ["Succeeded"]
@@ -537,16 +566,11 @@
                                             "Get_Summary_Records": ["Succeeded"]
                                         }
                                     },
-                                    "Initialize_Summary_Records": {
-                                        "type": "InitializeVariable",
+                                    "Set_Summary_Records": {
+                                        "type": "SetVariable",
                                         "inputs": {
-                                            "variables": [
-                                                {
-                                                    "name": "summaryRecords",
-                                                    "type": "Array",
-                                                    "value": "@body('Filter_By_Period')"
-                                                }
-                                            ]
+                                            "name": "summaryRecords",
+                                            "value": "@body('Filter_By_Period')"
                                         },
                                         "runAfter": {
                                             "Filter_By_Period": ["Succeeded"]
@@ -583,7 +607,7 @@
                                                     "type": "Query",
                                                     "inputs": {
                                                         "from": "@variables('summaryRecords')",
-                                                        "where": "@equals(item()?['team'], triggerBody()?['team'])"
+                                                        "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
                                                     }
                                                 },
                                                 "Set_Summary_Records_To_Team": {
@@ -599,19 +623,14 @@
                                             }
                                         },
                                         "runAfter": {
-                                            "Initialize_Summary_Records": ["Succeeded"]
+                                            "Set_Summary_Records": ["Succeeded"]
                                         }
                                     },
-                                    "Initialize_Team_Summary": {
-                                        "type": "InitializeVariable",
+                                    "Set_Team_Summary_Empty": {
+                                        "type": "SetVariable",
                                         "inputs": {
-                                            "variables": [
-                                                {
-                                                    "name": "teamSummary",
-                                                    "type": "Array",
-                                                    "value": []
-                                                }
-                                            ]
+                                            "name": "teamSummary",
+                                            "value": []
                                         },
                                         "runAfter": {
                                             "Check_Summary_Role": ["Succeeded"]
@@ -693,7 +712,7 @@
                                             }
                                         },
                                         "runAfter": {
-                                            "Initialize_Team_Summary": ["Succeeded"]
+                                            "Set_Team_Summary_Empty": ["Succeeded"]
                                         }
                                     },
                                     "Response_Team_Summary": {
@@ -827,7 +846,11 @@
                         }
                     }
                 },
-                "runAfter": {}
+                "runAfter": {
+                    "Initialize_Team_Summary": [
+                        "Succeeded"
+                    ]
+                }
             }
         },
         "parameters": {
