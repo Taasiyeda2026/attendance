@@ -26,6 +26,12 @@
                             "attendanceDate": {
                                 "type": "string"
                             },
+                            "periodFrom": {
+                                "type": "string"
+                            },
+                            "periodTo": {
+                                "type": "string"
+                            },
                             "startTime": {
                                 "type": "string"
                             },
@@ -506,6 +512,203 @@
                                     }
                                 },
                                 "case": "getHistory"
+                            },
+                            "getTeamSummary": {
+                                "actions": {
+                                    "Get_Summary_Records": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                }
+                                            },
+                                            "method": "get",
+                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                        }
+                                    },
+                                    "Filter_By_Period": {
+                                        "type": "Query",
+                                        "inputs": {
+                                            "from": "@body('Get_Summary_Records')?['value']",
+                                            "where": "@and(greaterOrEquals(item()?['attendanceDate'], triggerBody()?['periodFrom']), lessOrEquals(item()?['attendanceDate'], triggerBody()?['periodTo']))"
+                                        },
+                                        "runAfter": {
+                                            "Get_Summary_Records": ["Succeeded"]
+                                        }
+                                    },
+                                    "Initialize_Summary_Records": {
+                                        "type": "InitializeVariable",
+                                        "inputs": {
+                                            "variables": [
+                                                {
+                                                    "name": "summaryRecords",
+                                                    "type": "Array",
+                                                    "value": "@body('Filter_By_Period')"
+                                                }
+                                            ]
+                                        },
+                                        "runAfter": {
+                                            "Filter_By_Period": ["Succeeded"]
+                                        }
+                                    },
+                                    "Check_Summary_Role": {
+                                        "type": "If",
+                                        "expression": {
+                                            "or": [
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "system_admin"
+                                                    ]
+                                                },
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "operations_controller"
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        "actions": {},
+                                        "else": {
+                                            "actions": {
+                                                "Filter_By_Team_For_Summary": {
+                                                    "type": "Query",
+                                                    "inputs": {
+                                                        "from": "@variables('summaryRecords')",
+                                                        "where": "@or(equals(item()?['team']?['Value'], triggerBody()?['team']), equals(item()?['Team']?['Value'], triggerBody()?['team']), equals(item()?['team'], triggerBody()?['team']))"
+                                                    }
+                                                },
+                                                "Set_Summary_Records_To_Team": {
+                                                    "type": "SetVariable",
+                                                    "inputs": {
+                                                        "name": "summaryRecords",
+                                                        "value": "@body('Filter_By_Team_For_Summary')"
+                                                    },
+                                                    "runAfter": {
+                                                        "Filter_By_Team_For_Summary": ["Succeeded"]
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Initialize_Summary_Records": ["Succeeded"]
+                                        }
+                                    },
+                                    "Initialize_Team_Summary": {
+                                        "type": "InitializeVariable",
+                                        "inputs": {
+                                            "variables": [
+                                                {
+                                                    "name": "teamSummary",
+                                                    "type": "Array",
+                                                    "value": []
+                                                }
+                                            ]
+                                        },
+                                        "runAfter": {
+                                            "Check_Summary_Role": ["Succeeded"]
+                                        }
+                                    },
+                                    "For_each_Summary_Record": {
+                                        "type": "Foreach",
+                                        "foreach": "@variables('summaryRecords')",
+                                        "actions": {
+                                            "Filter_Existing_Summary": {
+                                                "type": "Query",
+                                                "inputs": {
+                                                    "from": "@variables('teamSummary')",
+                                                    "where": "@equals(item()?['employeeId'], items('For_each_Summary_Record')?['employeeId'])"
+                                                }
+                                            },
+                                            "Filter_Other_Summaries": {
+                                                "type": "Query",
+                                                "inputs": {
+                                                    "from": "@variables('teamSummary')",
+                                                    "where": "@not(equals(item()?['employeeId'], items('For_each_Summary_Record')?['employeeId']))"
+                                                },
+                                                "runAfter": {
+                                                    "Filter_Existing_Summary": ["Succeeded"]
+                                                }
+                                            },
+                                            "Check_Existing_Summary": {
+                                                "type": "If",
+                                                "expression": {
+                                                    "greater": [
+                                                        "@length(body('Filter_Existing_Summary'))",
+                                                        0
+                                                    ]
+                                                },
+                                                "actions": {
+                                                    "Compose_Updated_Summary": {
+                                                        "type": "Compose",
+                                                        "inputs": {
+                                                            "employeeId": "@{items('For_each_Summary_Record')?['employeeId']}",
+                                                            "employeeName": "@{coalesce(items('For_each_Summary_Record')?['employeeName'], items('For_each_Summary_Record')?['EmployeeName'], items('For_each_Summary_Record')?['employeeName']?['Value'], items('For_each_Summary_Record')?['EmployeeName']?['Value'])}",
+                                                            "totalHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['totalHours'], 0)), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)))}",
+                                                            "workDays": "@{add(int(coalesce(first(body('Filter_Existing_Summary'))?['workDays'], 0)), 1)}",
+                                                            "totalExpenses": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['totalExpenses'], 0)), float(coalesce(items('For_each_Summary_Record')?['totalExpenses'], 0)))}",
+                                                            "kilometers": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['kilometers'], 0)), float(coalesce(items('For_each_Summary_Record')?['kilometers'], 0)))}"
+                                                        }
+                                                    },
+                                                    "Set_Team_Summary_Update": {
+                                                        "type": "SetVariable",
+                                                        "inputs": {
+                                                            "name": "teamSummary",
+                                                            "value": "@concat(body('Filter_Other_Summaries'), createArray(outputs('Compose_Updated_Summary')))"
+                                                        },
+                                                        "runAfter": {
+                                                            "Compose_Updated_Summary": ["Succeeded"]
+                                                        }
+                                                    }
+                                                },
+                                                "else": {
+                                                    "actions": {
+                                                        "Append_New_Summary": {
+                                                            "type": "AppendToArrayVariable",
+                                                            "inputs": {
+                                                                "name": "teamSummary",
+                                                                "value": {
+                                                                    "employeeId": "@{items('For_each_Summary_Record')?['employeeId']}",
+                                                                    "employeeName": "@{coalesce(items('For_each_Summary_Record')?['employeeName'], items('For_each_Summary_Record')?['EmployeeName'], items('For_each_Summary_Record')?['employeeName']?['Value'], items('For_each_Summary_Record')?['EmployeeName']?['Value'])}",
+                                                                    "totalHours": "@{float(coalesce(items('For_each_Summary_Record')?['workHours'], 0))}",
+                                                                    "workDays": 1,
+                                                                    "totalExpenses": "@{float(coalesce(items('For_each_Summary_Record')?['totalExpenses'], 0))}",
+                                                                    "kilometers": "@{float(coalesce(items('For_each_Summary_Record')?['kilometers'], 0))}"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                "runAfter": {
+                                                    "Filter_Other_Summaries": ["Succeeded"]
+                                                }
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Initialize_Team_Summary": ["Succeeded"]
+                                        }
+                                    },
+                                    "Response_Team_Summary": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 200,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*"
+                                            },
+                                            "body": {
+                                                "success": true,
+                                                "records": "@variables('teamSummary')"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "For_each_Summary_Record": ["Succeeded"]
+                                        }
+                                    }
+                                },
+                                "case": "getTeamSummary"
                             },
                             "updateRecord": {
                                 "actions": {
