@@ -748,17 +748,25 @@
                                         }
                                     },
                                     "Response_Team_Summary": {
-                                      "type": "Response",
-                                      "kind": "Http",
-                                      "inputs": {
-                                        "statusCode": 200,
-                                        "headers": {
-                                          "Access-Control-Allow-Origin": "*"
-                                        },
+                                        "type": "Response",
+                                        "kind": "Http",
                                         "runAfter": {
-                                            "For_each_Summary_Record": ["Succeeded", "Skipped"]
+                                            "For_each_Summary_Record": [
+                                                "Succeeded",
+                                                "Skipped"
+                                            ]
+                                        },
+                                        "inputs": {
+                                            "statusCode": 200,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
+                                            },
+                                            "body": {
+                                                "success": true,
+                                                "records": "@variables('teamSummary')"
+                                            }
                                         }
-                                      }
                                     }
                                 },
                                 "case": "getTeamSummary"
