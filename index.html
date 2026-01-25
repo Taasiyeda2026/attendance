@@ -2223,6 +2223,29 @@ let records = [];
 let teamSummaryRecords = [];
 let teamDetailRecords = [];
 let teamSummaryPeriod = { periodFrom: '', periodTo: '' };
+
+function isManagerRole(role) {
+  return ['manager', 'system_admin', 'operations_controller'].includes(role);
+}
+
+function buildHistoryPayload(user) {
+  return {
+    action: 'getHistory',
+    employeeId: user.empNum,
+    role: user.role,
+    team: user.team
+  };
+}
+
+function buildTeamSummaryPayload(user, periodFrom, periodTo) {
+  return {
+    action: 'getTeamSummary',
+    periodFrom,
+    periodTo,
+    role: user.role,
+    team: user.team
+  };
+}
 let currentUser = '';
 let editingIndex = -1;
 
@@ -2604,7 +2627,7 @@ async function loadMyRecordsFromServer() {
   try {
     const role = localStorage.getItem("role") || '';
     const team = localStorage.getItem("team") || '';
-    if (role === 'manager' || role === 'system_admin') {
+    if (isManagerRole(role)) {
       records = [];
       renderRecordsTable();
       updateStats();
@@ -2616,12 +2639,11 @@ async function loadMyRecordsFromServer() {
     const res = await fetch(LOGIC_APP_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "getHistory",
-        employeeId: employeeId,
-        role: role,
-        team: team
-      })
+      body: JSON.stringify(buildHistoryPayload({
+        empNum: employeeId,
+        role,
+        team
+      }))
     });
 
     const data = await res.json();
@@ -3012,6 +3034,12 @@ function getCurrentMonthPeriod() {
   return { periodFrom, periodTo };
 }
 
+function getPeriodForMonth(year, month) {
+  const periodFrom = formatDateToISO(new Date(year, month - 1, 1));
+  const periodTo = formatDateToISO(new Date(year, month, 0));
+  return { periodFrom, periodTo };
+}
+
 async function loadTeamSummary() {
   const user = getCurrentUserData();
   if (!user) return;
@@ -3029,14 +3057,7 @@ async function loadTeamSummary() {
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'getTeamSummary',
-        employeeId: user.empNum,
-        role: user.role,
-        team: user.team,
-        periodFrom,
-        periodTo
-      })
+      body: JSON.stringify(buildTeamSummaryPayload(user, periodFrom, periodTo))
     });
     
     if (!response.ok) {
@@ -3082,6 +3103,8 @@ function renderTeamSummaryTable() {
   const totalExpenses = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
   const totalKm = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.kilometers) || 0), 0);
   
+  const user = getCurrentUserData();
+  const allowDetails = user ? !isManagerRole(user.role) : false;
   const tableHTML = `
     <div style="margin-bottom: 15px; color: #64748b;">
       תקופה: ${teamSummaryPeriod.periodFrom} עד ${teamSummaryPeriod.periodTo}
@@ -3102,7 +3125,7 @@ function renderTeamSummaryTable() {
         </thead>
         <tbody>
           ${teamSummaryRecords.map(rec => `
-            <tr data-employee-id="${rec.employeeId}" data-employee-name="${rec.employeeName || ''}" style="cursor: pointer;">
+            <tr ${allowDetails ? `data-employee-id="${rec.employeeId}" data-employee-name="${rec.employeeName || ''}"` : ''} style="cursor: ${allowDetails ? 'pointer' : 'default'};">
               <td>${rec.employeeName || '-'}</td>
               <td>${rec.workDays || 0}</td>
               <td><strong>${formatHoursDisplay(rec.totalHours)}</strong></td>
@@ -3125,13 +3148,18 @@ function renderTeamSummaryTable() {
   
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
   
-  document.querySelectorAll('#teamRecordsTable tr[data-employee-id]').forEach(row => {
-    row.addEventListener('click', () => {
-      const employeeId = row.dataset.employeeId;
-      const employeeName = row.dataset.employeeName || '';
-      loadTeamMemberDetails(employeeId, employeeName);
+  if (allowDetails) {
+    document.querySelectorAll('#teamRecordsTable tr[data-employee-id]').forEach(row => {
+      row.addEventListener('click', () => {
+        const employeeId = row.dataset.employeeId;
+        const employeeName = row.dataset.employeeName || '';
+        loadTeamMemberDetails(employeeId, employeeName);
+      });
     });
-  });
+  } else {
+    const detailsContainer = document.getElementById('teamRecordDetails');
+    if (detailsContainer) detailsContainer.innerHTML = '';
+  }
 }
 
 function isDateWithinRange(dateValue, periodFrom, periodTo) {
@@ -3146,6 +3174,15 @@ async function loadTeamMemberDetails(employeeId, employeeName) {
   
   const detailsContainer = document.getElementById('teamRecordDetails');
   if (!detailsContainer) return;
+
+  if (isManagerRole(user.role)) {
+    detailsContainer.innerHTML = `
+      <p style="text-align: center; color: #64748b; padding: 20px;">
+        אין פירוט לעובדים בתצוגת סיכום
+      </p>
+    `;
+    return;
+  }
   
   detailsContainer.innerHTML = `
     <p style="text-align: center; color: #94a3b8; padding: 20px;">טוען פירוט עבור ${employeeName || employeeId}...</p>
@@ -3155,12 +3192,7 @@ async function loadTeamMemberDetails(employeeId, employeeName) {
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'getHistory',
-        employeeId: user.empNum,
-        role: user.role,
-        team: user.team
-      })
+      body: JSON.stringify(buildHistoryPayload(user))
     });
     
     const data = await response.json();
@@ -4500,6 +4532,8 @@ async function loadReportData() {
   
   const user = getCurrentUserData();
   if (!user) return;
+  const managerView = isManagerRole(user.role);
+  const { periodFrom, periodTo } = getPeriodForMonth(parseInt(year), parseInt(month));
   
   showAlert('טוען נתוני דוח...', 'info');
   
@@ -4507,58 +4541,73 @@ async function loadReportData() {
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'getHistory',
-        employeeId: user.empNum,
-        role: user.role,
-        team: user.team
-      })
+      body: JSON.stringify(
+        managerView
+          ? buildTeamSummaryPayload(user, periodFrom, periodTo)
+          : buildHistoryPayload(user)
+      )
     });
     
     if (!response.ok) {
-      reportRecords = getFilteredRecordsByMonth(records, month, year);
+      reportRecords = managerView ? [] : getFilteredRecordsByMonth(records, month, year);
     } else {
       const data = await response.json();
       if (data.success && Array.isArray(data.records)) {
-        reportRecords = data.records.map(rec => ({
-          recordId: rec.ID || rec.Id || rec.id,
-          empNum: rec.employeeId,
-          empName: rec.employeeName,
-          date: rec.attendanceDate,
-          start: rec.startTime,
-          end: rec.endTime,
-          hours: rec.workHours || 0,
-          activity: rec.activityType,
-          school: rec.schoolName,
-          municipality: rec.municipality,
-          program: rec.programName,
-          session: rec.sessionNumber,
-          km: rec.kilometers || 0,
-          totalExpenses: rec.totalExpenses || 0,
-          expensesDetail: rec.expensesDetails,
-          notes: rec.notes,
-          employmentType: rec.employmentType,
-          team: rec.team
-        }));
+        reportRecords = managerView
+          ? data.records.map(rec => ({
+              empNum: rec.employeeId,
+              empName: rec.employeeName,
+              hours: rec.totalHours || 0,
+              km: rec.kilometers || 0,
+              totalExpenses: rec.totalExpenses || 0,
+              workDays: rec.workDays || 0,
+              team: rec.team || user.team || ''
+            }))
+          : data.records.map(rec => ({
+              recordId: rec.ID || rec.Id || rec.id,
+              empNum: rec.employeeId,
+              empName: rec.employeeName,
+              date: rec.attendanceDate,
+              start: rec.startTime,
+              end: rec.endTime,
+              hours: rec.workHours || 0,
+              activity: rec.activityType,
+              school: rec.schoolName,
+              municipality: rec.municipality,
+              program: rec.programName,
+              session: rec.sessionNumber,
+              km: rec.kilometers || 0,
+              totalExpenses: rec.totalExpenses || 0,
+              expensesDetail: rec.expensesDetails,
+              notes: rec.notes,
+              employmentType: rec.employmentType,
+              team: rec.team
+            }));
       } else {
-        reportRecords = getFilteredRecordsByMonth(records, month, year);
+        reportRecords = managerView ? [] : getFilteredRecordsByMonth(records, month, year);
       }
     }
     
-    reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
+    if (!managerView) {
+      reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
+    }
     
     populateTeamFilterFromRecords(reportRecords);
     
-    if (employmentType !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
-    }
-    
-    if (team !== 'all') {
+    if (!managerView) {
+      if (employmentType !== 'all') {
+        reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
+      }
+      
+      if (team !== 'all') {
+        reportRecords = reportRecords.filter(rec => rec.team === team);
+      }
+      
+      if (activityType !== 'all') {
+        reportRecords = reportRecords.filter(rec => rec.activity === activityType);
+      }
+    } else if (team !== 'all') {
       reportRecords = reportRecords.filter(rec => rec.team === team);
-    }
-    
-    if (activityType !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.activity === activityType);
     }
     
     updateReportStats();
@@ -4598,10 +4647,11 @@ function renderReportByEmployee() {
     if (!byEmployee[key]) {
       byEmployee[key] = { empNum: rec.empNum, hours: 0, km: 0, expenses: 0, count: 0 };
     }
+    const recordCount = rec.workDays ? parseFloat(rec.workDays) || 0 : 1;
     byEmployee[key].hours += parseFloat(rec.hours) || 0;
     byEmployee[key].km += parseFloat(rec.km) || 0;
     byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
-    byEmployee[key].count++;
+    byEmployee[key].count += recordCount;
   });
   
   let html = `
