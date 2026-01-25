@@ -1395,11 +1395,11 @@
         <i class="fas fa-table"></i>
         <span>רשומות נוכחות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,payroll_officer,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin">
         <i class="fas fa-users"></i>
         <span>רשומות הצוות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,payroll_officer,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
       </a>
@@ -1459,6 +1459,40 @@
         <p id="dashboardMonthLabel">סקירה כללית</p>
       </div>
       
+      <!-- Payroll Officer Dashboard -->
+      <div id="payrollDashboard" style="display: none;">
+        <div class="content-card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="card-title"><i class="fas fa-users" style="margin-left: 8px; color: #3b82f6;"></i>סיכום לפי מדריך - חודש נוכחי</h2>
+            <button class="btn" onclick="exportPayrollToExcel()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 10px 20px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-file-excel"></i>
+              ייצוא ל-Excel
+            </button>
+          </div>
+          <div class="card-body" style="overflow-x: auto;">
+            <table id="payrollSummaryTable" style="width: 100%; min-width: 900px;">
+              <thead>
+                <tr>
+                  <th style="text-align: right; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שם המדריך</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">צוות</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">ימי עבודה</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות קורס</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות הכשרה</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות ביטול</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">קילומטר-סה"כ</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ הוצאות</th>
+                </tr>
+              </thead>
+              <tbody id="payrollSummaryTableBody">
+                <!-- יתמלא ע"י JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Regular Dashboard Content -->
+      <div id="regularDashboardContent">
       <div class="stats-grid">
         <div class="stat-card blue" onclick="showPage(event, 'records')" style="cursor: pointer; transition: transform 0.2s;"
              onmouseover="this.style.transform='translateY(-5px)'"
@@ -1541,6 +1575,7 @@
           </table>
         </div>
       </div>
+      </div><!-- End regularDashboardContent -->
     </div>
 
     <!-- Add Record Page -->
@@ -2459,10 +2494,33 @@ function updateMenuByRole(role) {
     mobileRecordsBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
   }
   
+  // Hide mobile "menu" button for payroll_officer (they only see dashboard)
+  const mobileMenuBtn = document.getElementById('mobileNavMenu');
+  if (mobileMenuBtn) {
+    mobileMenuBtn.style.display = (role === 'payroll_officer') ? 'none' : 'flex';
+  }
+  
+  // Hide top mobile menu toggle for payroll_officer
+  const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+  if (mobileMenuToggle) {
+    mobileMenuToggle.style.display = (role === 'payroll_officer') ? 'none' : 'flex';
+  }
+  
   // Hide dashboard "add record" button for non-instructors
   const dashboardAddBtn = document.getElementById('dashboardAddRecordBtn');
   if (dashboardAddBtn) {
     dashboardAddBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
+  }
+  
+  // Show payroll dashboard for payroll_officer, hide regular dashboard elements
+  const payrollDashboard = document.getElementById('payrollDashboard');
+  const regularDashboardContent = document.getElementById('regularDashboardContent');
+  if (role === 'payroll_officer') {
+    if (payrollDashboard) payrollDashboard.style.display = 'block';
+    if (regularDashboardContent) regularDashboardContent.style.display = 'none';
+  } else {
+    if (payrollDashboard) payrollDashboard.style.display = 'none';
+    if (regularDashboardContent) regularDashboardContent.style.display = 'block';
   }
 }
 
@@ -2896,6 +2954,11 @@ function showPage(event, pageName) {
   const role = localStorage.getItem("role") || '';
   if (pageName === 'records' && role !== 'instructor') {
     pageName = 'team-records';
+  }
+  
+  // Role guard: payroll_officer can only access dashboard
+  if (role === 'payroll_officer' && pageName !== 'dashboard') {
+    pageName = 'dashboard';
   }
   
   // Close mobile menu when navigating
@@ -3398,7 +3461,186 @@ function updateStats() {
 // =============== Dashboard ===============
 function updateDashboard() {
   updateStats();
-  // הטבלה הוסרה - רק מעדכנים סטטיסטיקה
+  // If payroll officer, update payroll summary table
+  const role = localStorage.getItem("role") || '';
+  if (role === 'payroll_officer') {
+    updatePayrollSummaryTable();
+  }
+}
+
+// =============== Payroll Officer Functions ===============
+async function updatePayrollSummaryTable() {
+  const tbody = document.getElementById('payrollSummaryTableBody');
+  if (!tbody) return;
+  
+  // Get current month for filtering
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  // Filter records to current month only
+  const currentMonthRecords = records.filter(rec => {
+    if (!rec.date) return false;
+    const recDate = new Date(rec.date);
+    return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
+  });
+  
+  // Group records by instructor
+  const instructorData = {};
+  
+  currentMonthRecords.forEach(rec => {
+    const name = rec.empName || rec.empNum || 'לא ידוע';
+    if (!instructorData[name]) {
+      instructorData[name] = {
+        name: name,
+        team: rec.team || '',
+        workDays: new Set(),
+        hoursCourse: 0,
+        hoursTraining: 0,
+        hoursCancel: 0,
+        totalKm: 0,
+        totalExpenses: 0
+      };
+    }
+    
+    // Add unique work days
+    if (rec.date) {
+      instructorData[name].workDays.add(rec.date);
+    }
+    
+    // Sum hours by activity type
+    const hours = parseFloat(rec.hours) || 0;
+    const activity = (rec.activity || '').toLowerCase();
+    if (activity.includes('קורס') || activity.includes('הפעלה')) {
+      instructorData[name].hoursCourse += hours;
+    } else if (activity.includes('הכשרה') || activity.includes('השתלמות')) {
+      instructorData[name].hoursTraining += hours;
+    } else if (activity.includes('ביטול')) {
+      instructorData[name].hoursCancel += hours;
+    } else {
+      instructorData[name].hoursCourse += hours; // Default to course hours
+    }
+    
+    // Sum kilometers and expenses
+    instructorData[name].totalKm += parseFloat(rec.km) || 0;
+    instructorData[name].totalExpenses += parseFloat(rec.totalExpenses) || 0;
+    
+    // Update team if empty
+    if (!instructorData[name].team && rec.team) {
+      instructorData[name].team = rec.team;
+    }
+  });
+  
+  // Render table
+  const sortedInstructors = Object.values(instructorData).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  
+  if (sortedInstructors.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = sortedInstructors.map(inst => `
+    <tr>
+      <td style="padding: 10px 8px; text-align: right; font-weight: 500;">${inst.name}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.team || '-'}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.workDays.size}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.hoursCourse.toFixed(1)}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.hoursTraining.toFixed(1)}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.hoursCancel.toFixed(1)}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.totalKm}</td>
+      <td style="padding: 10px 8px; text-align: center;">${inst.totalExpenses.toFixed(0)} ₪</td>
+    </tr>
+  `).join('');
+}
+
+function exportPayrollToExcel() {
+  // Get current month for filtering
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  // Filter records to current month only
+  const currentMonthRecords = records.filter(rec => {
+    if (!rec.date) return false;
+    const recDate = new Date(rec.date);
+    return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
+  });
+  
+  // Group records by instructor
+  const instructorData = {};
+  
+  currentMonthRecords.forEach(rec => {
+    const name = rec.empName || rec.empNum || 'לא ידוע';
+    if (!instructorData[name]) {
+      instructorData[name] = {
+        name: name,
+        team: rec.team || '',
+        workDays: new Set(),
+        hoursCourse: 0,
+        hoursTraining: 0,
+        hoursCancel: 0,
+        totalKm: 0,
+        totalExpenses: 0
+      };
+    }
+    
+    if (rec.date) instructorData[name].workDays.add(rec.date);
+    
+    const hours = parseFloat(rec.hours) || 0;
+    const activity = (rec.activity || '').toLowerCase();
+    if (activity.includes('קורס') || activity.includes('הפעלה')) {
+      instructorData[name].hoursCourse += hours;
+    } else if (activity.includes('הכשרה') || activity.includes('השתלמות')) {
+      instructorData[name].hoursTraining += hours;
+    } else if (activity.includes('ביטול')) {
+      instructorData[name].hoursCancel += hours;
+    } else {
+      instructorData[name].hoursCourse += hours;
+    }
+    
+    instructorData[name].totalKm += parseFloat(rec.km) || 0;
+    instructorData[name].totalExpenses += parseFloat(rec.totalExpenses) || 0;
+    if (!instructorData[name].team && rec.team) instructorData[name].team = rec.team;
+  });
+  
+  const sortedInstructors = Object.values(instructorData).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  
+  if (sortedInstructors.length === 0) {
+    showAlert('אין נתונים לייצוא', 'warning');
+    return;
+  }
+  
+  // Create CSV content
+  const headers = ['שם המדריך', 'צוות', 'ימי עבודה', 'סה"כ שעות קורס', 'סה"כ שעות הכשרה', 'סה"כ שעות ביטול', 'קילומטר-סה"כ', 'סה"כ הוצאות'];
+  
+  let csvContent = '\uFEFF'; // BOM for Hebrew
+  csvContent += headers.join(',') + '\n';
+  
+  sortedInstructors.forEach(inst => {
+    const row = [
+      `"${inst.name}"`,
+      `"${inst.team || ''}"`,
+      inst.workDays.size,
+      inst.hoursCourse.toFixed(1),
+      inst.hoursTraining.toFixed(1),
+      inst.hoursCancel.toFixed(1),
+      inst.totalKm,
+      inst.totalExpenses.toFixed(0)
+    ];
+    csvContent += row.join(',') + '\n';
+  });
+  
+  // Download file
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const now = new Date();
+  const filename = `סיכום_נוכחות_${now.getFullYear()}_${(now.getMonth()+1).toString().padStart(2,'0')}.csv`;
+  
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  
+  showAlert('הקובץ יורד...', 'success');
 }
 
 // =============== Time Picker Functions ===============
