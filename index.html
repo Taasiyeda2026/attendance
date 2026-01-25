@@ -2269,7 +2269,16 @@ let teamDetailRecords = [];
 let teamSummaryPeriod = { periodFrom: '', periodTo: '' };
 
 function isManagerRole(role) {
-  return ['manager', 'system_admin', 'operations_controller', 'payroll_officer', 'admin_assistant', 'payroll'].includes(role);
+  return ['manager', 'system_admin', 'operations_controller', 'payroll_officer'].includes(role);
+}
+
+function buildHistoryPayload(user) {
+  return {
+    action: 'getHistory',
+    employeeId: String(user.empNum || ''),
+    role: String(user.role || ''),
+    team: String(user.team || '')
+  };
 }
 
 function buildTeamSummaryPayload(user, periodFrom, periodTo) {
@@ -2977,7 +2986,7 @@ function loadTeamRecords() {
   if (!user) return;
   
   const teamName = document.getElementById('teamName');
-  if (['system_admin', 'operations_controller', 'payroll_officer', 'admin_assistant', 'payroll'].includes(user.role)) {
+  if (['system_admin', 'operations_controller', 'payroll_officer'].includes(user.role)) {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
@@ -3072,37 +3081,35 @@ function renderTeamSummaryTable() {
     <div style="margin-bottom: 15px; color: #64748b;">
       תקופה: ${teamSummaryPeriod.periodFrom} עד ${teamSummaryPeriod.periodTo}
     </div>
-    <div class="summary-cards">
-      ${teamSummaryRecords.map(rec => `
-        <div class="summary-card">
-          <h4>${rec.employeeName || '-'}</h4>
-          <div class="summary-meta">
-            <span>${rec.employmentType || '-'}</span>
-            <span>•</span>
-            <span>${rec.team || '-'}</span>
-          </div>
-          <div class="summary-metric">
-            <span>ימי עבודה</span>
-            <strong>${rec.workDays || 0}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>שעות הדרכה</span>
-            <strong>${formatHoursDisplay(rec.courseHours)}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>שעות הכשרה</span>
-            <strong>${formatHoursDisplay(rec.trainingHours)}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>שעות ביטול</span>
-            <strong>${formatHoursDisplay(rec.cancelHours)}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>סה"כ ק"מ</span>
-            <strong>${(parseFloat(rec.kilometers) || 0).toFixed(1)}</strong>
-          </div>
-        </div>
-      `).join('')}
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>שם עובד</th>
+            <th>סוג העסקה</th>
+            <th>צוות</th>
+            <th>ימי עבודה</th>
+            <th>שעות הדרכה</th>
+            <th>שעות הכשרה</th>
+            <th>שעות ביטול</th>
+            <th>ק"מ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${teamSummaryRecords.map(rec => `
+            <tr>
+              <td>${rec.employeeName || '-'}</td>
+              <td>${rec.employmentType || '-'}</td>
+              <td>${rec.team || '-'}</td>
+              <td>${rec.workDays || 0}</td>
+              <td><strong>${formatHoursDisplay(rec.courseHours)}</strong></td>
+              <td><strong>${formatHoursDisplay(rec.trainingHours)}</strong></td>
+              <td><strong>${formatHoursDisplay(rec.cancelHours)}</strong></td>
+              <td>${(parseFloat(rec.kilometers) || 0).toFixed(1)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
     </div>
     <div id="teamRecordDetails" style="margin-top: 20px;"></div>
   `;
@@ -3214,7 +3221,43 @@ async function exportTeamToExcel() {
     teamSummaryPeriod = getCurrentMonthPeriod();
   }
   
-  const dataToExport = teamSummaryRecords;
+  let dataToExport = teamDetailRecords;
+  
+  if (dataToExport.length === 0) {
+    showAlert('טוען רשומות לצורך ייצוא...', 'info');
+    try {
+      const response = await fetch(LOGIC_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildHistoryPayload(user))
+      });
+      
+      const data = await response.json();
+      if (data.success && Array.isArray(data.records)) {
+        dataToExport = data.records
+          .filter(rec => isDateWithinRange(rec.attendanceDate || '', teamSummaryPeriod.periodFrom, teamSummaryPeriod.periodTo))
+          .map(rec => ({
+            empNum: rec.employeeId,
+            empName: extractLookupValue(rec.employeeName || rec.EmployeeName, ''),
+            date: rec.attendanceDate || '',
+            start: rec.startTime || '',
+            end: rec.endTime || '',
+            hours: rec.workHours || 0,
+            activity: extractLookupValue(rec.activityType || rec.ActivityType, ''),
+            school: extractLookupValue(rec.schoolName || rec.SchoolName, ''),
+            municipality: extractLookupValue(rec.municipality || rec.Municipality, ''),
+            program: extractLookupValue(rec.programName || rec.ProgramName, ''),
+            session: rec.sessionNumber || '',
+            km: rec.kilometers || 0,
+            totalExpenses: rec.totalExpenses || 0,
+            expensesDetail: rec.expensesDetails || '',
+            notes: rec.notes || ''
+          }));
+      }
+    } catch (error) {
+      console.error('Export load error:', error);
+    }
+  }
   
   if (dataToExport.length === 0) {
     showAlert('⚠️ אין נתונים לייצוא', 'error');
