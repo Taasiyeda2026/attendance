@@ -1,1064 +1,529 @@
 {
-    "definition": {
-        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-        "contentVersion": "1.0.0.0",
-        "triggers": {
-            "When_an_HTTP_request_is_received": {
-                "type": "Request",
-                "kind": "Http",
-                "inputs": {
-                    "method": "POST",
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "action": {
-                                "type": "string"
-                            },
-                            "employeeId": {
-                                "type": "string"
-                            },
-                            "personalCode": {
-                                "type": "string"
-                            },
-                            "employeeName": {
-                                "type": "string"
-                            },
-                            "attendanceDate": {
-                                "type": "string"
-                            },
-                            "periodFrom": {
-                                "type": "string"
-                            },
-                            "periodTo": {
-                                "type": "string"
-                            },
-                            "startTime": {
-                                "type": "string"
-                            },
-                            "endTime": {
-                                "type": "string"
-                            },
-                            "workHours": {
-                                "type": "number"
-                            },
-                            "activityType": {
-                                "type": "string"
-                            },
-                            "schoolName": {
-                                "type": "string"
-                            },
-                            "municipality": {
-                                "type": "string"
-                            },
-                            "programName": {
-                                "type": "string"
-                            },
-                            "sessionNumber": {
-                                "type": "number"
-                            },
-                            "kilometers": {
-                                "type": "number"
-                            },
-                            "totalExpenses": {
-                                "type": "number"
-                            },
-                            "expensesDetails": {
-                                "type": "string"
-                            },
-                            "notes": {
-                                "type": "string"
-                            },
-                            "originalAttendanceDate": {
-                                "type": "string"
-                            },
-                            "originalStartTime": {
-                                "type": "string"
-                            },
-                            "recordId": {
-                                "type": "integer"
-                            },
-                            "employmentType": {
-                                "type": "string"
-                            },
-                            "team": {
-                                "type": "string"
-                            },
-                            "role": {
-                                "type": "string"
-                            }
-                        },
-                        "required": ["action"]
-                    }
-                }
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "employeeId": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "team": {
+                "type": "string"
+              },
+              "recordId": {
+                "type": "string"
+              },
+              "attendanceDate": {
+                "type": "string"
+              },
+              "startTime": {
+                "type": "string"
+              },
+              "endTime": {
+                "type": "string"
+              },
+              "workHours": {
+                "type": "number"
+              },
+              "activityType": {
+                "type": "string"
+              },
+              "schoolName": {
+                "type": "string"
+              },
+              "municipality": {
+                "type": "string"
+              },
+              "programName": {
+                "type": "string"
+              },
+              "sessionNumber": {
+                "type": "string"
+              },
+              "kilometers": {
+                "type": "number"
+              },
+              "totalExpenses": {
+                "type": "number"
+              },
+              "expensesDetails": {
+                "type": "string"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "employeeName": {
+                "type": "string"
+              },
+              "employmentType": {
+                "type": "string"
+              }
             }
-        },
-        "actions": {
-            "Initialize_Summary_Records": {
-                "type": "InitializeVariable",
+          }
+        }
+      }
+    },
+    "actions": {
+      "Switch_Action": {
+        "type": "Switch",
+        "expression": "@triggerBody()?['action']",
+        "cases": {
+          "auth": {
+            "case": "auth",
+            "actions": {
+              "Get_Employee": {
+                "type": "ApiConnection",
                 "inputs": {
-                    "variables": [
-                        {
-                            "name": "summaryRecords",
-                            "type": "Array",
-                            "value": []
-                        }
-                    ]
-                }
-            },
-            "Initialize_Team_Summary": {
-                "type": "InitializeVariable",
-                "inputs": {
-                    "variables": [
-                        {
-                            "name": "teamSummary",
-                            "type": "Array",
-                            "value": []
-                        }
-                    ]
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "get",
+                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('a9d9e7ad-d6ab-4e68-80a0-6fd9f8b3a3c0'))}/items",
+                  "queries": {
+                    "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and password eq '@{triggerBody()?['password']}'"
+                  }
                 },
-                "runAfter": {
-                    "Initialize_Summary_Records": [
-                        "Succeeded"
-                    ]
-                }
-            },
-            "Check_If_Action_Exists": {
+                "runAfter": {}
+              },
+              "Check_Auth_Result": {
                 "type": "If",
                 "expression": {
-                    "and": [
-                        {
-                            "not": {
-                                "equals": ["@triggerBody()?['action']", null]
-                            }
-                        }
-                    ]
+                  "and": [
+                    {
+                      "greater": [
+                        "@length(body('Get_Employee')?['value'])",
+                        0
+                      ]
+                    }
+                  ]
                 },
                 "actions": {
-                    "Switch_Action": {
-                        "type": "Switch",
-                        "expression": "@triggerBody()?['action']",
-                        "default": {
-                            "actions": {
-                                "Response_Unknown_Action": {
-                                    "type": "Response",
-                                    "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 400,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json",
-                                                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                                                "Access-Control-Allow-Headers": "Content-Type"
-                                            },
-                                            "body": {
-                                                "success": false,
-                                                "records": [],
-                                                "message": "Unknown action"
-                                            }
-                                        }
-                                    }
-                            }
-                        },
-                        "cases": {
-                            "auth": {
-                                "actions": {
-                                    "Get_Employee": {
-                                        "type": "ApiConnection",
-                                        "inputs": {
-                                            "host": {
-                                                "connection": {
-                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                }
-                                            },
-                                            "method": "get",
-                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('697f3cf6-2ed9-49ba-8a05-605d760af517'))}/items",
-                                            "queries": {
-                                                "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and personalCode eq '@{triggerBody()?['personalCode']}'"
-                                            }
-                                        }
-                                    },
-                                    "Check_Employee_Found": {
-                                        "type": "If",
-                                        "expression": {
-                                            "and": [
-                                                {
-                                                    "greater": [
-                                                        "@length(body('Get_Employee')?['value'])",
-                                                        0
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        "actions": {
-                                            "Response_Auth_Success": {
-                                                "type": "Response",
-                                                "kind": "Http",
-                                                "inputs": {
-                                                    "statusCode": 200,
-                                                    "headers": {
-                                                        "Access-Control-Allow-Origin": "*",
-                                                        "Content-Type": "application/json"
-                                                    },
-                                                    "body": {
-                                                        "success": true,
-                                                        "records": [],
-                                                        "message": "Authentication successful",
-                                                        "employeeName": "@{first(body('Get_Employee')?['value'])?['EmployeeName']}",
-                                                        "role": "@{coalesce(first(body('Get_Employee')?['value'])?['role']?['Value'], first(body('Get_Employee')?['value'])?['role'])}",
-                                                        "team": "@{coalesce(first(body('Get_Employee')?['value'])?['Team']?['Value'], first(body('Get_Employee')?['value'])?['team']?['Value'], first(body('Get_Employee')?['value'])?['Team'], first(body('Get_Employee')?['value'])?['team'])}",
-                                                        "employmentType": "@{coalesce(first(body('Get_Employee')?['value'])?['EmploymentType']?['Value'], first(body('Get_Employee')?['value'])?['employmentType']?['Value'], first(body('Get_Employee')?['value'])?['EmploymentType'], first(body('Get_Employee')?['value'])?['employmentType'])}"
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        "else": {
-                                            "actions": {
-                                                "Response_Auth_Fail": {
-                                                    "type": "Response",
-                                                    "kind": "Http",
-                                                    "inputs": {
-                                                        "statusCode": 401,
-                                                        "headers": {
-                                                            "Access-Control-Allow-Origin": "*",
-                                                            "Content-Type": "application/json"
-                                                        },
-                                                        "body": {
-                                                            "success": false,
-                                                            "records": [],
-                                                            "message": "מספר עובד או קוד אישי שגויים"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Get_Employee": ["Succeeded"]
-                                        }
-                                    },
-                                    "Response_Auth_Error": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 500,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": false,
-                                                "records": [],
-                                                "message": "Authentication failed"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Get_Employee": ["Failed", "TimedOut"]
-                                        }
-                                    }
-                                },
-                                "case": "auth"
-                            },
-                            "submit": {
-                                "actions": {
-                                    "Create_Attendance": {
-                                        "type": "ApiConnection",
-                                        "inputs": {
-                                            "host": {
-                                                "connection": {
-                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                }
-                                            },
-                                            "method": "post",
-                                            "body": {
-                                                "employeeName": "@triggerBody()?['employeeName']",
-                                                "employeeId": "@triggerBody()?['employeeId']",
-                                                "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                                "startTime": "@triggerBody()?['startTime']",
-                                                "endTime": "@triggerBody()?['endTime']",
-                                                "activityType": "@triggerBody()?['activityType']",
-                                                "schoolName": "@triggerBody()?['schoolName']",
-                                                "municipality": "@triggerBody()?['municipality']",
-                                                "programName": "@triggerBody()?['programName']",
-                                                "sessionNumber": "@triggerBody()?['sessionNumber']",
-                                                "totalExpenses": "@triggerBody()?['totalExpenses']",
-                                                "workHours": "@triggerBody()?['workHours']",
-                                                "kilometers": "@triggerBody()?['kilometers']",
-                                                "expensesDetails": "@triggerBody()?['expensesDetails']",
-                                                "notes": "@triggerBody()?['notes']",
-                                                "employmentType": "@triggerBody()?['employmentType']",
-                                                "team": "@triggerBody()?['team']"
-                                            },
-                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
-                                        }
-                                    },
-                                    "Response_Submit_Success": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 200,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": true,
-                                                "records": [],
-                                                "message": "הרשומה נשמרה בהצלחה",
-                                                "recordId": "@body('Create_Attendance')?['ID']"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Create_Attendance": ["Succeeded"]
-                                        }
-                                    },
-                                    "Response_Submit_Failed": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 500,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": false,
-                                                "records": [],
-                                                "message": "Failed to save record"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Create_Attendance": ["Failed", "TimedOut"]
-                                        }
-                                    }
-                                },
-                                "case": "submit"
-                            },
-                            "getHistory": {
-                                "actions": {
-                                    "Check_Role_Type": {
-                                        "type": "If",
-                                        "expression": {
-                                            "or": [
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "system_admin"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "operations_controller"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "payroll_officer"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "admin_assistant"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "payroll"
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        "actions": {
-                                            "Get_All_Records": {
-                                                "type": "ApiConnection",
-                                                "inputs": {
-                                                    "host": {
-                                                        "connection": {
-                                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                        }
-                                                    },
-                                                    "method": "get",
-                                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
-                                                }
-                                            },
-                                            "Transform_All_Records": {
-                                                "type": "Select",
-                                                "inputs": {
-                                                    "from": "@body('Get_All_Records')?['value']",
-                                                    "select": {
-                                                        "ID": "@item()?['ID']",
-                                                        "employeeId": "@string(item()?['employeeId'])",
-                                                        "employeeName": "@item()?['employeeName']",
-                                                        "attendanceDate": "@item()?['attendanceDate']",
-                                                        "startTime": "@item()?['startTime']",
-                                                        "endTime": "@item()?['endTime']",
-                                                        "workHours": "@item()?['workHours']",
-                                                        "activityType": "@coalesce(item()?['activityType']?['Value'], item()?['activityType'])",
-                                                        "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
-                                                        "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
-                                                        "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
-                                                        "sessionNumber": "@item()?['sessionNumber']",
-                                                        "kilometers": "@item()?['kilometers']",
-                                                        "totalExpenses": "@item()?['totalExpenses']",
-                                                        "expensesDetails": "@item()?['expensesDetails']",
-                                                        "notes": "@item()?['notes']",
-                                                        "team": "@coalesce(item()?['team']?['Value'], item()?['team'], item()?['Team']?['Value'], item()?['Team'])",
-                                                        "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
-                                                    }
-                                                },
-                                                "runAfter": {
-                                                    "Get_All_Records": [
-                                                        "Succeeded"
-                                                    ]
-                                                }
-                                            },
-                                            "Response_All_Records": {
-                                                "type": "Response",
-                                                "kind": "Http",
-                                                "inputs": {
-                                                    "statusCode": 200,
-                                                    "headers": {
-                                                        "Access-Control-Allow-Origin": "*",
-                                                        "Content-Type": "application/json"
-                                                    },
-                                                    "body": {
-                                                        "success": true,
-                                                        "records": "@if(equals(actions('Transform_All_Records').status, 'Succeeded'), body('Transform_All_Records'), createArray())",
-                                                        "message": "Records retrieved"
-                                                    }
-                                                },
-                                                "runAfter": {
-                                                    "Transform_All_Records": [
-                                                        "Succeeded",
-                                                        "Skipped"
-                                                    ]
-                                                }
-                                            }
-                                        },
-                                        "else": {
-                                            "actions": {
-                                                "Check_If_Manager": {
-                                                    "type": "If",
-                                                    "expression": {
-                                                        "equals": [
-                                                            "@triggerBody()?['role']",
-                                                            "manager"
-                                                        ]
-                                                    },
-                                                    "actions": {
-                                                        "Get_All_For_Team_Filter": {
-                                                            "type": "ApiConnection",
-                                                            "inputs": {
-                                                                "host": {
-                                                                    "connection": {
-                                                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                                    }
-                                                                },
-                                                                "method": "get",
-                                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
-                                                            }
-                                                        },
-                                                        "Filter_By_Team": {
-                                                            "type": "Query",
-                                                            "inputs": {
-                                                                "from": "@body('Get_All_For_Team_Filter')?['value']",
-                                                                "where": "@equals(toLower(trim(coalesce(item()?['team']?['Value'], item()?['team'], ''))), toLower(trim(coalesce(triggerBody()?['team'], ''))))"
-                                                            },
-                                                            "runAfter": {
-                                                                "Get_All_For_Team_Filter": ["Succeeded"]
-                                                            }
-                                                        },
-                                                        "Transform_Team_Records": {
-                                                            "type": "Select",
-                                                            "inputs": {
-                                                                "from": "@body('Filter_By_Team')",
-                                                                "select": {
-                                                                    "ID": "@item()?['ID']",
-                                                                    "employeeId": "@string(item()?['employeeId'])",
-                                                                    "employeeName": "@item()?['employeeName']",
-                                                                    "attendanceDate": "@item()?['attendanceDate']",
-                                                                    "startTime": "@item()?['startTime']",
-                                                                    "endTime": "@item()?['endTime']",
-                                                                    "workHours": "@item()?['workHours']",
-                                                                    "activityType": "@coalesce(item()?['activityType']?['Value'], item()?['activityType'])",
-                                                                    "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
-                                                                    "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
-                                                                    "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
-                                                                    "sessionNumber": "@item()?['sessionNumber']",
-                                                                    "kilometers": "@item()?['kilometers']",
-                                                                    "totalExpenses": "@item()?['totalExpenses']",
-                                                                    "expensesDetails": "@item()?['expensesDetails']",
-                                                                    "notes": "@item()?['notes']",
-                                                                    "team": "@coalesce(item()?['team']?['Value'], item()?['team'], item()?['Team']?['Value'], item()?['Team'])",
-                                                                    "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
-                                                                }
-                                                            },
-                                                            "runAfter": {
-                                                                "Filter_By_Team": [
-                                                                    "Succeeded"
-                                                                ]
-                                                            }
-                                                        },
-                                                        "Response_Team_Records": {
-                                                            "type": "Response",
-                                                            "kind": "Http",
-                                                            "inputs": {
-                                                                "statusCode": 200,
-                                                            "headers": {
-                                                                    "Access-Control-Allow-Origin": "*",
-                                                                    "Content-Type": "application/json"
-                                                                },
-                                                                "body": {
-                                                                    "success": true,
-                                                                    "records": "@if(equals(actions('Transform_Team_Records').status, 'Succeeded'), body('Transform_Team_Records'), createArray())",
-                                                                    "message": "Records retrieved"
-                                                                }
-                                                            },
-                                                            "runAfter": {
-                                                                "Transform_Team_Records": [
-                                                                    "Succeeded",
-                                                                    "Skipped"
-                                                                ]
-                                                            }
-                                                        }
-                                                    },
-                                                    "else": {
-                                                        "actions": {
-                                                            "Get_All_For_Own_Filter": {
-                                                                "type": "ApiConnection",
-                                                                "inputs": {
-                                                                    "host": {
-                                                                        "connection": {
-                                                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                                        }
-                                                                    },
-                                                                    "method": "get",
-                                                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
-                                                                }
-                                                            },
-                                                            "Filter_By_EmployeeId": {
-                                                                "type": "Query",
-                                                                "inputs": {
-                                                                    "from": "@body('Get_All_For_Own_Filter')?['value']",
-                                                                    "where": "@or(equals(string(item()?['employeeId']), triggerBody()?['employeeId']), equals(item()?['employeeId'], triggerBody()?['employeeId']))"
-                                                                },
-                                                                "runAfter": {
-                                                                    "Get_All_For_Own_Filter": ["Succeeded"]
-                                                                }
-                                                            },
-                                                            "Transform_Own_Records": {
-                                                                "type": "Select",
-                                                                "inputs": {
-                                                                    "from": "@body('Filter_By_EmployeeId')",
-                                                                    "select": {
-                                                                        "ID": "@item()?['ID']",
-                                                                        "employeeId": "@string(item()?['employeeId'])",
-                                                                        "employeeName": "@item()?['employeeName']",
-                                                                        "attendanceDate": "@item()?['attendanceDate']",
-                                                                        "startTime": "@item()?['startTime']",
-                                                                        "endTime": "@item()?['endTime']",
-                                                                        "workHours": "@item()?['workHours']",
-                                                                        "activityType": "@coalesce(item()?['activityType']?['Value'], item()?['activityType'])",
-                                                                        "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
-                                                                        "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
-                                                                        "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
-                                                                    "sessionNumber": "@item()?['sessionNumber']",
-                                                                    "kilometers": "@item()?['kilometers']",
-                                                                    "totalExpenses": "@item()?['totalExpenses']",
-                                                                    "expensesDetails": "@item()?['expensesDetails']",
-                                                                    "notes": "@item()?['notes']",
-                                                                    "team": "@coalesce(item()?['team']?['Value'], item()?['team'], item()?['Team']?['Value'], item()?['Team'])",
-                                                                    "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
-                                                                }
-                                                            },
-                                                            "runAfter": {
-                                                                "Filter_By_EmployeeId": [
-                                                                        "Succeeded"
-                                                                    ]
-                                                                }
-                                                            },
-                                                            "Response_Own_Records": {
-                                                                "type": "Response",
-                                                                "kind": "Http",
-                                                                "inputs": {
-                                                                    "statusCode": 200,
-                                                                    "headers": {
-                                                                        "Access-Control-Allow-Origin": "*",
-                                                                        "Content-Type": "application/json"
-                                                                    },
-                                                                    "body": {
-                                                                        "success": true,
-                                                                        "records": "@if(equals(actions('Transform_Own_Records').status, 'Succeeded'), body('Transform_Own_Records'), createArray())",
-                                                                        "message": "Records retrieved"
-                                                                    }
-                                                                },
-                                                                "runAfter": {
-                                                                    "Transform_Own_Records": [
-                                                                        "Succeeded",
-                                                                        "Skipped"
-                                                                    ]
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "case": "getHistory"
-                            },
-                            "getTeamSummary": {
-                                "actions": {
-                                    "Get_Summary_Records": {
-                                        "type": "ApiConnection",
-                                        "inputs": {
-                                            "host": {
-                                                "connection": {
-                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                }
-                                            },
-                                            "method": "get",
-                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
-                                        }
-                                    },
-                                    "Filter_By_Period": {
-                                        "type": "Query",
-                                        "inputs": {
-                                            "from": "@body('Get_Summary_Records')?['value']",
-                                            "where": "@and(greaterOrEquals(item()?['attendanceDate'], triggerBody()?['periodFrom']), lessOrEquals(item()?['attendanceDate'], triggerBody()?['periodTo']))"
-                                        },
-                                        "runAfter": {
-                                            "Get_Summary_Records": ["Succeeded"]
-                                        }
-                                    },
-                                    "Set_Summary_Records": {
-                                        "type": "SetVariable",
-                                        "inputs": {
-                                            "name": "summaryRecords",
-                                            "value": "@body('Filter_By_Period')"
-                                        },
-                                        "runAfter": {
-                                            "Filter_By_Period": ["Succeeded"]
-                                        }
-                                    },
-                                    "Check_Summary_Role": {
-                                        "type": "If",
-                                        "expression": {
-                                            "or": [
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "system_admin"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "operations_controller"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "payroll_officer"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "admin_assistant"
-                                                    ]
-                                                },
-                                                {
-                                                    "equals": [
-                                                        "@triggerBody()?['role']",
-                                                        "payroll"
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        "actions": {},
-                                        "else": {
-                                            "actions": {
-                                                "Check_Summary_Manager": {
-                                                    "type": "If",
-                                                    "expression": {
-                                                        "equals": [
-                                                            "@triggerBody()?['role']",
-                                                            "manager"
-                                                        ]
-                                                    },
-                                                    "actions": {
-                                                        "Filter_By_Team_For_Summary": {
-                                                            "type": "Query",
-                                                            "inputs": {
-                                                                "from": "@variables('summaryRecords')",
-                                                                "where": "@equals(toLower(trim(coalesce(item()?['team']?['Value'], item()?['team'], ''))), toLower(trim(coalesce(triggerBody()?['team'], ''))))"
-                                                            }
-                                                        },
-                                                        "Set_Summary_Records_To_Team": {
-                                                            "type": "SetVariable",
-                                                            "inputs": {
-                                                                "name": "summaryRecords",
-                                                                "value": "@body('Filter_By_Team_For_Summary')"
-                                                            },
-                                                            "runAfter": {
-                                                                "Filter_By_Team_For_Summary": ["Succeeded"]
-                                                            }
-                                                        }
-                                                    },
-                                                    "else": {
-                                                        "actions": {
-                                                            "Filter_By_Employee_For_Summary": {
-                                                                "type": "Query",
-                                                                "inputs": {
-                                                                    "from": "@variables('summaryRecords')",
-                                                                    "where": "@equals(string(item()?['employeeId']), string(triggerBody()?['employeeId']))"
-                                                                }
-                                                            },
-                                                            "Set_Summary_Records_To_Employee": {
-                                                                "type": "SetVariable",
-                                                                "inputs": {
-                                                                    "name": "summaryRecords",
-                                                                    "value": "@body('Filter_By_Employee_For_Summary')"
-                                                                },
-                                                                "runAfter": {
-                                                                    "Filter_By_Employee_For_Summary": ["Succeeded"]
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Set_Summary_Records": ["Succeeded"]
-                                        }
-                                    },
-                                    "Set_Team_Summary_Empty": {
-                                        "type": "SetVariable",
-                                        "inputs": {
-                                            "name": "teamSummary",
-                                            "value": []
-                                        },
-                                        "runAfter": {
-                                            "Check_Summary_Role": ["Succeeded"]
-                                        }
-                                    },
-                                    "For_each_Summary_Record": {
-                                        "type": "Foreach",
-                                        "foreach": "@variables('summaryRecords')",
-                                        "actions": {
-                                            "Filter_Existing_Summary": {
-                                                "type": "Query",
-                                                "inputs": {
-                                                    "from": "@variables('teamSummary')",
-                                                    "where": "@equals(string(item()?['employeeId']), string(items('For_each_Summary_Record')?['employeeId']))"
-                                                }
-                                            },
-                                            "Filter_Other_Summaries": {
-                                                "type": "Query",
-                                                "inputs": {
-                                                    "from": "@variables('teamSummary')",
-                                                    "where": "@not(equals(string(item()?['employeeId']), string(items('For_each_Summary_Record')?['employeeId'])))"
-                                                },
-                                                "runAfter": {
-                                                    "Filter_Existing_Summary": ["Succeeded"]
-                                                }
-                                            },
-                                            "Check_Existing_Summary": {
-                                                "type": "If",
-                                                "expression": {
-                                                    "greater": [
-                                                        "@length(body('Filter_Existing_Summary'))",
-                                                        0
-                                                    ]
-                                                },
-                                                "actions": {
-                                                    "Compose_Updated_Summary": {
-                                                        "type": "Compose",
-                                                        "inputs": {
-                                                            "employeeId": "@{string(items('For_each_Summary_Record')?['employeeId'])}",
-                                                            "employeeName": "@{coalesce(first(body('Filter_Existing_Summary'))?['employeeName'], items('For_each_Summary_Record')?['employeeName'], items('For_each_Summary_Record')?['EmployeeName'], items('For_each_Summary_Record')?['employeeName']?['Value'], items('For_each_Summary_Record')?['EmployeeName']?['Value'])}",
-                                                            "employmentType": "@{coalesce(first(body('Filter_Existing_Summary'))?['employmentType'], coalesce(items('For_each_Summary_Record')?['employmentType']?['Value'], items('For_each_Summary_Record')?['EmploymentType']?['Value'], items('For_each_Summary_Record')?['employmentType']))}",
-                                                            "team": "@{coalesce(first(body('Filter_Existing_Summary'))?['team'], coalesce(items('For_each_Summary_Record')?['team']?['Value'], items('For_each_Summary_Record')?['team'], items('For_each_Summary_Record')?['Team']?['Value'], items('For_each_Summary_Record')?['Team']))}",
-                                                            "dates": "@{if(contains(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), items('For_each_Summary_Record')?['attendanceDate']), coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), union(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), createArray(items('For_each_Summary_Record')?['attendanceDate'])))}",
-                                                            "workDays": "@{length(if(contains(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), items('For_each_Summary_Record')?['attendanceDate']), coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), union(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), createArray(items('For_each_Summary_Record')?['attendanceDate']))))}",
-                                                            "courseHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['courseHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'course'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
-                                                            "trainingHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['trainingHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'training'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
-                                                            "cancelHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['cancelHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancel_time'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
-                                                            "kilometers": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['kilometers'], 0)), float(coalesce(items('For_each_Summary_Record')?['kilometers'], 0)))}"
-                                                        }
-                                                    },
-                                                    "Set_Team_Summary_Update": {
-                                                        "type": "SetVariable",
-                                                        "inputs": {
-                                                            "name": "teamSummary",
-                                                            "value": "@concat(body('Filter_Other_Summaries'), createArray(outputs('Compose_Updated_Summary')))"
-                                                        },
-                                                        "runAfter": {
-                                                            "Compose_Updated_Summary": ["Succeeded"]
-                                                        }
-                                                    }
-                                                },
-                                                "else": {
-                                                    "actions": {
-                                                        "Append_New_Summary": {
-                                                            "type": "AppendToArrayVariable",
-                                                            "inputs": {
-                                                                "name": "teamSummary",
-                                                                "value": {
-                                                                    "employeeId": "@{string(items('For_each_Summary_Record')?['employeeId'])}",
-                                                                    "employeeName": "@{coalesce(items('For_each_Summary_Record')?['employeeName'], items('For_each_Summary_Record')?['EmployeeName'], items('For_each_Summary_Record')?['employeeName']?['Value'], items('For_each_Summary_Record')?['EmployeeName']?['Value'])}",
-                                                                    "employmentType": "@{coalesce(items('For_each_Summary_Record')?['employmentType']?['Value'], items('For_each_Summary_Record')?['EmploymentType']?['Value'], items('For_each_Summary_Record')?['employmentType'])}",
-                                                                    "team": "@{coalesce(items('For_each_Summary_Record')?['team']?['Value'], items('For_each_Summary_Record')?['team'], items('For_each_Summary_Record')?['Team']?['Value'], items('For_each_Summary_Record')?['Team'])}",
-                                                                    "dates": "@{createArray(items('For_each_Summary_Record')?['attendanceDate'])}",
-                                                                    "workDays": 1,
-                                                                    "courseHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'course'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
-                                                                    "trainingHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'training'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
-                                                                    "cancelHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'cancel_time'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
-                                                                    "kilometers": "@{float(coalesce(items('For_each_Summary_Record')?['kilometers'], 0))}"
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                },
-                                                "runAfter": {
-                                                    "Filter_Other_Summaries": ["Succeeded"]
-                                                }
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Set_Team_Summary_Empty": ["Succeeded"]
-                                        }
-                                    },
-                                    "Response_Team_Summary": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 200,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": true,
-                                                "records": "@variables('teamSummary')",
-                                                "message": "Records retrieved"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "For_each_Summary_Record": [
-                                                "Succeeded",
-                                                "Skipped"
-                                            ]
-                                        }
-                                    }
-                                },
-                                "case": "getTeamSummary"
-                            },
-                            "updateRecord": {
-                                "actions": {
-                                    "Update_Attendance": {
-                                        "type": "ApiConnection",
-                                        "inputs": {
-                                            "host": {
-                                                "connection": {
-                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                }
-                                            },
-                                            "method": "patch",
-                                            "body": {
-                                                "employeeName": "@triggerBody()?['employeeName']",
-                                                "employeeId": "@triggerBody()?['employeeId']",
-                                                "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                                "startTime": "@triggerBody()?['startTime']",
-                                                "endTime": "@triggerBody()?['endTime']",
-                                                "activityType": "@triggerBody()?['activityType']",
-                                                "schoolName": "@triggerBody()?['schoolName']",
-                                                "municipality": "@triggerBody()?['municipality']",
-                                                "programName": "@triggerBody()?['programName']",
-                                                "sessionNumber": "@triggerBody()?['sessionNumber']",
-                                                "totalExpenses": "@triggerBody()?['totalExpenses']",
-                                                "workHours": "@triggerBody()?['workHours']",
-                                                "kilometers": "@triggerBody()?['kilometers']",
-                                                "expensesDetails": "@triggerBody()?['expensesDetails']",
-                                                "notes": "@triggerBody()?['notes']",
-                                                "employmentType": "@triggerBody()?['employmentType']",
-                                                "team": "@triggerBody()?['team']"
-                                            },
-                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}"
-                                        }
-                                    },
-                                    "Response_Update_Success": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 200,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": true,
-                                                "records": [],
-                                                "message": "הרשומה עודכנה בהצלחה"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Update_Attendance": ["Succeeded"]
-                                        }
-                                    },
-                                    "Response_Update_Failed": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 500,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": false,
-                                                "records": [],
-                                                "message": "Failed to update record"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Update_Attendance": ["Failed", "TimedOut"]
-                                        }
-                                    }
-                                },
-                                "case": "updateRecord"
-                            },
-                            "deleteRecord": {
-                                "actions": {
-                                    "Delete_Attendance": {
-                                        "type": "ApiConnection",
-                                        "inputs": {
-                                            "host": {
-                                                "connection": {
-                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                                }
-                                            },
-                                            "method": "delete",
-                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}"
-                                        }
-                                    },
-                                    "Response_Delete_Success": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 200,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": true,
-                                                "records": [],
-                                                "message": "הרשומה נמחקה בהצלחה"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Delete_Attendance": ["Succeeded"]
-                                        }
-                                    },
-                                    "Response_Delete_Failed": {
-                                        "type": "Response",
-                                        "kind": "Http",
-                                        "inputs": {
-                                            "statusCode": 500,
-                                            "headers": {
-                                                "Access-Control-Allow-Origin": "*",
-                                                "Content-Type": "application/json"
-                                            },
-                                            "body": {
-                                                "success": false,
-                                                "records": [],
-                                                "message": "Failed to delete record"
-                                            }
-                                        },
-                                        "runAfter": {
-                                            "Delete_Attendance": ["Failed", "TimedOut"]
-                                        }
-                                    }
-                                },
-                                "case": "deleteRecord"
-                            }
-                        },
-                        "runAfter": {}
+                  "Response_Auth_Success": {
+                    "type": "Response",
+                    "inputs": {
+                      "statusCode": 200,
+                      "headers": {
+                        "Access-Control-Allow-Origin": "*",
+                        "Content-Type": "application/json"
+                      },
+                      "body": {
+                        "success": true,
+                        "employeeId": "@{first(body('Get_Employee')?['value'])?['employeeId']}",
+                        "employeeName": "@coalesce(first(body('Get_Employee')?['value'])?['employeeName']?['Value'], first(body('Get_Employee')?['value'])?['employeeName'])",
+                        "role": "@coalesce(first(body('Get_Employee')?['value'])?['role']?['Value'], first(body('Get_Employee')?['value'])?['role'])",
+                        "team": "@coalesce(first(body('Get_Employee')?['value'])?['team']?['Value'], first(body('Get_Employee')?['value'])?['team'])",
+                        "employmentType": "@coalesce(first(body('Get_Employee')?['value'])?['employmentType']?['Value'], first(body('Get_Employee')?['value'])?['employmentType'])"
+                      }
                     },
-                    "Response_Fallback": {
-                        "type": "Response",
-                        "kind": "Http",
-                        "inputs": {
-                            "statusCode": 500,
-                            "headers": {
-                                "Access-Control-Allow-Origin": "*",
-                                "Content-Type": "application/json"
-                            },
-                            "body": {
-                                "success": false,
-                                "records": [],
-                                "message": "Unhandled execution path"
-                            }
-                        },
-                        "runAfter": {
-                            "Switch_Action": ["Failed", "Skipped", "TimedOut"]
-                        }
-                    }
+                    "runAfter": {}
+                  }
                 },
                 "else": {
-                    "actions": {
-                        "Response_Null_Action": {
-                            "type": "Response",
-                            "kind": "Http",
-                            "inputs": {
-                                "statusCode": 200,
-                                "headers": {
-                                    "Access-Control-Allow-Origin": "*",
-                                    "Content-Type": "application/json",
-                                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                                    "Access-Control-Allow-Headers": "Content-Type"
-                                },
-                                "body": {
-                                    "success": false,
-                                    "records": [],
-                                    "message": "No action specified"
-                                }
-                            }
+                  "actions": {
+                    "Response_Auth_Failed": {
+                      "type": "Response",
+                      "inputs": {
+                        "statusCode": 401,
+                        "headers": {
+                          "Access-Control-Allow-Origin": "*",
+                          "Content-Type": "application/json"
+                        },
+                        "body": {
+                          "success": false,
+                          "message": "מספר עובד או סיסמה שגויים"
                         }
+                      },
+                      "runAfter": {}
                     }
+                  }
                 },
                 "runAfter": {
-                    "Initialize_Team_Summary": [
-                        "Succeeded"
-                    ]
+                  "Get_Employee": [
+                    "Succeeded"
+                  ]
                 }
+              }
             }
+          },
+          "getHistory": {
+            "case": "getHistory",
+            "actions": {
+              "Get_All_Records": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "get",
+                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                },
+                "runAfter": {}
+              },
+              "Check_Admin_Roles": {
+                "type": "If",
+                "expression": {
+                  "or": [
+                    {
+                      "equals": [
+                        "@triggerBody()?['role']",
+                        "system_admin"
+                      ]
+                    },
+                    {
+                      "equals": [
+                        "@triggerBody()?['role']",
+                        "operations_controller"
+                      ]
+                    },
+                    {
+                      "equals": [
+                        "@triggerBody()?['role']",
+                        "payroll_officer"
+                      ]
+                    }
+                  ]
+                },
+                "actions": {
+                  "Response_All_Records": {
+                    "type": "Response",
+                    "inputs": {
+                      "statusCode": 200,
+                      "headers": {
+                        "Access-Control-Allow-Origin": "*",
+                        "Content-Type": "application/json"
+                      },
+                      "body": {
+                        "success": true,
+                        "scope": "all",
+                        "records": "@body('Get_All_Records')?['value']"
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Check_Team_Manager": {
+                      "type": "If",
+                      "expression": {
+                        "and": [
+                          {
+                            "equals": [
+                              "@triggerBody()?['role']",
+                              "manager"
+                            ]
+                          }
+                        ]
+                      },
+                      "actions": {
+                        "Filter_By_Team": {
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Get_All_Records')?['value']",
+                            "where": "@equals(coalesce(item()?['team']?['Value'], item()?['team']), triggerBody()?['team'])"
+                          },
+                          "runAfter": {}
+                        },
+                        "Response_Team_Records": {
+                          "type": "Response",
+                          "inputs": {
+                            "statusCode": 200,
+                            "headers": {
+                              "Access-Control-Allow-Origin": "*",
+                              "Content-Type": "application/json"
+                            },
+                            "body": {
+                              "success": true,
+                              "scope": "team",
+                              "records": "@body('Filter_By_Team')"
+                            }
+                          },
+                          "runAfter": {
+                            "Filter_By_Team": [
+                              "Succeeded"
+                            ]
+                          }
+                        }
+                      },
+                      "else": {
+                        "actions": {
+                          "Check_Instructor": {
+                            "type": "If",
+                            "expression": {
+                              "and": [
+                                {
+                                  "equals": [
+                                    "@triggerBody()?['role']",
+                                    "instructor"
+                                  ]
+                                }
+                              ]
+                            },
+                            "actions": {
+                              "Filter_By_Employee": {
+                                "type": "Query",
+                                "inputs": {
+                                  "from": "@body('Get_All_Records')?['value']",
+                                  "where": "@equals(item()?['employeeId'], triggerBody()?['employeeId'])"
+                                },
+                                "runAfter": {}
+                              },
+                              "Response_Own_Records": {
+                                "type": "Response",
+                                "inputs": {
+                                  "statusCode": 200,
+                                  "headers": {
+                                    "Access-Control-Allow-Origin": "*",
+                                    "Content-Type": "application/json"
+                                  },
+                                  "body": {
+                                    "success": true,
+                                    "scope": "own",
+                                    "records": "@body('Filter_By_Employee')"
+                                  }
+                                },
+                                "runAfter": {
+                                  "Filter_By_Employee": [
+                                    "Succeeded"
+                                  ]
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {
+                                "Response_Forbidden": {
+                                  "type": "Response",
+                                  "inputs": {
+                                    "statusCode": 403,
+                                    "headers": {
+                                      "Access-Control-Allow-Origin": "*",
+                                      "Content-Type": "application/json"
+                                    },
+                                    "body": {
+                                      "success": false,
+                                      "forbidden": true,
+                                      "message": "אין הרשאה לצפייה ברשומות"
+                                    }
+                                  },
+                                  "runAfter": {}
+                                }
+                              }
+                            },
+                            "runAfter": {}
+                          }
+                        }
+                      },
+                      "runAfter": {}
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Get_All_Records": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "submit": {
+            "case": "submit",
+            "actions": {
+              "Create_Attendance_Record": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "post",
+                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                  "body": {
+                    "employeeId": "@triggerBody()?['employeeId']",
+                    "employeeName": "@triggerBody()?['employeeName']",
+                    "team": "@triggerBody()?['team']",
+                    "attendanceDate": "@triggerBody()?['attendanceDate']",
+                    "startTime": "@triggerBody()?['startTime']",
+                    "endTime": "@triggerBody()?['endTime']",
+                    "workHours": "@triggerBody()?['workHours']",
+                    "activityType": "@triggerBody()?['activityType']",
+                    "schoolName": "@triggerBody()?['schoolName']",
+                    "municipality": "@triggerBody()?['municipality']",
+                    "programName": "@triggerBody()?['programName']",
+                    "sessionNumber": "@triggerBody()?['sessionNumber']",
+                    "kilometers": "@triggerBody()?['kilometers']",
+                    "totalExpenses": "@triggerBody()?['totalExpenses']",
+                    "expensesDetails": "@triggerBody()?['expensesDetails']",
+                    "notes": "@triggerBody()?['notes']",
+                    "employmentType": "@triggerBody()?['employmentType']"
+                  }
+                },
+                "runAfter": {}
+              },
+              "Response_Submit_Success": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json"
+                  },
+                  "body": {
+                    "success": true,
+                    "message": "הרשומה נוספה בהצלחה",
+                    "recordId": "@body('Create_Attendance_Record')?['ID']"
+                  }
+                },
+                "runAfter": {
+                  "Create_Attendance_Record": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "updateRecord": {
+            "case": "updateRecord",
+            "actions": {
+              "Update_Attendance_Record": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "patch",
+                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}",
+                  "body": {
+                    "attendanceDate": "@triggerBody()?['attendanceDate']",
+                    "startTime": "@triggerBody()?['startTime']",
+                    "endTime": "@triggerBody()?['endTime']",
+                    "workHours": "@triggerBody()?['workHours']",
+                    "activityType": "@triggerBody()?['activityType']",
+                    "kilometers": "@triggerBody()?['kilometers']",
+                    "totalExpenses": "@triggerBody()?['totalExpenses']",
+                    "notes": "@triggerBody()?['notes']"
+                  }
+                },
+                "runAfter": {}
+              },
+              "Response_Update_Success": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json"
+                  },
+                  "body": {
+                    "success": true,
+                    "message": "הרשומה עודכנה בהצלחה"
+                  }
+                },
+                "runAfter": {
+                  "Update_Attendance_Record": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          },
+          "deleteRecord": {
+            "case": "deleteRecord",
+            "actions": {
+              "Delete_Attendance_Record": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "delete",
+                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}"
+                },
+                "runAfter": {}
+              },
+              "Response_Delete_Success": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json"
+                  },
+                  "body": {
+                    "success": true,
+                    "message": "הרשומה נמחקה בהצלחה"
+                  }
+                },
+                "runAfter": {
+                  "Delete_Attendance_Record": [
+                    "Succeeded"
+                  ]
+                }
+              }
+            }
+          }
         },
-        "parameters": {
-            "$connections": {
-                "type": "Object",
-                "defaultValue": {}
+        "default": {
+          "actions": {
+            "Response_Unknown_Action": {
+              "type": "Response",
+              "inputs": {
+                "statusCode": 400,
+                "headers": {
+                  "Access-Control-Allow-Origin": "*",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "success": false,
+                  "message": "פעולה לא מוכרת"
+                }
+              },
+              "runAfter": {}
             }
-        }
+          }
+        },
+        "runAfter": {}
+      }
     },
     "parameters": {
-        "$connections": {
-            "type": "Object",
-            "value": {
-                "sharepointonline": {
-                    "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/providers/Microsoft.Web/locations/israelcentral/managedApis/sharepointonline",
-                    "connectionId": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline",
-                    "connectionName": "sharepointonline",
-                    "connectionProperties": {}
-                }
-            }
-        }
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      }
     }
+  },
+  "parameters": {
+    "$connections": {
+      "value": {
+        "sharepointonline": {
+          "connectionId": "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/YOUR-RESOURCE-GROUP/providers/Microsoft.Web/connections/sharepointonline",
+          "connectionName": "sharepointonline",
+          "id": "/subscriptions/YOUR-SUBSCRIPTION-ID/providers/Microsoft.Web/locations/westeurope/managedApis/sharepointonline"
+        }
+      }
+    }
+  }
 }
