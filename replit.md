@@ -22,10 +22,9 @@ Preferred communication style: Simple, everyday language.
 - **Time Dropdown Fix**: Limited height with scroll to prevent overflow
 - **Employee Info Display**: Now shows employee number and name in header when adding record
 - **Hours Field**: Smaller, centered, bold display; formatted as simple numbers for SharePoint
-- **Approval Workflow**: Approve/reject buttons for managers and above; status badges (pending/approved/rejected); reject modal with comment field
 - **Reports Page Enhanced**: Filters for team, EmploymentType, activity type; stats for hours, km, expenses
 - **Excel Export Options**: All rows (detailed) or grouped by employee (summary) via export modal
-- **RBAC Permissions**: Edit allowed for manager/ops_controller/admin; Delete only for ops_controller/admin; Approve for non-instructors
+- **RBAC Permissions**: Edit allowed for manager/ops_controller/admin; Delete only for ops_controller/admin
 - **EmploymentType**: Stored in localStorage on login, sent in submit/update payloads
 - **Mobile Responsive**: Horizontal table scroll, sticky first column (RTL), mobile-optimized headers/buttons, cards grid adapts to 1 column on mobile
 - **File Upload UI**: Drag-and-drop support, 5MB validation (actual SharePoint upload pending Logic App config)
@@ -47,9 +46,9 @@ Preferred communication style: Simple, everyday language.
 
 ### RBAC Roles
 - `instructor`: View/submit own records only, sees "רשומות נוכחות" (מדריך/ה)
-- `manager`: View team records, edit all records, approve (מנהל/ת פעילויות)
+- `manager`: View team records, edit all records (מנהל/ת פעילויות)
 - `payroll_officer`: Isolated dashboard only - sees monthly summary table grouped by instructor with export to Excel, no access to other pages (אחראית שכר)
-- `operations_controller`: Full access, edit/delete/approve permissions (מבקרת תפעול)
+- `operations_controller`: Full access, edit/delete permissions (מבקרת תפעול)
 - `system_admin`: Full access, all permissions (מנהל מערכת)
 
 ### Data Flow
