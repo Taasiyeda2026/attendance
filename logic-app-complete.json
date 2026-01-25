@@ -447,7 +447,7 @@
                                                     },
                                                     "else": {
                                                         "actions": {
-                                                            "Get_Own_Records": {
+                                                            "Get_All_For_Own_Filter": {
                                                                 "type": "ApiConnection",
                                                                 "inputs": {
                                                                     "host": {
@@ -456,16 +456,23 @@
                                                                         }
                                                                     },
                                                                     "method": "get",
-                                                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
-                                                                    "queries": {
-                                                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}'"
-                                                                    }
+                                                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                                                }
+                                                            },
+                                                            "Filter_By_EmployeeId": {
+                                                                "type": "Query",
+                                                                "inputs": {
+                                                                    "from": "@body('Get_All_For_Own_Filter')?['value']",
+                                                                    "where": "@or(equals(string(item()?['employeeId']), triggerBody()?['employeeId']), equals(item()?['employeeId'], triggerBody()?['employeeId']))"
+                                                                },
+                                                                "runAfter": {
+                                                                    "Get_All_For_Own_Filter": ["Succeeded"]
                                                                 }
                                                             },
                                                             "Transform_Own_Records": {
                                                                 "type": "Select",
                                                                 "inputs": {
-                                                                    "from": "@body('Get_Own_Records')?['value']",
+                                                                    "from": "@body('Filter_By_EmployeeId')",
                                                                     "select": {
                                                                         "ID": "@item()?['ID']",
                                                                         "employeeId": "@item()?['employeeId']",
@@ -492,7 +499,7 @@
                                                                     }
                                                                 },
                                                                 "runAfter": {
-                                                                    "Get_Own_Records": [
+                                                                    "Filter_By_EmployeeId": [
                                                                         "Succeeded"
                                                                     ]
                                                                 }
