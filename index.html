@@ -1646,35 +1646,37 @@
                 <div style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 8px 20px; min-width: 80px;">
                   <span id="hoursDisplay" style="font-size: 22px; font-weight: 700; color: #1e40af;">0:00</span>
                 </div>
-                <input type="hidden" id="hoursField" step="0.01" min="0" max="24" readonly>
+                <input type="text" id="hoursField" step="0.01" min="0" max="24" readonly style="display: none;">
               </div>
               <!-- שעת התחלה -->
               <div class="form-field" style="margin: 0;">
-                <label style="display: block; margin-bottom: 6px;">שעת התחלה <span style="color: #ef4444;">*</span></label>
-                <div class="time-picker-row">
-                  <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
-                    <option value="">שעה</option>
-                  </select>
-                  <span class="time-separator">:</span>
-                  <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" required>
-                    <option value="">דקות</option>
-                  </select>
-                  <input type="hidden" id="startTime">
-                </div>
+                <label style="display: block; margin-bottom: 6px;">שעת התחלה <span style="color: #ef4444;">*</span>
+                  <div class="time-picker-row">
+                    <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
+                      <option value="">שעה</option>
+                    </select>
+                    <span class="time-separator">:</span>
+                    <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" required>
+                      <option value="">דקות</option>
+                    </select>
+                    <input type="hidden" id="startTime">
+                  </div>
+                </label>
               </div>
               <!-- שעת סיום -->
               <div class="form-field" style="margin: 0;">
-                <label style="display: block; margin-bottom: 6px;">שעת סיום <span style="color: #ef4444;">*</span></label>
-                <div class="time-picker-row">
-                  <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
-                    <option value="">שעה</option>
-                  </select>
-                  <span class="time-separator">:</span>
-                  <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" required>
-                    <option value="">דקות</option>
-                  </select>
-                  <input type="hidden" id="endTime">
-                </div>
+                <label style="display: block; margin-bottom: 6px;">שעת סיום <span style="color: #ef4444;">*</span>
+                  <div class="time-picker-row">
+                    <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
+                      <option value="">שעה</option>
+                    </select>
+                    <span class="time-separator">:</span>
+                    <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" required>
+                      <option value="">דקות</option>
+                    </select>
+                    <input type="hidden" id="endTime">
+                  </div>
+                </label>
               </div>
             </div>
           </div>
@@ -1910,7 +1912,7 @@
         <div class="card-body" style="padding: 15px;">
           <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
             <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label style="font-size: 12px; margin-bottom: 4px;">חודש</label>
+              <label for="reportMonth" style="font-size: 12px; margin-bottom: 4px;">חודש</label>
               <select id="reportMonth" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="1">ינואר</option>
                 <option value="2">פברואר</option>
@@ -1927,7 +1929,7 @@
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 100px;">
-              <label style="font-size: 12px; margin-bottom: 4px;">שנה</label>
+              <label for="reportYear" style="font-size: 12px; margin-bottom: 4px;">שנה</label>
               <select id="reportYear" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="2025">2025</option>
                 <option value="2026">2026</option>
@@ -1935,13 +1937,13 @@
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label style="font-size: 12px; margin-bottom: 4px;">צוות</label>
+              <label for="reportTeam" style="font-size: 12px; margin-bottom: 4px;">צוות</label>
               <select id="reportTeam" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="all">הכל</option>
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 140px;" id="employmentTypeFilterContainer">
-              <label style="font-size: 12px; margin-bottom: 4px;">סוג העסקה</label>
+              <label for="reportEmploymentType" style="font-size: 12px; margin-bottom: 4px;">סוג העסקה</label>
               <select id="reportEmploymentType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="all">הכל</option>
                 <option value="תעשיידע">תעשיידע</option>
@@ -1951,7 +1953,7 @@
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label style="font-size: 12px; margin-bottom: 4px;">סוג פעילות</label>
+              <label for="reportActivityType" style="font-size: 12px; margin-bottom: 4px;">סוג פעילות</label>
               <select id="reportActivityType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="all">הכל</option>
                 <option value="ביטול זמן">ביטול זמן</option>
@@ -2062,30 +2064,32 @@
             <input type="date" id="editDate" required>
           </div>
           <div class="form-field">
-            <label class="required-label">שעת התחלה</label>
-            <div class="time-picker-row">
-              <select id="editStartHour" onchange="updateTimeField('editStart'); calculateEditHours()" required>
-                <option value="">שעה</option>
-              </select>
-              <span class="time-separator">:</span>
-              <select id="editStartMinute" onchange="updateTimeField('editStart'); calculateEditHours()" required>
-                <option value="">דקות</option>
-              </select>
-              <input type="hidden" id="editStartTime">
-            </div>
+            <label class="required-label">שעת התחלה
+              <div class="time-picker-row">
+                <select id="editStartHour" onchange="updateTimeField('editStart'); calculateEditHours()" required>
+                  <option value="">שעה</option>
+                </select>
+                <span class="time-separator">:</span>
+                <select id="editStartMinute" onchange="updateTimeField('editStart'); calculateEditHours()" required>
+                  <option value="">דקות</option>
+                </select>
+                <input type="hidden" id="editStartTime">
+              </div>
+            </label>
           </div>
           <div class="form-field">
-            <label class="required-label">שעת סיום</label>
-            <div class="time-picker-row">
-              <select id="editEndHour" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
-                <option value="">שעה</option>
-              </select>
-              <span class="time-separator">:</span>
-              <select id="editEndMinute" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
-                <option value="">דקות</option>
-              </select>
-              <input type="hidden" id="editEndTime">
-            </div>
+            <label class="required-label">שעת סיום
+              <div class="time-picker-row">
+                <select id="editEndHour" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
+                  <option value="">שעה</option>
+                </select>
+                <span class="time-separator">:</span>
+                <select id="editEndMinute" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
+                  <option value="">דקות</option>
+                </select>
+                <input type="hidden" id="editEndTime">
+              </div>
+            </label>
           </div>
           <div class="form-field">
             <label for="editHours">סה"כ שעות</label>
