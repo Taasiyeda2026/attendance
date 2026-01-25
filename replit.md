@@ -10,6 +10,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (January 2026)
 
+- **Role-Based Navigation**: "רשומות נוכחות" page visible only to instructors; non-instructors redirected to "רשומות הצוות"
+- **getHistory with Role Filtering**: Now sends role+team to Logic App for proper role-based record retrieval
+- **Mobile Bottom Nav**: "הוספה" and "רשומות" buttons hidden for non-instructors
+- **payroll_officer**: View-only access (can view all records and export to Excel, no edit/delete/approve)
 - **Add Record Page Redesign**: Reorganized into 4 colored cards:
   - Card 1 (blue): Date, Start Time, End Time, Total Hours
   - Card 2 (green): Activity Type, School, Municipality, Program, Session, Kilometers
@@ -37,15 +41,15 @@ Preferred communication style: Simple, everyday language.
 ### Logic App Actions
 1. **auth**: Login with empNum/password → returns role, team, employmentType
 2. **submit**: Create attendance record with employmentType
-3. **getHistory**: Fetch all records (or filter by employeeId)
+3. **getHistory**: Role-based filtering (admin/controller/payroll=all, manager=team, instructor=own)
 4. **updateRecord**: Update by SharePoint recordId
 5. **deleteRecord**: Delete by SharePoint recordId
 
 ### RBAC Roles
-- `instructor`: View/submit own records only (מדריך/ה)
-- `manager`: View team records, edit all records (מנהל/ת פעילויות)
-- `payroll_officer`: Full access, delete permission - same as operations_controller (אחראית שכר)
-- `operations_controller`: Full access, delete permission (מבקרת תפעול)
+- `instructor`: View/submit own records only, sees "רשומות נוכחות" (מדריך/ה)
+- `manager`: View team records, edit all records, approve (מנהל/ת פעילויות)
+- `payroll_officer`: View-only, can view all records + export to Excel, no edit/delete/approve (אחראית שכר)
+- `operations_controller`: Full access, edit/delete/approve permissions (מבקרת תפעול)
 - `system_admin`: Full access, all permissions (מנהל מערכת)
 
 ### Data Flow
