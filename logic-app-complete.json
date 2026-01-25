@@ -10,69 +10,27 @@
           "schema": {
             "type": "object",
             "properties": {
-              "action": {
-                "type": "string"
-              },
-              "employeeId": {
-                "type": "string"
-              },
-              "password": {
-                "type": "string"
-              },
-              "role": {
-                "type": "string"
-              },
-              "team": {
-                "type": "string"
-              },
-              "recordId": {
-                "type": "string"
-              },
-              "attendanceDate": {
-                "type": "string"
-              },
-              "startTime": {
-                "type": "string"
-              },
-              "endTime": {
-                "type": "string"
-              },
-              "workHours": {
-                "type": "number"
-              },
-              "activityType": {
-                "type": "string"
-              },
-              "schoolName": {
-                "type": "string"
-              },
-              "municipality": {
-                "type": "string"
-              },
-              "programName": {
-                "type": "string"
-              },
-              "sessionNumber": {
-                "type": "string"
-              },
-              "kilometers": {
-                "type": "number"
-              },
-              "totalExpenses": {
-                "type": "number"
-              },
-              "expensesDetails": {
-                "type": "string"
-              },
-              "notes": {
-                "type": "string"
-              },
-              "employeeName": {
-                "type": "string"
-              },
-              "employmentType": {
-                "type": "string"
-              }
+              "action": {"type": "string"},
+              "employeeId": {"type": "string"},
+              "password": {"type": "string"},
+              "role": {"type": "string"},
+              "team": {"type": "string"},
+              "recordId": {"type": "string"},
+              "attendanceDate": {"type": "string"},
+              "startTime": {"type": "string"},
+              "endTime": {"type": "string"},
+              "workHours": {"type": "number"},
+              "activityType": {"type": "string"},
+              "schoolName": {"type": "string"},
+              "municipality": {"type": "string"},
+              "programName": {"type": "string"},
+              "sessionNumber": {"type": "string"},
+              "kilometers": {"type": "number"},
+              "totalExpenses": {"type": "number"},
+              "expensesDetails": {"type": "string"},
+              "notes": {"type": "string"},
+              "employeeName": {"type": "string"},
+              "employmentType": {"type": "string"}
             }
           }
         }
@@ -155,9 +113,7 @@
                   }
                 },
                 "runAfter": {
-                  "Get_Employee": [
-                    "Succeeded"
-                  ]
+                  "Get_Employee": ["Succeeded"]
                 }
               }
             }
@@ -182,24 +138,9 @@
                 "type": "If",
                 "expression": {
                   "or": [
-                    {
-                      "equals": [
-                        "@triggerBody()?['role']",
-                        "system_admin"
-                      ]
-                    },
-                    {
-                      "equals": [
-                        "@triggerBody()?['role']",
-                        "operations_controller"
-                      ]
-                    },
-                    {
-                      "equals": [
-                        "@triggerBody()?['role']",
-                        "payroll_officer"
-                      ]
-                    }
+                    {"equals": ["@triggerBody()?['role']", "system_admin"]},
+                    {"equals": ["@triggerBody()?['role']", "operations_controller"]},
+                    {"equals": ["@triggerBody()?['role']", "payroll_officer"]}
                   ]
                 },
                 "actions": {
@@ -207,15 +148,8 @@
                     "type": "Response",
                     "inputs": {
                       "statusCode": 200,
-                      "headers": {
-                        "Access-Control-Allow-Origin": "*",
-                        "Content-Type": "application/json"
-                      },
-                      "body": {
-                        "success": true,
-                        "scope": "all",
-                        "records": "@body('Get_All_Records')?['value']"
-                      }
+                      "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                      "body": {"success": true, "scope": "all", "records": "@body('Get_All_Records')?['value']"}
                     },
                     "runAfter": {}
                   }
@@ -224,16 +158,7 @@
                   "actions": {
                     "Check_Team_Manager": {
                       "type": "If",
-                      "expression": {
-                        "and": [
-                          {
-                            "equals": [
-                              "@triggerBody()?['role']",
-                              "manager"
-                            ]
-                          }
-                        ]
-                      },
+                      "expression": {"and": [{"equals": ["@triggerBody()?['role']", "manager"]}]},
                       "actions": {
                         "Filter_By_Team": {
                           "type": "Query",
@@ -247,37 +172,17 @@
                           "type": "Response",
                           "inputs": {
                             "statusCode": 200,
-                            "headers": {
-                              "Access-Control-Allow-Origin": "*",
-                              "Content-Type": "application/json"
-                            },
-                            "body": {
-                              "success": true,
-                              "scope": "team",
-                              "records": "@body('Filter_By_Team')"
-                            }
+                            "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                            "body": {"success": true, "scope": "team", "records": "@body('Filter_By_Team')"}
                           },
-                          "runAfter": {
-                            "Filter_By_Team": [
-                              "Succeeded"
-                            ]
-                          }
+                          "runAfter": {"Filter_By_Team": ["Succeeded"]}
                         }
                       },
                       "else": {
                         "actions": {
                           "Check_Instructor": {
                             "type": "If",
-                            "expression": {
-                              "and": [
-                                {
-                                  "equals": [
-                                    "@triggerBody()?['role']",
-                                    "instructor"
-                                  ]
-                                }
-                              ]
-                            },
+                            "expression": {"and": [{"equals": ["@triggerBody()?['role']", "instructor"]}]},
                             "actions": {
                               "Filter_By_Employee": {
                                 "type": "Query",
@@ -291,21 +196,10 @@
                                 "type": "Response",
                                 "inputs": {
                                   "statusCode": 200,
-                                  "headers": {
-                                    "Access-Control-Allow-Origin": "*",
-                                    "Content-Type": "application/json"
-                                  },
-                                  "body": {
-                                    "success": true,
-                                    "scope": "own",
-                                    "records": "@body('Filter_By_Employee')"
-                                  }
+                                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                                  "body": {"success": true, "scope": "own", "records": "@body('Filter_By_Employee')"}
                                 },
-                                "runAfter": {
-                                  "Filter_By_Employee": [
-                                    "Succeeded"
-                                  ]
-                                }
+                                "runAfter": {"Filter_By_Employee": ["Succeeded"]}
                               }
                             },
                             "else": {
@@ -314,15 +208,8 @@
                                   "type": "Response",
                                   "inputs": {
                                     "statusCode": 403,
-                                    "headers": {
-                                      "Access-Control-Allow-Origin": "*",
-                                      "Content-Type": "application/json"
-                                    },
-                                    "body": {
-                                      "success": false,
-                                      "forbidden": true,
-                                      "message": "אין הרשאה לצפייה ברשומות"
-                                    }
+                                    "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                                    "body": {"success": false, "forbidden": true, "message": "אין הרשאה לצפייה ברשומות"}
                                   },
                                   "runAfter": {}
                                 }
@@ -336,11 +223,7 @@
                     }
                   }
                 },
-                "runAfter": {
-                  "Get_All_Records": [
-                    "Succeeded"
-                  ]
-                }
+                "runAfter": {"Get_All_Records": ["Succeeded"]}
               }
             }
           },
@@ -350,11 +233,7 @@
               "Create_Attendance_Record": {
                 "type": "ApiConnection",
                 "inputs": {
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                    }
-                  },
+                  "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
                   "method": "post",
                   "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                   "body": {
@@ -383,21 +262,10 @@
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
-                  "headers": {
-                    "Access-Control-Allow-Origin": "*",
-                    "Content-Type": "application/json"
-                  },
-                  "body": {
-                    "success": true,
-                    "message": "הרשומה נוספה בהצלחה",
-                    "recordId": "@body('Create_Attendance_Record')?['ID']"
-                  }
+                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                  "body": {"success": true, "message": "הרשומה נוספה בהצלחה", "recordId": "@body('Create_Attendance_Record')?['ID']"}
                 },
-                "runAfter": {
-                  "Create_Attendance_Record": [
-                    "Succeeded"
-                  ]
-                }
+                "runAfter": {"Create_Attendance_Record": ["Succeeded"]}
               }
             }
           },
@@ -407,11 +275,7 @@
               "Update_Attendance_Record": {
                 "type": "ApiConnection",
                 "inputs": {
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                    }
-                  },
+                  "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
                   "method": "patch",
                   "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}",
                   "body": {
@@ -431,20 +295,10 @@
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
-                  "headers": {
-                    "Access-Control-Allow-Origin": "*",
-                    "Content-Type": "application/json"
-                  },
-                  "body": {
-                    "success": true,
-                    "message": "הרשומה עודכנה בהצלחה"
-                  }
+                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                  "body": {"success": true, "message": "הרשומה עודכנה בהצלחה"}
                 },
-                "runAfter": {
-                  "Update_Attendance_Record": [
-                    "Succeeded"
-                  ]
-                }
+                "runAfter": {"Update_Attendance_Record": ["Succeeded"]}
               }
             }
           },
@@ -454,11 +308,7 @@
               "Delete_Attendance_Record": {
                 "type": "ApiConnection",
                 "inputs": {
-                  "host": {
-                    "connection": {
-                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                    }
-                  },
+                  "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
                   "method": "delete",
                   "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}"
                 },
@@ -468,20 +318,10 @@
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
-                  "headers": {
-                    "Access-Control-Allow-Origin": "*",
-                    "Content-Type": "application/json"
-                  },
-                  "body": {
-                    "success": true,
-                    "message": "הרשומה נמחקה בהצלחה"
-                  }
+                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                  "body": {"success": true, "message": "הרשומה נמחקה בהצלחה"}
                 },
-                "runAfter": {
-                  "Delete_Attendance_Record": [
-                    "Succeeded"
-                  ]
-                }
+                "runAfter": {"Delete_Attendance_Record": ["Succeeded"]}
               }
             }
           }
@@ -492,14 +332,8 @@
               "type": "Response",
               "inputs": {
                 "statusCode": 400,
-                "headers": {
-                  "Access-Control-Allow-Origin": "*",
-                  "Content-Type": "application/json"
-                },
-                "body": {
-                  "success": false,
-                  "message": "פעולה לא מוכרת"
-                }
+                "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                "body": {"success": false, "message": "פעולה לא מוכרת"}
               },
               "runAfter": {}
             }
@@ -519,9 +353,9 @@
     "$connections": {
       "value": {
         "sharepointonline": {
-          "connectionId": "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/YOUR-RESOURCE-GROUP/providers/Microsoft.Web/connections/sharepointonline",
+          "connectionId": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline",
           "connectionName": "sharepointonline",
-          "id": "/subscriptions/YOUR-SUBSCRIPTION-ID/providers/Microsoft.Web/locations/westeurope/managedApis/sharepointonline"
+          "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/providers/Microsoft.Web/locations/israelcentral/managedApis/sharepointonline"
         }
       }
     }
