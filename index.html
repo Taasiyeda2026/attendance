@@ -1377,7 +1377,7 @@
         <i class="fas fa-table"></i>
         <span>רשומות נוכחות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
         <span>רשומות הצוות</span>
       </a>
@@ -1813,31 +1813,58 @@
       </div>
     </div>
 
-    <!-- Team Records Page (for manager, operations_controller, system_admin) -->
+    <!-- Team Records Page (for manager, operations_controller, system_admin, payroll_officer) -->
     <div id="teamRecordsPage" class="page hidden">
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h1>רשומות הצוות</h1>
-          <p id="teamRecordsSubtitle">צפייה ועריכה של רשומות הצוות</p>
+          <h1>סיכום נוכחות</h1>
+          <p id="teamRecordsSubtitle">סיכום לפי עובד - לחץ על שם לפירוט</p>
         </div>
         <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
       </div>
-      
+
       <div class="content-card">
-        <div class="card-header">
-          <h2 class="card-title">רשומות צוות <span id="teamName"></span></h2>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="card-header" style="flex-direction: column; gap: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+            <h2 class="card-title">סיכום צוות <span id="teamName"></span></h2>
             <button class="btn" onclick="exportTeamToExcel()" style="background: #10b981; color: white;">
               <i class="fas fa-file-excel"></i>
-              ייצוא חודשי
+              ייצוא ל-Excel
+            </button>
+          </div>
+          <!-- Month/Year Filter -->
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; width: 100%;">
+            <label style="font-weight: 500; color: #475569;">תקופה:</label>
+            <select id="teamMonthFilter" onchange="loadTeamRecords()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
+              <option value="1">ינואר</option>
+              <option value="2">פברואר</option>
+              <option value="3">מרץ</option>
+              <option value="4">אפריל</option>
+              <option value="5">מאי</option>
+              <option value="6">יוני</option>
+              <option value="7">יולי</option>
+              <option value="8">אוגוסט</option>
+              <option value="9">ספטמבר</option>
+              <option value="10">אוקטובר</option>
+              <option value="11">נובמבר</option>
+              <option value="12">דצמבר</option>
+            </select>
+            <select id="teamYearFilter" onchange="loadTeamRecords()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
+            <button class="btn" onclick="loadTeamRecords()" style="background: #3b82f6; color: white; padding: 8px 16px;">
+              <i class="fas fa-sync-alt"></i>
+              רענן
             </button>
           </div>
         </div>
         <div class="card-body">
           <div id="teamRecordsTable">
-            <p style="text-align: center; color: #94a3b8; padding: 40px;">טוען רשומות צוות...</p>
+            <p style="text-align: center; color: #94a3b8; padding: 40px;">בחר חודש ושנה לצפייה בסיכום</p>
           </div>
         </div>
       </div>
@@ -2954,9 +2981,9 @@ function showPage(event, pageName) {
     pageName = 'team-records';
   }
   
-  // Role guard: payroll_officer can only access dashboard
-  if (role === 'payroll_officer' && pageName !== 'dashboard') {
-    pageName = 'dashboard';
+  // Role guard: payroll_officer can only access dashboard and team-records
+  if (role === 'payroll_officer' && pageName !== 'dashboard' && pageName !== 'team-records') {
+    pageName = 'team-records';
   }
   
   // Close mobile menu when navigating
@@ -3011,6 +3038,23 @@ async function loadTeamRecords() {
   const user = getCurrentUserData();
   if (!user) return;
 
+  // Set default month/year to current
+  const now = new Date();
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+
+  if (monthSelect && !monthSelect.dataset.initialized) {
+    monthSelect.value = now.getMonth() + 1;
+    monthSelect.dataset.initialized = 'true';
+  }
+  if (yearSelect && !yearSelect.dataset.initialized) {
+    yearSelect.value = now.getFullYear();
+    yearSelect.dataset.initialized = 'true';
+  }
+
+  const selectedMonth = monthSelect ? parseInt(monthSelect.value) : now.getMonth() + 1;
+  const selectedYear = yearSelect ? parseInt(yearSelect.value) : now.getFullYear();
+
   const teamName = document.getElementById('teamName');
   if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'payroll_officer') {
     teamName.textContent = '(כל הצוותים)';
@@ -3021,12 +3065,12 @@ async function loadTeamRecords() {
   // Show loading
   document.getElementById('teamRecordsTable').innerHTML = `
     <p style="text-align: center; color: #64748b; padding: 40px;">
-      <i class="fas fa-spinner fa-spin"></i> טוען נתונים...
+      <i class="fas fa-spinner fa-spin"></i> טוען נתונים לחודש ${selectedMonth}/${selectedYear}...
     </p>
   `;
 
   try {
-    // Get summary data from server
+    // Get summary data from server - filtered by month/year
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3034,7 +3078,9 @@ async function loadTeamRecords() {
         action: 'getSummary',
         employeeId: user.empNum,
         role: user.role,
-        team: user.team
+        team: user.team,
+        month: selectedMonth,
+        year: selectedYear
       })
     });
 
@@ -3174,12 +3220,19 @@ async function toggleEmployeeDetails(empId) {
     if (!detailsContent.dataset.loaded) {
       try {
         const user = getCurrentUserData();
+        const monthSelect = document.getElementById('teamMonthFilter');
+        const yearSelect = document.getElementById('teamYearFilter');
+        const selectedMonth = monthSelect ? parseInt(monthSelect.value) : new Date().getMonth() + 1;
+        const selectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
+
         const response = await fetch(LOGIC_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'getEmployeeRecords',
-            employeeId: empId
+            employeeId: empId,
+            month: selectedMonth,
+            year: selectedYear
           })
         });
 
