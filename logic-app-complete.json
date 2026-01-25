@@ -316,7 +316,7 @@
                                                         "totalExpenses": "@item()?['totalExpenses']",
                                                         "expensesDetails": "@item()?['expensesDetails']",
                                                         "notes": "@item()?['notes']",
-                                                        "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
+                                                        "team": "@item()?['team']",
                                                         "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                     }
                                                 },
@@ -373,7 +373,7 @@
                                                             "type": "Query",
                                                             "inputs": {
                                                                 "from": "@body('Get_All_For_Team_Filter')?['value']",
-                                                                "where": "@or(equals(item()?['team']?['Value'], triggerBody()?['team']), equals(item()?['team'], triggerBody()?['team']), equals(item()?['Team']?['Value'], triggerBody()?['team']))"
+                                                                "where": "@equals(item()?['team'], triggerBody()?['team'])"
                                                             },
                                                             "runAfter": {
                                                                 "Get_All_For_Team_Filter": ["Succeeded"]
@@ -400,7 +400,7 @@
                                                                     "totalExpenses": "@item()?['totalExpenses']",
                                                                     "expensesDetails": "@item()?['expensesDetails']",
                                                                     "notes": "@item()?['notes']",
-                                                                    "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
+                                                                    "team": "@item()?['team']",
                                                                     "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                                 }
                                                             },
@@ -470,17 +470,17 @@
                                                                         "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
                                                                         "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
                                                                         "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
-                                                                        "sessionNumber": "@item()?['sessionNumber']",
-                                                                        "kilometers": "@item()?['kilometers']",
-                                                                        "totalExpenses": "@item()?['totalExpenses']",
-                                                                        "expensesDetails": "@item()?['expensesDetails']",
-                                                                        "notes": "@item()?['notes']",
-                                                                        "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
-                                                                        "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
-                                                                    }
-                                                                },
-                                                                "runAfter": {
-                                                                    "Filter_By_EmployeeId": [
+                                                                    "sessionNumber": "@item()?['sessionNumber']",
+                                                                    "kilometers": "@item()?['kilometers']",
+                                                                    "totalExpenses": "@item()?['totalExpenses']",
+                                                                    "expensesDetails": "@item()?['expensesDetails']",
+                                                                    "notes": "@item()?['notes']",
+                                                                    "team": "@item()?['team']",
+                                                                    "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
+                                                                }
+                                                            },
+                                                            "runAfter": {
+                                                                "Filter_By_EmployeeId": [
                                                                         "Succeeded"
                                                                     ]
                                                                 }
@@ -567,6 +567,12 @@
                                                         "@triggerBody()?['role']",
                                                         "operations_controller"
                                                     ]
+                                                },
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "payroll_officer"
+                                                    ]
                                                 }
                                             ]
                                         },
@@ -577,7 +583,7 @@
                                                     "type": "Query",
                                                     "inputs": {
                                                         "from": "@variables('summaryRecords')",
-                                                        "where": "@or(equals(item()?['team']?['Value'], triggerBody()?['team']), equals(item()?['Team']?['Value'], triggerBody()?['team']), equals(item()?['team'], triggerBody()?['team']))"
+                                                        "where": "@equals(item()?['team'], triggerBody()?['team'])"
                                                     }
                                                 },
                                                 "Set_Summary_Records_To_Team": {
