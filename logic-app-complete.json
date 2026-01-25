@@ -308,6 +308,18 @@
                                                         "@triggerBody()?['role']",
                                                         "payroll_officer"
                                                     ]
+                                                },
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "admin_assistant"
+                                                    ]
+                                                },
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "payroll"
+                                                    ]
                                                 }
                                             ]
                                         },
@@ -596,6 +608,18 @@
                                                     "equals": [
                                                         "@triggerBody()?['role']",
                                                         "payroll_officer"
+                                                    ]
+                                                },
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "admin_assistant"
+                                                    ]
+                                                },
+                                                {
+                                                    "equals": [
+                                                        "@triggerBody()?['role']",
+                                                        "payroll"
                                                     ]
                                                 }
                                             ]
