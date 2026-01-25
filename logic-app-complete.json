@@ -101,27 +101,44 @@
             }
         },
         "actions": {
-            "Switch_Action": {
-                "type": "Switch",
-                "expression": "@triggerBody()?['action']",
-                "default": {
-                    "actions": {
-                        "Response_Unknown_Action": {
-                            "type": "Response",
-                            "kind": "Http",
-                            "inputs": {
-                                "statusCode": 400,
-                                "headers": {
-                                    "Access-Control-Allow-Origin": "*"
-                                },
-                                "body": {
-                                    "success": false,
-                                    "message": "Unknown action"
-                                }
+            "Check_If_Action_Exists": {
+                "type": "If",
+                "expression": {
+                    "and": [
+                        {
+                            "not": {
+                                "equals": [
+                                    "@triggerBody()?['action']",
+                                    null
+                                ]
                             }
                         }
-                    }
+                    ]
                 },
+                "actions": {
+                    "Switch_Action": {
+                        "type": "Switch",
+                        "expression": "@triggerBody()?['action']",
+                        "default": {
+                            "actions": {
+                                "Response_Unknown_Action": {
+                                    "type": "Response",
+                                    "kind": "Http",
+                                    "inputs": {
+                                        "statusCode": 400,
+                                        "headers": {
+                                            "Access-Control-Allow-Origin": "*",
+                                            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                                            "Access-Control-Allow-Headers": "Content-Type"
+                                        },
+                                        "body": {
+                                            "success": false,
+                                            "message": "Unknown action"
+                                        }
+                                    }
+                                }
+                            }
+                        },
                 "cases": {
                     "auth": {
                         "actions": {
@@ -605,11 +622,34 @@
                         },
                         "case": "deleteRecord"
                     }
-                },
-                "runAfter": {}
-            }
-        },
-        "parameters": {
+                    },
+                    "runAfter": {}
+                }
+            },
+            "else": {
+                "actions": {
+                    "Response_Null_Action": {
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                            "statusCode": 200,
+                            "headers": {
+                                "Access-Control-Allow-Origin": "*",
+                                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                                "Access-Control-Allow-Headers": "Content-Type"
+                            },
+                            "body": {
+                                "success": false,
+                                "message": "No action specified"
+                            }
+                        }
+                    }
+                }
+            },
+            "runAfter": {}
+        }
+    },
+    "parameters": {
             "$connections": {
                 "type": "Object",
                 "defaultValue": {}
