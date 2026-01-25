@@ -761,7 +761,7 @@
                                             }
                                         },
                                         "runAfter": {
-                                            "For_each_Summary_Record": ["Succeeded"]
+                                            "For_each_Summary_Record": ["Succeeded", "Skipped"]
                                         }
                                     }
                                 },
