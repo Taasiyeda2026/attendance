@@ -750,12 +750,6 @@
                                     "Response_Team_Summary": {
                                         "type": "Response",
                                         "kind": "Http",
-                                        "runAfter": {
-                                            "For_each_Summary_Record": [
-                                                "Succeeded",
-                                                "Skipped"
-                                            ]
-                                        },
                                         "inputs": {
                                             "statusCode": 200,
                                             "headers": {
@@ -766,6 +760,12 @@
                                                 "success": true,
                                                 "records": "@variables('teamSummary')"
                                             }
+                                        },
+                                        "runAfter": {
+                                            "For_each_Summary_Record": [
+                                                "Succeeded",
+                                                "Skipped"
+                                            ]
                                         }
                                     }
                                 },
