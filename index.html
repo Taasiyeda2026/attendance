@@ -2665,6 +2665,7 @@ async function loadMyRecordsFromServer() {
       id: rec.ID || rec.Id || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
       empNum: rec.employeeId?.toString() || employeeId,
       empName: rec.employeeName || '',
+      team: rec.team || rec.Team || '',
       date: rec.attendanceDate || '',
       start: rec.startTime || '',
       end: rec.endTime || '',
@@ -2682,7 +2683,7 @@ async function loadMyRecordsFromServer() {
       approvedBy: rec.approvedBy || '',
       approvedDate: rec.approvedDate || '',
       rejectReason: rec.rejectReason || '',
-      employmentType: rec.employmentType || '',
+      employmentType: rec.employmentType || rec.EmploymentType || '',
       attachments: []
     }));
 
@@ -3047,10 +3048,12 @@ function loadTeamRecords() {
           <th style="width: 50px;">אישור</th>
           <th>תאריך</th>
           <th>עובד</th>
+          <th>צוות</th>
           <th>שעות</th>
           <th>פעילות</th>
           <th>בית ספר</th>
           <th>רשות</th>
+          <th>סוג העסקה</th>
           <th>ק"מ</th>
           <th>הוצאות</th>
         </tr>
@@ -3063,19 +3066,21 @@ function loadTeamRecords() {
             </td>
             <td>${rec.date}</td>
             <td>${rec.empName}</td>
+            <td>${rec.team || '-'}</td>
             <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
             <td>${rec.activity}</td>
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
+            <td>${rec.employmentType || '-'}</td>
             <td>${rec.km || 0}</td>
             <td>${rec.totalExpenses || 0} ₪</td>
           </tr>
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td></td>
-          <td colspan="2" style="text-align: left;">סה"כ:</td>
+          <td colspan="3" style="text-align: left;">סה"כ:</td>
           <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="5"></td>
+          <td colspan="6"></td>
         </tr>
       </tbody>
     </table>
