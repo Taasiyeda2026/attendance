@@ -38,50 +38,6 @@
 
     .hidden { display: none !important; }
 
-    .summary-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-    }
-
-    .summary-card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .summary-card h4 {
-      font-size: 16px;
-      color: #1e293b;
-      font-weight: 600;
-    }
-
-    .summary-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      color: #64748b;
-      font-size: 13px;
-    }
-
-    .summary-metric {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: #475569;
-      padding: 6px 0;
-      border-bottom: 1px dashed #e2e8f0;
-    }
-
-    .summary-metric:last-child {
-      border-bottom: none;
-    }
-
     /* ============= Login Screen ============= */
     #loginScreen {
       min-height: 100vh;
@@ -1646,37 +1602,35 @@
                 <div style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: 2px solid #cbd5e1; border-radius: 12px; padding: 8px 20px; min-width: 80px;">
                   <span id="hoursDisplay" style="font-size: 22px; font-weight: 700; color: #1e40af;">0:00</span>
                 </div>
-                <input type="text" id="hoursField" step="0.01" min="0" max="24" readonly style="display: none;">
+                <input type="hidden" id="hoursField" step="0.01" min="0" max="24" readonly>
               </div>
               <!-- שעת התחלה -->
               <div class="form-field" style="margin: 0;">
-                <label style="display: block; margin-bottom: 6px;">שעת התחלה <span style="color: #ef4444;">*</span>
-                  <div class="time-picker-row">
-                    <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
-                      <option value="">שעה</option>
-                    </select>
-                    <span class="time-separator">:</span>
-                    <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" required>
-                      <option value="">דקות</option>
-                    </select>
-                    <input type="hidden" id="startTime">
-                  </div>
-                </label>
+                <label style="display: block; margin-bottom: 6px;">שעת התחלה <span style="color: #ef4444;">*</span></label>
+                <div class="time-picker-row">
+                  <select id="startHour" onchange="updateTimeField('start'); calculateHours()" required>
+                    <option value="">שעה</option>
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select id="startMinute" onchange="updateTimeField('start'); calculateHours()" required>
+                    <option value="">דקות</option>
+                  </select>
+                  <input type="hidden" id="startTime">
+                </div>
               </div>
               <!-- שעת סיום -->
               <div class="form-field" style="margin: 0;">
-                <label style="display: block; margin-bottom: 6px;">שעת סיום <span style="color: #ef4444;">*</span>
-                  <div class="time-picker-row">
-                    <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
-                      <option value="">שעה</option>
-                    </select>
-                    <span class="time-separator">:</span>
-                    <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" required>
-                      <option value="">דקות</option>
-                    </select>
-                    <input type="hidden" id="endTime">
-                  </div>
-                </label>
+                <label style="display: block; margin-bottom: 6px;">שעת סיום <span style="color: #ef4444;">*</span></label>
+                <div class="time-picker-row">
+                  <select id="endHour" onchange="updateTimeField('end'); calculateHours()" required>
+                    <option value="">שעה</option>
+                  </select>
+                  <span class="time-separator">:</span>
+                  <select id="endMinute" onchange="updateTimeField('end'); calculateHours()" required>
+                    <option value="">דקות</option>
+                  </select>
+                  <input type="hidden" id="endTime">
+                </div>
               </div>
             </div>
           </div>
@@ -1912,7 +1866,7 @@
         <div class="card-body" style="padding: 15px;">
           <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
             <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label for="reportMonth" style="font-size: 12px; margin-bottom: 4px;">חודש</label>
+              <label style="font-size: 12px; margin-bottom: 4px;">חודש</label>
               <select id="reportMonth" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="1">ינואר</option>
                 <option value="2">פברואר</option>
@@ -1929,7 +1883,7 @@
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 100px;">
-              <label for="reportYear" style="font-size: 12px; margin-bottom: 4px;">שנה</label>
+              <label style="font-size: 12px; margin-bottom: 4px;">שנה</label>
               <select id="reportYear" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="2025">2025</option>
                 <option value="2026">2026</option>
@@ -1937,13 +1891,13 @@
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label for="reportTeam" style="font-size: 12px; margin-bottom: 4px;">צוות</label>
+              <label style="font-size: 12px; margin-bottom: 4px;">צוות</label>
               <select id="reportTeam" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="all">הכל</option>
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 140px;" id="employmentTypeFilterContainer">
-              <label for="reportEmploymentType" style="font-size: 12px; margin-bottom: 4px;">סוג העסקה</label>
+              <label style="font-size: 12px; margin-bottom: 4px;">סוג העסקה</label>
               <select id="reportEmploymentType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="all">הכל</option>
                 <option value="תעשיידע">תעשיידע</option>
@@ -1953,7 +1907,7 @@
               </select>
             </div>
             <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label for="reportActivityType" style="font-size: 12px; margin-bottom: 4px;">סוג פעילות</label>
+              <label style="font-size: 12px; margin-bottom: 4px;">סוג פעילות</label>
               <select id="reportActivityType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
                 <option value="all">הכל</option>
                 <option value="ביטול זמן">ביטול זמן</option>
@@ -2064,32 +2018,30 @@
             <input type="date" id="editDate" required>
           </div>
           <div class="form-field">
-            <label class="required-label">שעת התחלה
-              <div class="time-picker-row">
-                <select id="editStartHour" onchange="updateTimeField('editStart'); calculateEditHours()" required>
-                  <option value="">שעה</option>
-                </select>
-                <span class="time-separator">:</span>
-                <select id="editStartMinute" onchange="updateTimeField('editStart'); calculateEditHours()" required>
-                  <option value="">דקות</option>
-                </select>
-                <input type="hidden" id="editStartTime">
-              </div>
-            </label>
+            <label class="required-label">שעת התחלה</label>
+            <div class="time-picker-row">
+              <select id="editStartHour" onchange="updateTimeField('editStart'); calculateEditHours()" required>
+                <option value="">שעה</option>
+              </select>
+              <span class="time-separator">:</span>
+              <select id="editStartMinute" onchange="updateTimeField('editStart'); calculateEditHours()" required>
+                <option value="">דקות</option>
+              </select>
+              <input type="hidden" id="editStartTime">
+            </div>
           </div>
           <div class="form-field">
-            <label class="required-label">שעת סיום
-              <div class="time-picker-row">
-                <select id="editEndHour" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
-                  <option value="">שעה</option>
-                </select>
-                <span class="time-separator">:</span>
-                <select id="editEndMinute" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
-                  <option value="">דקות</option>
-                </select>
-                <input type="hidden" id="editEndTime">
-              </div>
-            </label>
+            <label class="required-label">שעת סיום</label>
+            <div class="time-picker-row">
+              <select id="editEndHour" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
+                <option value="">שעה</option>
+              </select>
+              <span class="time-separator">:</span>
+              <select id="editEndMinute" onchange="updateTimeField('editEnd'); calculateEditHours()" required>
+                <option value="">דקות</option>
+              </select>
+              <input type="hidden" id="editEndTime">
+            </div>
           </div>
           <div class="form-field">
             <label for="editHours">סה"כ שעות</label>
@@ -2268,33 +2220,6 @@ const LOGIC_APP_URL = "https://prod-23.israelcentral.logic.azure.com:443/workflo
 
 // =============== State ===============
 let records = [];
-let teamSummaryRecords = [];
-let teamDetailRecords = [];
-let teamSummaryPeriod = { periodFrom: '', periodTo: '' };
-
-function isManagerRole(role) {
-  return ['manager', 'system_admin', 'operations_controller', 'payroll_officer'].includes(role);
-}
-
-function buildHistoryPayload(user) {
-  return {
-    action: 'getHistory',
-    employeeId: String(user.empNum || ''),
-    role: String(user.role || ''),
-    team: String(user.team || '')
-  };
-}
-
-function buildTeamSummaryPayload(user, periodFrom, periodTo) {
-  return {
-    action: 'getTeamSummary',
-    periodFrom: String(periodFrom || ''),
-    periodTo: String(periodTo || ''),
-    employeeId: String(user.empNum || ''),
-    role: String(user.role || ''),
-    team: String(user.team || '')
-  };
-}
 let currentUser = '';
 let editingIndex = -1;
 
@@ -2322,11 +2247,6 @@ function extractLookupValue(field, defaultValue = '') {
     return field.Value;
   }
   return defaultValue;
-}
-
-function normalizeText(value) {
-  if (value === null || value === undefined) return '';
-  return String(value).trim().toLowerCase();
 }
 
 // =============== Users ===============
@@ -2678,10 +2598,74 @@ async function loadMyRecordsFromServer() {
     return;
   }
 
-  records = [];
-  renderRecordsTable();
-  updateStats();
-  showAlert('ℹ️ תצוגת סיכומים בלבד', 'info');
+  try {
+    showAlert('🔄 טוען רשומות מהשרת...', 'info');
+    
+    const role = localStorage.getItem("role") || '';
+    const team = localStorage.getItem("team") || '';
+    
+    const res = await fetch(LOGIC_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "getHistory",
+        employeeId: employeeId,
+        role: role,
+        team: team
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.success || !Array.isArray(data.records)) {
+      console.warn("No records or failed:", data);
+      records = [];
+      renderRecordsTable();
+      updateStats();
+      showAlert('✅ אין רשומות קיימות', 'info');
+      return;
+    }
+
+    // Helper to extract value from SharePoint lookup fields
+    const extractValue = (field) => {
+      if (!field) return '';
+      if (typeof field === 'string') return field;
+      if (typeof field === 'object' && field.Value) return field.Value;
+      return '';
+    };
+    
+    // Map server records to local format
+    records = data.records.map(rec => ({
+      recordId: rec.ID || rec.Id || rec.id || rec.recordId || null,
+      id: rec.ID || rec.Id || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
+      empNum: rec.employeeId?.toString() || employeeId,
+      empName: extractValue(rec.employeeName) || extractValue(rec.EmployeeName) || '',
+      team: extractValue(rec.team) || extractValue(rec.Team) || '',
+      date: rec.attendanceDate || '',
+      start: rec.startTime || '',
+      end: rec.endTime || '',
+      hours: rec.workHours || 0,
+      activity: extractValue(rec.activityType) || extractValue(rec.ActivityType) || '',
+      school: extractValue(rec.schoolName) || extractValue(rec.SchoolName) || '',
+      municipality: extractValue(rec.municipality) || extractValue(rec.Municipality) || '',
+      program: extractValue(rec.programName) || extractValue(rec.ProgramName) || '',
+      session: rec.sessionNumber || '',
+      km: rec.kilometers || 0,
+      totalExpenses: rec.totalExpenses || 0,
+      expensesDetail: rec.expensesDetails || '',
+      notes: rec.notes || '',
+      employmentType: extractValue(rec.employmentType) || extractValue(rec.EmploymentType) || '',
+      attachments: []
+    }));
+
+    renderRecordsTable();
+    updateStats();
+    showAlert(`✅ נטענו ${records.length} רשומות`, 'success');
+  } catch (error) {
+    console.error('Load records error:', error);
+    // Don't reset records on error - keep existing data
+    showAlert('⚠️ שגיאה בטעינת רשומות', 'error');
+  }
 }
 
 async function updateRecordOnServer(updatedRecord, originalDate, originalStartTime) {
@@ -2996,218 +2980,69 @@ function loadTeamRecords() {
   if (!user) return;
   
   const teamName = document.getElementById('teamName');
-  if (['system_admin', 'operations_controller', 'payroll_officer'].includes(user.role)) {
+  if (user.role === 'system_admin' || user.role === 'operations_controller') {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
   }
-
-  loadTeamSummary();
-}
-
-function formatDateToISO(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function getCurrentMonthPeriod() {
-  const now = new Date();
-  const periodFrom = formatDateToISO(new Date(now.getFullYear(), now.getMonth(), 1));
-  const periodTo = formatDateToISO(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-  return { periodFrom, periodTo };
-}
-
-function getPeriodForMonth(year, month) {
-  const periodFrom = formatDateToISO(new Date(year, month - 1, 1));
-  const periodTo = formatDateToISO(new Date(year, month, 0));
-  return { periodFrom, periodTo };
-}
-
-async function loadTeamSummary() {
-  const user = getCurrentUserData();
-  if (!user) return;
   
-  const { periodFrom, periodTo } = getCurrentMonthPeriod();
-  teamSummaryPeriod = { periodFrom, periodTo };
-  teamSummaryRecords = [];
-  teamDetailRecords = [];
-  
-  document.getElementById('teamRecordsTable').innerHTML = `
-    <p style="text-align: center; color: #94a3b8; padding: 40px;">טוען סיכום צוות...</p>
-  `;
-  
-  try {
-    const response = await fetch(LOGIC_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildTeamSummaryPayload(user, periodFrom, periodTo))
-    });
-    
-    if (!response.ok) {
-      throw new Error('Summary request failed');
-    }
-    
-    const data = await response.json();
-    if (data.success && Array.isArray(data.records)) {
-      teamSummaryRecords = data.records.map(rec => ({
-        employeeId: rec.employeeId,
-        employeeName: rec.employeeName,
-        employmentType: rec.employmentType,
-        team: rec.team,
-        workDays: rec.workDays || 0,
-        courseHours: rec.courseHours || 0,
-        trainingHours: rec.trainingHours || 0,
-        cancelHours: rec.cancelHours || 0,
-        kilometers: rec.kilometers || 0
-      }));
-    }
-    
-    renderTeamSummaryTable();
-  } catch (error) {
-    console.error('Load team summary error:', error);
-    document.getElementById('teamRecordsTable').innerHTML = `
-      <p style="text-align: center; color: #ef4444; padding: 40px;">
-        <i class="fas fa-exclamation-triangle"></i>
-        שגיאה בטעינת סיכום הצוות
-      </p>
-    `;
-  }
-}
-
-function renderTeamSummaryTable() {
-  if (teamSummaryRecords.length === 0) {
+  // Show local records for now (will be replaced with team records after sync)
+  if (records.length === 0) {
     document.getElementById('teamRecordsTable').innerHTML = `
       <p style="text-align: center; color: #64748b; padding: 40px;">
         <i class="fas fa-info-circle"></i>
-        אין נתונים להצגה
+        אין רשומות להצגה
       </p>
     `;
     return;
   }
   
+  const totalHours = records.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  
   const tableHTML = `
-    <div style="margin-bottom: 15px; color: #64748b;">
-      תקופה: ${teamSummaryPeriod.periodFrom} עד ${teamSummaryPeriod.periodTo}
+    <div style="margin-bottom: 15px;">
+      <span style="color: #64748b;">סה"כ ${records.length} רשומות</span>
     </div>
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
+    <table>
+      <thead>
+        <tr>
+          <th>תאריך</th>
+          <th>עובד</th>
+          <th>צוות</th>
+          <th>שעות</th>
+          <th>פעילות</th>
+          <th>בית ספר</th>
+          <th>רשות</th>
+          <th>סוג העסקה</th>
+          <th>ק"מ</th>
+          <th>הוצאות</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${records.map((rec, idx) => `
           <tr>
-            <th>שם עובד</th>
-            <th>סוג העסקה</th>
-            <th>צוות</th>
-            <th>ימי עבודה</th>
-            <th>שעות הדרכה</th>
-            <th>שעות הכשרה</th>
-            <th>שעות ביטול</th>
-            <th>ק"מ</th>
+            <td>${rec.date}</td>
+            <td>${rec.empName}</td>
+            <td>${rec.team || '-'}</td>
+            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
+            <td>${rec.activity}</td>
+            <td>${rec.school || '-'}</td>
+            <td>${rec.municipality}</td>
+            <td>${rec.employmentType || '-'}</td>
+            <td>${rec.km || 0}</td>
+            <td>${rec.totalExpenses || 0} ₪</td>
           </tr>
-        </thead>
-        <tbody>
-          ${teamSummaryRecords.map(rec => `
-            <tr>
-              <td>${rec.employeeName || '-'}</td>
-              <td>${rec.employmentType || '-'}</td>
-              <td>${rec.team || '-'}</td>
-              <td>${rec.workDays || 0}</td>
-              <td><strong>${formatHoursDisplay(rec.courseHours)}</strong></td>
-              <td><strong>${formatHoursDisplay(rec.trainingHours)}</strong></td>
-              <td><strong>${formatHoursDisplay(rec.cancelHours)}</strong></td>
-              <td>${(parseFloat(rec.kilometers) || 0).toFixed(1)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-    <div id="teamRecordDetails" style="margin-top: 20px;"></div>
+        `).join('')}
+        <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
+          <td colspan="3" style="text-align: left;">סה"כ:</td>
+          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
+          <td colspan="6"></td>
+        </tr>
+      </tbody>
+    </table>
   `;
   
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
-  
-  const detailsContainer = document.getElementById('teamRecordDetails');
-  if (detailsContainer) detailsContainer.innerHTML = '';
-}
-
-function isDateWithinRange(dateValue, periodFrom, periodTo) {
-  if (!dateValue) return false;
-  const dateOnly = dateValue.split('T')[0];
-  return dateOnly >= periodFrom && dateOnly <= periodTo;
-}
-
-async function loadTeamMemberDetails(employeeId, employeeName) {
-  const user = getCurrentUserData();
-  if (!user) return;
-  
-  const detailsContainer = document.getElementById('teamRecordDetails');
-  if (!detailsContainer) return;
-
-  teamDetailRecords = [];
-  detailsContainer.innerHTML = `
-    <p style="text-align: center; color: #64748b; padding: 20px;">
-      תצוגת סיכום בלבד זמינה עבור ${employeeName || employeeId}
-    </p>
-  `;
-}
-
-function renderTeamMemberDetails(employeeName, employeeId) {
-  const detailsContainer = document.getElementById('teamRecordDetails');
-  if (!detailsContainer) return;
-  
-  if (teamDetailRecords.length === 0) {
-    detailsContainer.innerHTML = `
-      <p style="text-align: center; color: #64748b; padding: 20px;">
-        אין רשומות עבור ${employeeName || employeeId}
-      </p>
-    `;
-    return;
-  }
-  
-  const totalHours = teamDetailRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  
-  detailsContainer.innerHTML = `
-    <div style="margin-bottom: 10px; font-weight: 600;">
-      פירוט עבור ${employeeName || employeeId}
-    </div>
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>תאריך</th>
-            <th>שעת התחלה</th>
-            <th>שעת סיום</th>
-            <th>שעות</th>
-            <th>פעילות</th>
-            <th>בית ספר</th>
-            <th>רשות</th>
-            <th>ק"מ</th>
-            <th>הוצאות</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${teamDetailRecords.map(rec => `
-            <tr>
-              <td>${rec.date}</td>
-              <td>${rec.start}</td>
-              <td>${rec.end}</td>
-              <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
-              <td>${rec.activity || '-'}</td>
-              <td>${rec.school || '-'}</td>
-              <td>${rec.municipality || '-'}</td>
-              <td>${rec.km || 0}</td>
-              <td>${rec.totalExpenses || 0} ₪</td>
-            </tr>
-          `).join('')}
-          <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-            <td colspan="3" style="text-align: left;">סה"כ:</td>
-            <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-            <td colspan="5"></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  `;
 }
 
 function loadReports() {
@@ -3223,64 +3058,55 @@ function loadReports() {
   `;
 }
 
-async function exportTeamToExcel() {
-  const user = getCurrentUserData();
-  if (!user) return;
-  
-  if (!teamSummaryPeriod.periodFrom || !teamSummaryPeriod.periodTo) {
-    teamSummaryPeriod = getCurrentMonthPeriod();
-  }
-  
-  let dataToExport = teamDetailRecords;
-  
-  if (dataToExport.length === 0) {
-    showAlert('טוען רשומות לצורך ייצוא...', 'info');
-    try {
-      const response = await fetch(LOGIC_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildHistoryPayload(user))
-      });
-      
-      const data = await response.json();
-      if (data.success && Array.isArray(data.records)) {
-        dataToExport = data.records
-          .filter(rec => isDateWithinRange(rec.attendanceDate || '', teamSummaryPeriod.periodFrom, teamSummaryPeriod.periodTo))
-          .map(rec => ({
-            empNum: rec.employeeId,
-            empName: extractLookupValue(rec.employeeName || rec.EmployeeName, ''),
-            date: rec.attendanceDate || '',
-            start: rec.startTime || '',
-            end: rec.endTime || '',
-            hours: rec.workHours || 0,
-            activity: extractLookupValue(rec.activityType || rec.ActivityType, ''),
-            school: extractLookupValue(rec.schoolName || rec.SchoolName, ''),
-            municipality: extractLookupValue(rec.municipality || rec.Municipality, ''),
-            program: extractLookupValue(rec.programName || rec.ProgramName, ''),
-            session: rec.sessionNumber || '',
-            km: rec.kilometers || 0,
-            totalExpenses: rec.totalExpenses || 0,
-            expensesDetail: rec.expensesDetails || '',
-            notes: rec.notes || ''
-          }));
-      }
-    } catch (error) {
-      console.error('Export load error:', error);
-    }
-  }
+function exportTeamToExcel() {
+  // Use all records (local records for now, team records when synced)
+  const dataToExport = records;
   
   if (dataToExport.length === 0) {
     showAlert('⚠️ אין נתונים לייצוא', 'error');
     return;
   }
   
-  let summaryCSV = 'שם עובד,סוג העסקה,צוות,ימי עבודה,שעות הדרכה,שעות הכשרה,שעות ביטול,קילומטר\n';
+  // Export all records for the monthly report (approved status shown in column)
+  const approvedRecords = dataToExport;
   
-  dataToExport.forEach(rec => {
-    summaryCSV += `${rec.employeeName || ''},${rec.employmentType || ''},${rec.team || ''},${rec.workDays || 0},${rec.courseHours || 0},${rec.trainingHours || 0},${rec.cancelHours || 0},${rec.kilometers || 0}\n`;
+  // Create workbook with SheetJS (xlsx library)
+  // Since we don't have xlsx library, create a multi-sheet CSV approach
+  // Sheet 1: Detailed records
+  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
+  
+  approvedRecords.forEach(rec => {
+    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
   });
   
-  const fullCSV = summaryCSV;
+  // Sheet 2: Summary by activity type (hours only) + general totals
+  let summaryCSV = '\n\n--- גיליון מסכם ---\n\n';
+  summaryCSV += 'סיכום שעות לפי סוג פעילות\n';
+  summaryCSV += 'סוג פעילות,סה"כ שעות\n';
+  
+  // Group hours by activity type
+  const hoursByActivity = {};
+  approvedRecords.forEach(rec => {
+    const activity = rec.activity || 'לא מוגדר';
+    hoursByActivity[activity] = (hoursByActivity[activity] || 0) + (parseFloat(rec.hours) || 0);
+  });
+  
+  Object.entries(hoursByActivity).forEach(([activity, hours]) => {
+    summaryCSV += `${activity},${hours.toFixed(2)}\n`;
+  });
+  
+  // General totals
+  const totalKm = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
+  const totalExpenses = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
+  const totalHours = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  
+  summaryCSV += '\n\nסיכום כללי\n';
+  summaryCSV += `סה"כ שעות,${totalHours.toFixed(2)}\n`;
+  summaryCSV += `סה"כ קילומטר,${totalKm.toFixed(1)}\n`;
+  summaryCSV += `סה"כ הוצאות,${totalExpenses.toFixed(2)} ₪\n`;
+  
+  // Combine both sheets
+  const fullCSV = detailedCSV + summaryCSV;
   
   const blob = new Blob(['\ufeff' + fullCSV], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -3386,21 +3212,23 @@ async function submitAll() {
     try {
     const payload = {
         action: "submit",
-        employeeId: String(localStorage.getItem("employeeId") || rec.empNum || ''),
-        employeeName: String(localStorage.getItem("employeeName") || rec.empName || ''),
-        attendanceDate: String(rec.date || ''),
-        startTime: String(rec.start || ''),
-        endTime: String(rec.end || ''),
-        workHours: Number(rec.hours) || 0,
-        activityType: String(rec.activity || ''),
-        schoolName: String(rec.school || ''),
-        municipality: String(rec.municipality || ''),
-        programName: String(rec.program || ''),
-        sessionNumber: Number(rec.session) || 0,
-        kilometers: Number(rec.km) || 0,
-        totalExpenses: Number(rec.totalExpenses) || 0,
-        expensesDetails: String(rec.expensesDetail || ''),
-        notes: String(rec.notes || ''),
+        employeeId: localStorage.getItem("employeeId") || rec.empNum,
+        employeeName: localStorage.getItem("employeeName") || rec.empName,
+        attendanceDate: rec.date,
+        startTime: rec.start || '',
+        endTime: rec.end || '',
+        workHours: rec.hours ? Number(rec.hours).toFixed(2) : '0',
+        activityType: rec.activity,
+        schoolName: rec.school || '',
+        municipality: rec.municipality || '',
+        programName: rec.program || '',
+        sessionNumber: rec.session || '',
+        kilometers: rec.km || 0,
+        totalExpenses: rec.totalExpenses || 0,
+        expensesDetails: rec.expensesDetail || '',
+        notes: rec.notes || '',
+        attachments: rec.attachments || [],
+        attachmentsNames: formatAttachments(rec.attachments || []),
         employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
         team: String(localStorage.getItem("team") || '')
       };
@@ -4403,10 +4231,10 @@ async function loadReportData() {
   const year = document.getElementById('reportYear').value;
   const employmentType = document.getElementById('reportEmploymentType')?.value || 'all';
   const team = document.getElementById('reportTeam')?.value || 'all';
+  const activityType = document.getElementById('reportActivityType')?.value || 'all';
   
   const user = getCurrentUserData();
   if (!user) return;
-  const { periodFrom, periodTo } = getPeriodForMonth(parseInt(year), parseInt(month));
   
   showAlert('טוען נתוני דוח...', 'info');
   
@@ -4414,48 +4242,66 @@ async function loadReportData() {
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildTeamSummaryPayload(user, periodFrom, periodTo))
+      body: JSON.stringify({
+        action: 'getHistory',
+        employeeId: user.empNum,
+        role: user.role,
+        team: user.team
+      })
     });
     
     if (!response.ok) {
-      reportRecords = [];
+      reportRecords = getFilteredRecordsByMonth(records, month, year);
     } else {
       const data = await response.json();
       if (data.success && Array.isArray(data.records)) {
         reportRecords = data.records.map(rec => ({
+          recordId: rec.ID || rec.Id || rec.id,
           empNum: rec.employeeId,
           empName: rec.employeeName,
+          date: rec.attendanceDate,
+          start: rec.startTime,
+          end: rec.endTime,
+          hours: rec.workHours || 0,
+          activity: rec.activityType,
+          school: rec.schoolName,
+          municipality: rec.municipality,
+          program: rec.programName,
+          session: rec.sessionNumber,
+          km: rec.kilometers || 0,
+          totalExpenses: rec.totalExpenses || 0,
+          expensesDetail: rec.expensesDetails,
+          notes: rec.notes,
           employmentType: rec.employmentType,
-          team: rec.team,
-          workDays: rec.workDays || 0,
-          courseHours: rec.courseHours || 0,
-          trainingHours: rec.trainingHours || 0,
-          cancelHours: rec.cancelHours || 0,
-          km: rec.kilometers || 0
+          team: rec.team
         }));
       } else {
-        reportRecords = [];
+        reportRecords = getFilteredRecordsByMonth(records, month, year);
       }
     }
-
+    
+    reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
+    
     populateTeamFilterFromRecords(reportRecords);
     
     if (employmentType !== 'all') {
-      const targetEmployment = normalizeText(employmentType);
-      reportRecords = reportRecords.filter(rec => normalizeText(rec.employmentType) === targetEmployment);
+      reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
     }
     
     if (team !== 'all') {
-      const targetTeam = normalizeText(team);
-      reportRecords = reportRecords.filter(rec => normalizeText(rec.team) === targetTeam);
+      reportRecords = reportRecords.filter(rec => rec.team === team);
+    }
+    
+    if (activityType !== 'all') {
+      reportRecords = reportRecords.filter(rec => rec.activity === activityType);
     }
     
     updateReportStats();
     renderReportByEmployee();
-    showAlert(`נטענו ${reportRecords.length} סיכומים לחודש ${month}/${year}`, 'success');
+    showAlert(`נטענו ${reportRecords.length} רשומות לחודש ${month}/${year}`, 'success');
   } catch (error) {
     console.error('Load report data error:', error);
-    reportRecords = [];
+    reportRecords = getFilteredRecordsByMonth(records, month, year);
     updateReportStats();
     renderReportByEmployee();
   }
@@ -4463,55 +4309,87 @@ async function loadReportData() {
 
 function updateReportStats() {
   const totalRecords = reportRecords.length;
+  const totalHours = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
+  const totalKm = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
+  const totalExpenses = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
   
   document.getElementById('teamTotalRecords').textContent = totalRecords;
-  document.getElementById('teamTotalHours').textContent = '—';
-  document.getElementById('teamTotalKm').textContent = '—';
-  document.getElementById('teamTotalExpenses').textContent = '—';
+  document.getElementById('teamTotalHours').textContent = formatHoursDisplay(totalHours);
+  document.getElementById('teamTotalKm').textContent = totalKm.toFixed(1);
+  document.getElementById('teamTotalExpenses').textContent = `${totalExpenses.toFixed(0)} ₪`;
 }
 
 function renderReportByEmployee() {
   const container = document.getElementById('reportsByEmployee');
   
   if (reportRecords.length === 0) {
-    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין סיכומים לתקופה הנבחרת</p>';
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות לתקופה הנבחרת</p>';
     return;
   }
-
-  container.innerHTML = `
-    <div class="summary-cards">
-      ${reportRecords.map(rec => `
-        <div class="summary-card">
-          <h4>${rec.empName || '-'}</h4>
-          <div class="summary-meta">
-            <span>${rec.employmentType || '-'}</span>
-            <span>•</span>
-            <span>${rec.team || '-'}</span>
-          </div>
-          <div class="summary-metric">
-            <span>ימי עבודה</span>
-            <strong>${rec.workDays || 0}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>שעות הדרכה</span>
-            <strong>${formatHoursDisplay(rec.courseHours)}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>שעות הכשרה</span>
-            <strong>${formatHoursDisplay(rec.trainingHours)}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>שעות ביטול</span>
-            <strong>${formatHoursDisplay(rec.cancelHours)}</strong>
-          </div>
-          <div class="summary-metric">
-            <span>סה"כ ק"מ</span>
-            <strong>${(parseFloat(rec.km) || 0).toFixed(1)}</strong>
-          </div>
-        </div>
-      `).join('')}
+  
+  const byEmployee = {};
+  reportRecords.forEach(rec => {
+    const key = rec.empName || 'לא ידוע';
+    if (!byEmployee[key]) {
+      byEmployee[key] = { empNum: rec.empNum, hours: 0, km: 0, expenses: 0, count: 0 };
+    }
+    byEmployee[key].hours += parseFloat(rec.hours) || 0;
+    byEmployee[key].km += parseFloat(rec.km) || 0;
+    byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
+    byEmployee[key].count++;
+  });
+  
+  let html = `
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>שם עובד</th>
+            <th>מספר עובד</th>
+            <th>רשומות</th>
+            <th>שעות</th>
+            <th>ק"מ</th>
+            <th>הוצאות</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+  
+  Object.keys(byEmployee).sort().forEach(name => {
+    const emp = byEmployee[name];
+    html += `
+      <tr>
+        <td>${name}</td>
+        <td>${emp.empNum}</td>
+        <td>${emp.count}</td>
+        <td><strong>${formatHoursDisplay(emp.hours)}</strong></td>
+        <td>${emp.km.toFixed(0)}</td>
+        <td>${emp.expenses.toFixed(0)} ₪</td>
+      </tr>
+    `;
+  });
+  
+  const totals = {
+    count: reportRecords.length,
+    hours: reportRecords.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0),
+    km: reportRecords.reduce((s, r) => s + (parseFloat(r.km) || 0), 0),
+    expenses: reportRecords.reduce((s, r) => s + (parseFloat(r.totalExpenses) || 0), 0)
+  };
+  
+  html += `
+      <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
+        <td colspan="2">סה"כ</td>
+        <td>${totals.count}</td>
+        <td style="color: #3b82f6;">${totals.hours.toFixed(1)}</td>
+        <td style="color: #3b82f6;">${totals.km.toFixed(0)}</td>
+        <td style="color: #3b82f6;">${totals.expenses.toFixed(0)} ₪</td>
+      </tr>
+        </tbody>
+      </table>
     </div>
   `;
+  
+  container.innerHTML = html;
 }
 
 function openExportModal() {
@@ -4536,12 +4414,43 @@ function exportReportToExcel(type = 'all') {
   const year = document.getElementById('reportYear').value;
   const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   
-  let csv = 'מספר עובד,שם עובד,סוג העסקה,צוות,ימי עבודה,שעות הדרכה,שעות הכשרה,שעות ביטול,קילומטר\n';
-  let filename = `דוח_סיכום_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  let csv = '';
+  let filename = '';
   
-  reportRecords.forEach(rec => {
-    csv += `${rec.empNum || ''},${rec.empName || ''},${rec.employmentType || ''},${rec.team || ''},${rec.workDays || 0},${rec.courseHours || 0},${rec.trainingHours || 0},${rec.cancelHours || 0},${rec.km || 0}\n`;
-  });
+  if (type === 'all') {
+    csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
+    
+    reportRecords.forEach(rec => {
+      csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
+    });
+    
+    filename = `דוח_נוכחות_מלא_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  } else {
+    csv = 'שם עובד,מספר רשומות,סה"כ שעות,סה"כ ק"מ,סה"כ הוצאות\n';
+    
+    const byEmployee = {};
+    reportRecords.forEach(rec => {
+      const key = rec.empName || 'לא ידוע';
+      if (!byEmployee[key]) {
+        byEmployee[key] = { hours: 0, km: 0, expenses: 0, count: 0 };
+      }
+      byEmployee[key].hours += parseFloat(rec.hours) || 0;
+      byEmployee[key].km += parseFloat(rec.km) || 0;
+      byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
+      byEmployee[key].count++;
+    });
+    
+    Object.entries(byEmployee).forEach(([name, data]) => {
+      csv += `${name},${data.count},${data.hours.toFixed(2)},${data.km.toFixed(1)},${data.expenses.toFixed(2)}\n`;
+    });
+    
+    const totalHours = reportRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+    const totalKm = reportRecords.reduce((sum, r) => sum + (parseFloat(r.km) || 0), 0);
+    const totalExpenses = reportRecords.reduce((sum, r) => sum + (parseFloat(r.totalExpenses) || 0), 0);
+    csv += `סה"כ,${reportRecords.length},${totalHours.toFixed(2)},${totalKm.toFixed(1)},${totalExpenses.toFixed(2)}\n`;
+    
+    filename = `דוח_נוכחות_מקובץ_${monthNames[parseInt(month) - 1]}_${year}.csv`;
+  }
   
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
