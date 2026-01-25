@@ -2225,7 +2225,7 @@ let teamDetailRecords = [];
 let teamSummaryPeriod = { periodFrom: '', periodTo: '' };
 
 function isManagerRole(role) {
-  return ['manager', 'system_admin', 'operations_controller'].includes(role);
+  return ['manager', 'system_admin', 'operations_controller', 'payroll_officer'].includes(role);
 }
 
 function buildHistoryPayload(user) {
@@ -3011,7 +3011,7 @@ function loadTeamRecords() {
   if (!user) return;
   
   const teamName = document.getElementById('teamName');
-  if (user.role === 'system_admin' || user.role === 'operations_controller') {
+  if (['system_admin', 'operations_controller', 'payroll_officer'].includes(user.role)) {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
@@ -3069,9 +3069,12 @@ async function loadTeamSummary() {
       teamSummaryRecords = data.records.map(rec => ({
         employeeId: rec.employeeId,
         employeeName: rec.employeeName,
-        totalHours: rec.totalHours || 0,
+        employmentType: rec.employmentType,
+        team: rec.team,
         workDays: rec.workDays || 0,
-        totalExpenses: rec.totalExpenses || 0,
+        courseHours: rec.courseHours || 0,
+        trainingHours: rec.trainingHours || 0,
+        cancelHours: rec.cancelHours || 0,
         kilometers: rec.kilometers || 0
       }));
     }
@@ -3099,47 +3102,37 @@ function renderTeamSummaryTable() {
     return;
   }
   
-  const totalHours = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalHours) || 0), 0);
-  const totalExpenses = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
-  const totalKm = teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.kilometers) || 0), 0);
-  
-  const user = getCurrentUserData();
-  const allowDetails = user ? !isManagerRole(user.role) : false;
   const tableHTML = `
     <div style="margin-bottom: 15px; color: #64748b;">
       תקופה: ${teamSummaryPeriod.periodFrom} עד ${teamSummaryPeriod.periodTo}
-    </div>
-    <div style="margin-bottom: 15px;">
-      <span style="color: #64748b;">סה"כ ${teamSummaryRecords.length} עובדים</span>
     </div>
     <div style="overflow-x: auto;">
       <table>
         <thead>
           <tr>
             <th>שם עובד</th>
+            <th>סוג העסקה</th>
+            <th>צוות</th>
             <th>ימי עבודה</th>
-            <th>סה"כ שעות</th>
+            <th>שעות הדרכה</th>
+            <th>שעות הכשרה</th>
+            <th>שעות ביטול</th>
             <th>ק"מ</th>
-            <th>הוצאות</th>
           </tr>
         </thead>
         <tbody>
           ${teamSummaryRecords.map(rec => `
-            <tr ${allowDetails ? `data-employee-id="${rec.employeeId}" data-employee-name="${rec.employeeName || ''}"` : ''} style="cursor: ${allowDetails ? 'pointer' : 'default'};">
+            <tr>
               <td>${rec.employeeName || '-'}</td>
+              <td>${rec.employmentType || '-'}</td>
+              <td>${rec.team || '-'}</td>
               <td>${rec.workDays || 0}</td>
-              <td><strong>${formatHoursDisplay(rec.totalHours)}</strong></td>
+              <td><strong>${formatHoursDisplay(rec.courseHours)}</strong></td>
+              <td><strong>${formatHoursDisplay(rec.trainingHours)}</strong></td>
+              <td><strong>${formatHoursDisplay(rec.cancelHours)}</strong></td>
               <td>${(parseFloat(rec.kilometers) || 0).toFixed(1)}</td>
-              <td>${(parseFloat(rec.totalExpenses) || 0).toFixed(0)} ₪</td>
             </tr>
           `).join('')}
-          <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-            <td>סה"כ</td>
-            <td>${teamSummaryRecords.reduce((sum, rec) => sum + (parseFloat(rec.workDays) || 0), 0)}</td>
-            <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-            <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
-            <td style="color: #3b82f6;">${totalExpenses.toFixed(0)} ₪</td>
-          </tr>
         </tbody>
       </table>
     </div>
@@ -3148,18 +3141,8 @@ function renderTeamSummaryTable() {
   
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
   
-  if (allowDetails) {
-    document.querySelectorAll('#teamRecordsTable tr[data-employee-id]').forEach(row => {
-      row.addEventListener('click', () => {
-        const employeeId = row.dataset.employeeId;
-        const employeeName = row.dataset.employeeName || '';
-        loadTeamMemberDetails(employeeId, employeeName);
-      });
-    });
-  } else {
-    const detailsContainer = document.getElementById('teamRecordDetails');
-    if (detailsContainer) detailsContainer.innerHTML = '';
-  }
+  const detailsContainer = document.getElementById('teamRecordDetails');
+  if (detailsContainer) detailsContainer.innerHTML = '';
 }
 
 function isDateWithinRange(dateValue, periodFrom, periodTo) {
@@ -3359,46 +3342,13 @@ async function exportTeamToExcel() {
     return;
   }
   
-  // Export all records for the monthly report (approved status shown in column)
-  const approvedRecords = dataToExport;
+  let summaryCSV = 'שם עובד,סוג העסקה,צוות,ימי עבודה,שעות הדרכה,שעות הכשרה,שעות ביטול,קילומטר\n';
   
-  // Create workbook with SheetJS (xlsx library)
-  // Since we don't have xlsx library, create a multi-sheet CSV approach
-  // Sheet 1: Detailed records
-  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
-  
-  approvedRecords.forEach(rec => {
-    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
+  dataToExport.forEach(rec => {
+    summaryCSV += `${rec.employeeName || ''},${rec.employmentType || ''},${rec.team || ''},${rec.workDays || 0},${rec.courseHours || 0},${rec.trainingHours || 0},${rec.cancelHours || 0},${rec.kilometers || 0}\n`;
   });
   
-  // Sheet 2: Summary by activity type (hours only) + general totals
-  let summaryCSV = '\n\n--- גיליון מסכם ---\n\n';
-  summaryCSV += 'סיכום שעות לפי סוג פעילות\n';
-  summaryCSV += 'סוג פעילות,סה"כ שעות\n';
-  
-  // Group hours by activity type
-  const hoursByActivity = {};
-  approvedRecords.forEach(rec => {
-    const activity = rec.activity || 'לא מוגדר';
-    hoursByActivity[activity] = (hoursByActivity[activity] || 0) + (parseFloat(rec.hours) || 0);
-  });
-  
-  Object.entries(hoursByActivity).forEach(([activity, hours]) => {
-    summaryCSV += `${activity},${hours.toFixed(2)}\n`;
-  });
-  
-  // General totals
-  const totalKm = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
-  const totalExpenses = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
-  const totalHours = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  
-  summaryCSV += '\n\nסיכום כללי\n';
-  summaryCSV += `סה"כ שעות,${totalHours.toFixed(2)}\n`;
-  summaryCSV += `סה"כ קילומטר,${totalKm.toFixed(1)}\n`;
-  summaryCSV += `סה"כ הוצאות,${totalExpenses.toFixed(2)} ₪\n`;
-  
-  // Combine both sheets
-  const fullCSV = detailedCSV + summaryCSV;
+  const fullCSV = summaryCSV;
   
   const blob = new Blob(['\ufeff' + fullCSV], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
