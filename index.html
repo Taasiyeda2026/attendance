@@ -1391,7 +1391,7 @@
         <i class="fas fa-plus-circle"></i>
         <span>הוספת רשומה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="all">
+      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor">
         <i class="fas fa-table"></i>
         <span>רשומות נוכחות</span>
       </a>
@@ -2453,6 +2453,12 @@ function updateMenuByRole(role) {
     mobileAddBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
   }
   
+  // Hide mobile "records" button for non-instructors (they use team-records instead)
+  const mobileRecordsBtn = document.getElementById('mobileNavRecords');
+  if (mobileRecordsBtn) {
+    mobileRecordsBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
+  }
+  
   // Hide dashboard "add record" button for non-instructors
   const dashboardAddBtn = document.getElementById('dashboardAddRecordBtn');
   if (dashboardAddBtn) {
@@ -2570,12 +2576,17 @@ async function loadMyRecordsFromServer() {
   try {
     showAlert('🔄 טוען רשומות מהשרת...', 'info');
     
+    const role = localStorage.getItem("role") || '';
+    const team = localStorage.getItem("team") || '';
+    
     const res = await fetch(LOGIC_APP_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "getHistory",
-        employeeId: employeeId
+        employeeId: employeeId,
+        role: role,
+        team: team
       })
     });
 
@@ -2879,6 +2890,12 @@ function updateMobileNavActive(pageName) {
 function showPage(event, pageName) {
   if (event) {
     event.preventDefault();
+  }
+  
+  // Role guard: non-instructors cannot access 'records' page, redirect to 'team-records'
+  const role = localStorage.getItem("role") || '';
+  if (pageName === 'records' && role !== 'instructor') {
+    pageName = 'team-records';
   }
   
   // Close mobile menu when navigating
