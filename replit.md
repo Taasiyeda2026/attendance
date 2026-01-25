@@ -13,7 +13,7 @@ Preferred communication style: Simple, everyday language.
 - **Role-Based Navigation**: "רשומות נוכחות" page visible only to instructors; non-instructors redirected to "רשומות הצוות"
 - **getHistory with Role Filtering**: Now sends role+team to Logic App for proper role-based record retrieval
 - **Mobile Bottom Nav**: "הוספה" and "רשומות" buttons hidden for non-instructors
-- **payroll_officer**: View-only access (can view all records and export to Excel, no edit/delete/approve)
+- **payroll_officer Dashboard**: Dedicated single-page experience with monthly summary table grouped by instructor (work days, hours by type, km, expenses), export to Excel, no sidebar/menu access
 - **Add Record Page Redesign**: Reorganized into 4 colored cards:
   - Card 1 (blue): Date, Start Time, End Time, Total Hours
   - Card 2 (green): Activity Type, School, Municipality, Program, Session, Kilometers
@@ -48,7 +48,7 @@ Preferred communication style: Simple, everyday language.
 ### RBAC Roles
 - `instructor`: View/submit own records only, sees "רשומות נוכחות" (מדריך/ה)
 - `manager`: View team records, edit all records, approve (מנהל/ת פעילויות)
-- `payroll_officer`: View-only, can view all records + export to Excel, no edit/delete/approve (אחראית שכר)
+- `payroll_officer`: Isolated dashboard only - sees monthly summary table grouped by instructor with export to Excel, no access to other pages (אחראית שכר)
 - `operations_controller`: Full access, edit/delete/approve permissions (מבקרת תפעול)
 - `system_admin`: Full access, all permissions (מנהל מערכת)
 
