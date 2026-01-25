@@ -2659,31 +2659,39 @@ async function loadMyRecordsFromServer() {
       return;
     }
 
+    // Helper to extract value from SharePoint lookup fields
+    const extractValue = (field) => {
+      if (!field) return '';
+      if (typeof field === 'string') return field;
+      if (typeof field === 'object' && field.Value) return field.Value;
+      return '';
+    };
+    
     // Map server records to local format
     records = data.records.map(rec => ({
       recordId: rec.ID || rec.Id || rec.id || rec.recordId || null,
       id: rec.ID || rec.Id || rec.id || `${rec.employeeId}_${rec.attendanceDate}_${rec.startTime}`,
       empNum: rec.employeeId?.toString() || employeeId,
-      empName: rec.employeeName || '',
-      team: rec.team || rec.Team || '',
+      empName: extractValue(rec.employeeName) || extractValue(rec.EmployeeName) || '',
+      team: extractValue(rec.team) || extractValue(rec.Team) || '',
       date: rec.attendanceDate || '',
       start: rec.startTime || '',
       end: rec.endTime || '',
       hours: rec.workHours || 0,
-      activity: rec.activityType || '',
-      school: rec.schoolName || '',
-      municipality: rec.municipality || '',
-      program: rec.programName || '',
+      activity: extractValue(rec.activityType) || extractValue(rec.ActivityType) || '',
+      school: extractValue(rec.schoolName) || extractValue(rec.SchoolName) || '',
+      municipality: extractValue(rec.municipality) || extractValue(rec.Municipality) || '',
+      program: extractValue(rec.programName) || extractValue(rec.ProgramName) || '',
       session: rec.sessionNumber || '',
       km: rec.kilometers || 0,
       totalExpenses: rec.totalExpenses || 0,
       expensesDetail: rec.expensesDetails || '',
       notes: rec.notes || '',
-      status: rec.status || 'pending',
+      status: extractValue(rec.status) || extractValue(rec.Status) || 'pending',
       approvedBy: rec.approvedBy || '',
       approvedDate: rec.approvedDate || '',
       rejectReason: rec.rejectReason || '',
-      employmentType: rec.employmentType || rec.EmploymentType || '',
+      employmentType: extractValue(rec.employmentType) || extractValue(rec.EmploymentType) || '',
       attachments: []
     }));
 
