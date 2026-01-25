@@ -142,19 +142,21 @@
                                 "Response_Unknown_Action": {
                                     "type": "Response",
                                     "kind": "Http",
-                                    "inputs": {
-                                        "statusCode": 400,
-                                        "headers": {
-                                            "Access-Control-Allow-Origin": "*",
-                                            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                                            "Access-Control-Allow-Headers": "Content-Type"
-                                        },
-                                        "body": {
-                                            "success": false,
-                                            "message": "Unknown action"
+                                        "inputs": {
+                                            "statusCode": 400,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json",
+                                                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                                                "Access-Control-Allow-Headers": "Content-Type"
+                                            },
+                                            "body": {
+                                                "success": false,
+                                                "records": [],
+                                                "message": "Unknown action"
+                                            }
                                         }
                                     }
-                                }
                             }
                         },
                         "cases": {
@@ -194,10 +196,13 @@
                                                 "inputs": {
                                                     "statusCode": 200,
                                                     "headers": {
-                                                        "Access-Control-Allow-Origin": "*"
+                                                        "Access-Control-Allow-Origin": "*",
+                                                        "Content-Type": "application/json"
                                                     },
                                                     "body": {
                                                         "success": true,
+                                                        "records": [],
+                                                        "message": "Authentication successful",
                                                         "employeeName": "@{first(body('Get_Employee')?['value'])?['EmployeeName']}",
                                                         "role": "@{first(body('Get_Employee')?['value'])?['role']?['Value']}",
                                                         "team": "@{first(body('Get_Employee')?['value'])?['Team']?['Value']}",
@@ -214,10 +219,12 @@
                                                     "inputs": {
                                                         "statusCode": 401,
                                                         "headers": {
-                                                            "Access-Control-Allow-Origin": "*"
+                                                            "Access-Control-Allow-Origin": "*",
+                                                            "Content-Type": "application/json"
                                                         },
                                                         "body": {
                                                             "success": false,
+                                                            "records": [],
                                                             "message": "מספר עובד או קוד אישי שגויים"
                                                         }
                                                     }
@@ -270,10 +277,12 @@
                                         "inputs": {
                                             "statusCode": 200,
                                             "headers": {
-                                                "Access-Control-Allow-Origin": "*"
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
                                             },
                                             "body": {
                                                 "success": true,
+                                                "records": [],
                                                 "message": "הרשומה נשמרה בהצלחה",
                                                 "recordId": "@body('Create_Attendance')?['ID']"
                                             }
@@ -373,11 +382,13 @@
                                                 "inputs": {
                                                     "statusCode": 200,
                                                     "headers": {
-                                                        "Access-Control-Allow-Origin": "*"
+                                                        "Access-Control-Allow-Origin": "*",
+                                                        "Content-Type": "application/json"
                                                     },
                                                     "body": {
                                                         "success": true,
-                                                        "records": "@body('Transform_All_Records')"
+                                                        "records": "@body('Transform_All_Records')",
+                                                        "message": "Records retrieved"
                                                     }
                                                 },
                                                 "runAfter": {
@@ -456,12 +467,14 @@
                                                             "kind": "Http",
                                                             "inputs": {
                                                                 "statusCode": 200,
-                                                                "headers": {
-                                                                    "Access-Control-Allow-Origin": "*"
+                                                            "headers": {
+                                                                    "Access-Control-Allow-Origin": "*",
+                                                                    "Content-Type": "application/json"
                                                                 },
                                                                 "body": {
                                                                     "success": true,
-                                                                    "records": "@body('Transform_Team_Records')"
+                                                                    "records": "@body('Transform_Team_Records')",
+                                                                    "message": "Records retrieved"
                                                                 }
                                                             },
                                                             "runAfter": {
@@ -532,11 +545,13 @@
                                                                 "inputs": {
                                                                     "statusCode": 200,
                                                                     "headers": {
-                                                                        "Access-Control-Allow-Origin": "*"
+                                                                        "Access-Control-Allow-Origin": "*",
+                                                                        "Content-Type": "application/json"
                                                                     },
                                                                     "body": {
                                                                         "success": true,
-                                                                        "records": "@body('Transform_Own_Records')"
+                                                                        "records": "@body('Transform_Own_Records')",
+                                                                        "message": "Records retrieved"
                                                                     }
                                                                 },
                                                                 "runAfter": {
@@ -790,7 +805,8 @@
                                             },
                                             "body": {
                                                 "success": true,
-                                                "records": "@variables('teamSummary')"
+                                                "records": "@variables('teamSummary')",
+                                                "message": "Records retrieved"
                                             }
                                         },
                                         "runAfter": {
@@ -842,10 +858,12 @@
                                         "inputs": {
                                             "statusCode": 200,
                                             "headers": {
-                                                "Access-Control-Allow-Origin": "*"
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
                                             },
                                             "body": {
                                                 "success": true,
+                                                "records": [],
                                                 "message": "הרשומה עודכנה בהצלחה"
                                             }
                                         },
@@ -876,10 +894,12 @@
                                         "inputs": {
                                             "statusCode": 200,
                                             "headers": {
-                                                "Access-Control-Allow-Origin": "*"
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
                                             },
                                             "body": {
                                                 "success": true,
+                                                "records": [],
                                                 "message": "הרשומה נמחקה בהצלחה"
                                             }
                                         },
@@ -903,11 +923,13 @@
                                 "statusCode": 200,
                                 "headers": {
                                     "Access-Control-Allow-Origin": "*",
+                                    "Content-Type": "application/json",
                                     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
                                     "Access-Control-Allow-Headers": "Content-Type"
                                 },
                                 "body": {
                                     "success": false,
+                                    "records": [],
                                     "message": "No action specified"
                                 }
                             }
