@@ -757,11 +757,8 @@
                                             },
                                             "body": {
                                                 "success": true,
-                                                "records": "@body('Select_Summary_Output')"
+                                                "records": "@variables('teamSummary')"
                                             }
-                                        },
-                                        "runAfter": {
-                                            "Select_Summary_Output": ["Succeeded"]
                                         }
                                     }
                                 },
