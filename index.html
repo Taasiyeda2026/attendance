@@ -707,11 +707,33 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Hide floating submit on desktop */
+    .mobile-floating-submit {
+      display: none;
+    }
+
+    /* Mobile Greeting Header */
+    .mobile-greeting {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 60px;
+      height: 54px;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      color: white;
+      padding: 0 16px;
+      z-index: 199;
+      align-items: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
     /* Mobile Menu Toggle */
     .mobile-menu-toggle {
       display: none;
       position: fixed;
-      top: 10px;
+      top: 5px;
       right: 10px;
       z-index: 200;
       background: #1e40af;
@@ -792,6 +814,10 @@
         font-size: 16px;
       }
 
+      .mobile-greeting {
+        display: flex;
+      }
+
       .mobile-menu-toggle {
         display: flex;
         align-items: center;
@@ -800,6 +826,51 @@
 
       .mobile-overlay.active {
         display: block;
+      }
+      
+      /* Compact Records Table for Mobile */
+      #recordsPage table,
+      #teamRecordsPage table {
+        font-size: 11px;
+      }
+      
+      #recordsPage table th,
+      #recordsPage table td,
+      #teamRecordsPage table th,
+      #teamRecordsPage table td {
+        padding: 6px 4px;
+      }
+      
+      #recordsPage .page-header,
+      #teamRecordsPage .page-header {
+        padding: 8px 0;
+      }
+      
+      #recordsPage .card-header,
+      #teamRecordsPage .card-header {
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+      }
+      
+      #recordsPage .card-header .btn,
+      #teamRecordsPage .card-header .btn {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+      
+      /* Floating Submit Button for Mobile */
+      .mobile-floating-submit {
+        display: block;
+        position: fixed;
+        bottom: 75px;
+        left: 16px;
+        right: 16px;
+        z-index: 180;
+        padding: 8px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
       }
 
       .sidebar {
@@ -1282,6 +1353,11 @@
 <!-- =============== Main App =============== -->
 <div id="mainApp" class="hidden">
   
+  <!-- Mobile Header with Greeting -->
+  <div class="mobile-greeting" id="mobileGreeting">
+    <span id="mobileUserGreeting">שלום</span>
+  </div>
+  
   <!-- Mobile Menu Toggle -->
   <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
     <i class="fas fa-bars" id="mobileMenuIcon"></i>
@@ -1311,7 +1387,7 @@
         <i class="fas fa-chart-line"></i>
         <span>לוח בקרה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="all">
+      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="instructor">
         <i class="fas fa-plus-circle"></i>
         <span>הוספת רשומה</span>
       </a>
@@ -1435,7 +1511,7 @@
       
       <!-- כפתורי פעולות -->
       <div style="text-align: center; margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn btn-primary" onclick="showPage(event, 'add-record')" style="font-size: 15px; width: 220px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+        <button id="dashboardAddRecordBtn" class="btn btn-primary" onclick="showPage(event, 'add-record')" style="font-size: 15px; width: 220px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
           <i class="fas fa-plus"></i>
           הוסף רשומה חדשה
         </button>
@@ -1675,6 +1751,14 @@
           </div>
         </div>
         
+      </div>
+      
+      <!-- Mobile Floating Submit Button -->
+      <div class="mobile-floating-submit">
+        <button class="btn btn-success" onclick="addRecord()" style="width: 100%; height: 50px; font-size: 16px; font-weight: 600; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <i class="fas fa-check"></i>
+          שלח רשומה
+        </button>
       </div>
     </div>
 
@@ -2362,6 +2446,18 @@ function updateMenuByRole(role) {
       item.style.display = roles.includes(role) ? 'flex' : 'none';
     }
   });
+  
+  // Hide mobile "add" button for non-instructors
+  const mobileAddBtn = document.getElementById('mobileNavAdd');
+  if (mobileAddBtn) {
+    mobileAddBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
+  }
+  
+  // Hide dashboard "add record" button for non-instructors
+  const dashboardAddBtn = document.getElementById('dashboardAddRecordBtn');
+  if (dashboardAddBtn) {
+    dashboardAddBtn.style.display = (role === 'instructor') ? 'flex' : 'none';
+  }
 }
 
 function hasPermission(action, targetTeam = null) {
@@ -2376,7 +2472,7 @@ function hasPermission(action, targetTeam = null) {
     case 'view_team':
       return ['manager', 'operations_controller', 'system_admin'].includes(role);
     case 'view_all':
-      return ['operations_controller', 'system_admin'].includes(role);
+      return ['operations_controller', 'system_admin', 'payroll_officer'].includes(role);
     case 'edit_own':
       return false;
     case 'edit_team':
@@ -2401,7 +2497,8 @@ function canEditRecord(record) {
   
   const role = user.role;
   
-  if (role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer') {
+  // payroll_officer = view only, no edit
+  if (role === 'system_admin' || role === 'operations_controller') {
     return true;
   }
   
@@ -2418,7 +2515,8 @@ function canDeleteRecord(record) {
   
   const role = user.role;
   
-  return role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer';
+  // payroll_officer = view only, no delete
+  return role === 'system_admin' || role === 'operations_controller';
 }
 
 function canApproveRecord(record) {
@@ -2427,7 +2525,14 @@ function canApproveRecord(record) {
   
   const role = user.role;
   
-  return role === 'system_admin' || role === 'operations_controller' || role === 'payroll_officer' || role === 'manager';
+  // payroll_officer = view only, no approve
+  return role === 'system_admin' || role === 'operations_controller' || role === 'manager';
+}
+
+function canAddRecord() {
+  const user = getCurrentUserData();
+  if (!user) return false;
+  return user.role === 'instructor';
 }
 
 function getStatusBadge(status) {
@@ -2645,6 +2750,7 @@ async function doLogin(event) {
       
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role);
+      document.getElementById('mobileUserGreeting').textContent = 'שלום, ' + empData.empName;
       
       updateMenuByRole(empData.role);
       loadFromLocalStorage();
@@ -3576,6 +3682,9 @@ function renderRecordsTable() {
     return;
   }
   
+  const user = getCurrentUserData();
+  const userRole = user ? user.role : 'instructor';
+  const showActionsColumn = userRole !== 'instructor';
   const showApprovalColumn = canApproveRecord({});
   
   const tableHTML = `
@@ -3583,25 +3692,19 @@ function renderRecordsTable() {
       <thead>
         <tr>
           <th>תאריך</th>
-          <th>עובד</th>
-          <th>שעות התחלה</th>
-          <th>שעות סיום</th>
-          <th>סה"כ שעות</th>
+          <th>שעות</th>
           <th>פעילות</th>
           <th>בית ספר</th>
           <th>רשות</th>
           <th>ק"מ</th>
           <th>סטטוס</th>
-          <th>פעולות</th>
+          ${showActionsColumn ? '<th>פעולות</th>' : ''}
         </tr>
       </thead>
       <tbody>
         ${records.map((rec, idx) => `
           <tr>
             <td>${rec.date}</td>
-            <td>${rec.empName}</td>
-            <td>${rec.start || '-'}</td>
-            <td>${rec.end || '-'}</td>
             <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
             <td>${rec.activity}</td>
             <td>${rec.school || '-'}</td>
@@ -3609,38 +3712,40 @@ function renderRecordsTable() {
             <td>${rec.km}</td>
             <td>
               ${getStatusBadge(rec.status || 'pending')}
-              ${rec.approvedBy ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">${rec.approvedBy}</div>` : ''}
             </td>
+            ${showActionsColumn ? `
             <td style="white-space: nowrap;">
               ${showApprovalColumn && rec.status !== 'approved' ? `
-              <button class="btn" onclick="approveRecord(${idx})" style="background: #d1fae5; color: #059669; padding: 6px 10px; margin-left: 4px;" title="אישור">
+              <button onclick="approveRecord(${idx})" style="background: #d1fae5; color: #059669; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="אישור">
                 <i class="fas fa-check"></i>
               </button>
               ` : ''}
               ${showApprovalColumn && rec.status !== 'rejected' ? `
-              <button class="btn" onclick="openRejectModal(${idx})" style="background: #fee2e2; color: #dc2626; padding: 6px 10px; margin-left: 4px;" title="דחייה">
+              <button onclick="openRejectModal(${idx})" style="background: #fee2e2; color: #dc2626; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="דחייה">
                 <i class="fas fa-times"></i>
               </button>
               ` : ''}
               ${canEditRecord(rec) ? `
-              <button class="btn" onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 6px 10px; margin-left: 4px;" title="עריכה">
+              <button onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="עריכה">
                 <i class="fas fa-edit"></i>
               </button>
               ` : ''}
               ${canDeleteRecord(rec) ? `
-              <button class="btn" onclick="deleteRecord(${idx})" style="background: #fecaca; color: #b91c1c; padding: 6px 10px;" title="מחיקה">
+              <button onclick="deleteRecord(${idx})" style="background: #fecaca; color: #b91c1c; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer;" title="מחיקה">
                 <i class="fas fa-trash"></i>
               </button>
               ` : ''}
             </td>
+            ` : ''}
           </tr>
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td colspan="4" style="text-align: left; padding-right: 20px;">סה"כ:</td>
+          <td style="text-align: left; padding-right: 20px;">סה"כ:</td>
           <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="4"></td>
+          <td colspan="3"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
           <td></td>
+          ${showActionsColumn ? '<td></td>' : ''}
         </tr>
       </tbody>
     </table>
@@ -4474,6 +4579,7 @@ window.addEventListener('DOMContentLoaded', function() {
       
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role || 'instructor');
+      document.getElementById('mobileUserGreeting').textContent = 'שלום, ' + empData.empName;
       
       updateMenuByRole(empData.role || 'instructor');
       loadFromLocalStorage();
