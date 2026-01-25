@@ -755,9 +755,8 @@
                                         "headers": {
                                           "Access-Control-Allow-Origin": "*"
                                         },
-                                        "body": {
-                                          "success": true,
-                                          "records": "@variables('teamSummary')"
+                                        "runAfter": {
+                                            "For_each_Summary_Record": ["Succeeded", "Skipped"]
                                         }
                                       }
                                     }
