@@ -368,7 +368,7 @@
                                                         ]
                                                     },
                                                     "actions": {
-                                                        "Get_Team_Records": {
+                                                        "Get_All_For_Team_Filter": {
                                                             "type": "ApiConnection",
                                                             "inputs": {
                                                                 "host": {
@@ -377,16 +377,23 @@
                                                                     }
                                                                 },
                                                                 "method": "get",
-                                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
-                                                                "queries": {
-                                                                    "$filter": "team eq '@{triggerBody()?['team']}'"
-                                                                }
+                                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                                            }
+                                                        },
+                                                        "Filter_By_Team": {
+                                                            "type": "Query",
+                                                            "inputs": {
+                                                                "from": "@body('Get_All_For_Team_Filter')?['value']",
+                                                                "where": "@or(equals(item()?['team']?['Value'], triggerBody()?['team']), equals(item()?['team'], triggerBody()?['team']), equals(item()?['Team']?['Value'], triggerBody()?['team']))"
+                                                            },
+                                                            "runAfter": {
+                                                                "Get_All_For_Team_Filter": ["Succeeded"]
                                                             }
                                                         },
                                                         "Transform_Team_Records": {
                                                             "type": "Select",
                                                             "inputs": {
-                                                                "from": "@body('Get_Team_Records')?['value']",
+                                                                "from": "@body('Filter_By_Team')",
                                                                 "select": {
                                                                     "ID": "@item()?['ID']",
                                                                     "employeeId": "@item()?['employeeId']",
@@ -413,7 +420,7 @@
                                                                 }
                                                             },
                                                             "runAfter": {
-                                                                "Get_Team_Records": [
+                                                                "Filter_By_Team": [
                                                                     "Succeeded"
                                                                 ]
                                                             }
