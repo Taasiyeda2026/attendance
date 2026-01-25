@@ -204,9 +204,9 @@
                                                         "records": [],
                                                         "message": "Authentication successful",
                                                         "employeeName": "@{first(body('Get_Employee')?['value'])?['EmployeeName']}",
-                                                        "role": "@{first(body('Get_Employee')?['value'])?['role']?['Value']}",
-                                                        "team": "@{first(body('Get_Employee')?['value'])?['Team']?['Value']}",
-                                                        "employmentType": "@{first(body('Get_Employee')?['value'])?['EmploymentType']?['Value']}"
+                                                        "role": "@{coalesce(first(body('Get_Employee')?['value'])?['role']?['Value'], first(body('Get_Employee')?['value'])?['role'])}",
+                                                        "team": "@{coalesce(first(body('Get_Employee')?['value'])?['Team']?['Value'], first(body('Get_Employee')?['value'])?['team']?['Value'], first(body('Get_Employee')?['value'])?['Team'], first(body('Get_Employee')?['value'])?['team'])}",
+                                                        "employmentType": "@{coalesce(first(body('Get_Employee')?['value'])?['EmploymentType']?['Value'], first(body('Get_Employee')?['value'])?['employmentType']?['Value'], first(body('Get_Employee')?['value'])?['EmploymentType'], first(body('Get_Employee')?['value'])?['employmentType'])}"
                                                     }
                                                 }
                                             }
@@ -233,6 +233,25 @@
                                         },
                                         "runAfter": {
                                             "Get_Employee": ["Succeeded"]
+                                        }
+                                    },
+                                    "Response_Auth_Error": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 500,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
+                                            },
+                                            "body": {
+                                                "success": false,
+                                                "records": [],
+                                                "message": "Authentication failed"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Get_Employee": ["Failed", "TimedOut"]
                                         }
                                     }
                                 },
@@ -289,6 +308,25 @@
                                         },
                                         "runAfter": {
                                             "Create_Attendance": ["Succeeded"]
+                                        }
+                                    },
+                                    "Response_Submit_Failed": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 500,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
+                                            },
+                                            "body": {
+                                                "success": false,
+                                                "records": [],
+                                                "message": "Failed to save record"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Create_Attendance": ["Failed", "TimedOut"]
                                         }
                                     }
                                 },
@@ -351,7 +389,7 @@
                                                     "from": "@body('Get_All_Records')?['value']",
                                                     "select": {
                                                         "ID": "@item()?['ID']",
-                                                        "employeeId": "@item()?['employeeId']",
+                                                        "employeeId": "@string(item()?['employeeId'])",
                                                         "employeeName": "@item()?['employeeName']",
                                                         "attendanceDate": "@item()?['attendanceDate']",
                                                         "startTime": "@item()?['startTime']",
@@ -366,7 +404,7 @@
                                                         "totalExpenses": "@item()?['totalExpenses']",
                                                         "expensesDetails": "@item()?['expensesDetails']",
                                                         "notes": "@item()?['notes']",
-                                                        "team": "@item()?['team']",
+                                                        "team": "@coalesce(item()?['team']?['Value'], item()?['team'], item()?['Team']?['Value'], item()?['Team'])",
                                                         "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                     }
                                                 },
@@ -387,13 +425,14 @@
                                                     },
                                                     "body": {
                                                         "success": true,
-                                                        "records": "@body('Transform_All_Records')",
+                                                        "records": "@if(equals(actions('Transform_All_Records').status, 'Succeeded'), body('Transform_All_Records'), createArray())",
                                                         "message": "Records retrieved"
                                                     }
                                                 },
                                                 "runAfter": {
                                                     "Transform_All_Records": [
-                                                        "Succeeded"
+                                                        "Succeeded",
+                                                        "Skipped"
                                                     ]
                                                 }
                                             }
@@ -437,7 +476,7 @@
                                                                 "from": "@body('Filter_By_Team')",
                                                                 "select": {
                                                                     "ID": "@item()?['ID']",
-                                                                    "employeeId": "@item()?['employeeId']",
+                                                                    "employeeId": "@string(item()?['employeeId'])",
                                                                     "employeeName": "@item()?['employeeName']",
                                                                     "attendanceDate": "@item()?['attendanceDate']",
                                                                     "startTime": "@item()?['startTime']",
@@ -452,7 +491,7 @@
                                                                     "totalExpenses": "@item()?['totalExpenses']",
                                                                     "expensesDetails": "@item()?['expensesDetails']",
                                                                     "notes": "@item()?['notes']",
-                                                                    "team": "@item()?['team']",
+                                                                    "team": "@coalesce(item()?['team']?['Value'], item()?['team'], item()?['Team']?['Value'], item()?['Team'])",
                                                                     "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                                 }
                                                             },
@@ -473,13 +512,14 @@
                                                                 },
                                                                 "body": {
                                                                     "success": true,
-                                                                    "records": "@body('Transform_Team_Records')",
+                                                                    "records": "@if(equals(actions('Transform_Team_Records').status, 'Succeeded'), body('Transform_Team_Records'), createArray())",
                                                                     "message": "Records retrieved"
                                                                 }
                                                             },
                                                             "runAfter": {
                                                                 "Transform_Team_Records": [
-                                                                    "Succeeded"
+                                                                    "Succeeded",
+                                                                    "Skipped"
                                                                 ]
                                                             }
                                                         }
@@ -514,7 +554,7 @@
                                                                     "from": "@body('Filter_By_EmployeeId')",
                                                                     "select": {
                                                                         "ID": "@item()?['ID']",
-                                                                        "employeeId": "@item()?['employeeId']",
+                                                                        "employeeId": "@string(item()?['employeeId'])",
                                                                         "employeeName": "@item()?['employeeName']",
                                                                         "attendanceDate": "@item()?['attendanceDate']",
                                                                         "startTime": "@item()?['startTime']",
@@ -529,7 +569,7 @@
                                                                     "totalExpenses": "@item()?['totalExpenses']",
                                                                     "expensesDetails": "@item()?['expensesDetails']",
                                                                     "notes": "@item()?['notes']",
-                                                                    "team": "@item()?['team']",
+                                                                    "team": "@coalesce(item()?['team']?['Value'], item()?['team'], item()?['Team']?['Value'], item()?['Team'])",
                                                                     "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                                 }
                                                             },
@@ -550,13 +590,14 @@
                                                                     },
                                                                     "body": {
                                                                         "success": true,
-                                                                        "records": "@body('Transform_Own_Records')",
+                                                                        "records": "@if(equals(actions('Transform_Own_Records').status, 'Succeeded'), body('Transform_Own_Records'), createArray())",
                                                                         "message": "Records retrieved"
                                                                     }
                                                                 },
                                                                 "runAfter": {
                                                                     "Transform_Own_Records": [
-                                                                        "Succeeded"
+                                                                        "Succeeded",
+                                                                        "Skipped"
                                                                     ]
                                                                 }
                                                             }
@@ -715,14 +756,14 @@
                                                 "type": "Query",
                                                 "inputs": {
                                                     "from": "@variables('teamSummary')",
-                                                    "where": "@equals(item()?['employeeId'], items('For_each_Summary_Record')?['employeeId'])"
+                                                    "where": "@equals(string(item()?['employeeId']), string(items('For_each_Summary_Record')?['employeeId']))"
                                                 }
                                             },
                                             "Filter_Other_Summaries": {
                                                 "type": "Query",
                                                 "inputs": {
                                                     "from": "@variables('teamSummary')",
-                                                    "where": "@not(equals(item()?['employeeId'], items('For_each_Summary_Record')?['employeeId']))"
+                                                    "where": "@not(equals(string(item()?['employeeId']), string(items('For_each_Summary_Record')?['employeeId'])))"
                                                 },
                                                 "runAfter": {
                                                     "Filter_Existing_Summary": ["Succeeded"]
@@ -740,10 +781,10 @@
                                                     "Compose_Updated_Summary": {
                                                         "type": "Compose",
                                                         "inputs": {
-                                                            "employeeId": "@{items('For_each_Summary_Record')?['employeeId']}",
+                                                            "employeeId": "@{string(items('For_each_Summary_Record')?['employeeId'])}",
                                                             "employeeName": "@{coalesce(first(body('Filter_Existing_Summary'))?['employeeName'], items('For_each_Summary_Record')?['employeeName'], items('For_each_Summary_Record')?['EmployeeName'], items('For_each_Summary_Record')?['employeeName']?['Value'], items('For_each_Summary_Record')?['EmployeeName']?['Value'])}",
                                                             "employmentType": "@{coalesce(first(body('Filter_Existing_Summary'))?['employmentType'], coalesce(items('For_each_Summary_Record')?['employmentType']?['Value'], items('For_each_Summary_Record')?['EmploymentType']?['Value'], items('For_each_Summary_Record')?['employmentType']))}",
-                                                            "team": "@{coalesce(first(body('Filter_Existing_Summary'))?['team'], coalesce(items('For_each_Summary_Record')?['team']?['Value'], items('For_each_Summary_Record')?['team']))}",
+                                                            "team": "@{coalesce(first(body('Filter_Existing_Summary'))?['team'], coalesce(items('For_each_Summary_Record')?['team']?['Value'], items('For_each_Summary_Record')?['team'], items('For_each_Summary_Record')?['Team']?['Value'], items('For_each_Summary_Record')?['Team']))}",
                                                             "dates": "@{if(contains(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), items('For_each_Summary_Record')?['attendanceDate']), coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), union(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), createArray(items('For_each_Summary_Record')?['attendanceDate'])))}",
                                                             "workDays": "@{length(if(contains(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), items('For_each_Summary_Record')?['attendanceDate']), coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), union(coalesce(first(body('Filter_Existing_Summary'))?['dates'], createArray()), createArray(items('For_each_Summary_Record')?['attendanceDate']))))}",
                                                             "courseHours": "@{add(float(coalesce(first(body('Filter_Existing_Summary'))?['courseHours'], 0)), if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'course'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0))}",
@@ -770,10 +811,10 @@
                                                             "inputs": {
                                                                 "name": "teamSummary",
                                                                 "value": {
-                                                                    "employeeId": "@{items('For_each_Summary_Record')?['employeeId']}",
+                                                                    "employeeId": "@{string(items('For_each_Summary_Record')?['employeeId'])}",
                                                                     "employeeName": "@{coalesce(items('For_each_Summary_Record')?['employeeName'], items('For_each_Summary_Record')?['EmployeeName'], items('For_each_Summary_Record')?['employeeName']?['Value'], items('For_each_Summary_Record')?['EmployeeName']?['Value'])}",
                                                                     "employmentType": "@{coalesce(items('For_each_Summary_Record')?['employmentType']?['Value'], items('For_each_Summary_Record')?['EmploymentType']?['Value'], items('For_each_Summary_Record')?['employmentType'])}",
-                                                                    "team": "@{coalesce(items('For_each_Summary_Record')?['team']?['Value'], items('For_each_Summary_Record')?['team'])}",
+                                                                    "team": "@{coalesce(items('For_each_Summary_Record')?['team']?['Value'], items('For_each_Summary_Record')?['team'], items('For_each_Summary_Record')?['Team']?['Value'], items('For_each_Summary_Record')?['Team'])}",
                                                                     "dates": "@{createArray(items('For_each_Summary_Record')?['attendanceDate'])}",
                                                                     "workDays": 1,
                                                                     "courseHours": "@{if(equals(coalesce(items('For_each_Summary_Record')?['activityType']?['Value'], items('For_each_Summary_Record')?['activityType']), 'course'), float(coalesce(items('For_each_Summary_Record')?['workHours'], 0)), 0)}",
@@ -870,6 +911,25 @@
                                         "runAfter": {
                                             "Update_Attendance": ["Succeeded"]
                                         }
+                                    },
+                                    "Response_Update_Failed": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 500,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
+                                            },
+                                            "body": {
+                                                "success": false,
+                                                "records": [],
+                                                "message": "Failed to update record"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Update_Attendance": ["Failed", "TimedOut"]
+                                        }
                                     }
                                 },
                                 "case": "updateRecord"
@@ -906,12 +966,50 @@
                                         "runAfter": {
                                             "Delete_Attendance": ["Succeeded"]
                                         }
+                                    },
+                                    "Response_Delete_Failed": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 500,
+                                            "headers": {
+                                                "Access-Control-Allow-Origin": "*",
+                                                "Content-Type": "application/json"
+                                            },
+                                            "body": {
+                                                "success": false,
+                                                "records": [],
+                                                "message": "Failed to delete record"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Delete_Attendance": ["Failed", "TimedOut"]
+                                        }
                                     }
                                 },
                                 "case": "deleteRecord"
                             }
                         },
                         "runAfter": {}
+                    },
+                    "Response_Fallback": {
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                            "statusCode": 500,
+                            "headers": {
+                                "Access-Control-Allow-Origin": "*",
+                                "Content-Type": "application/json"
+                            },
+                            "body": {
+                                "success": false,
+                                "records": [],
+                                "message": "Unhandled execution path"
+                            }
+                        },
+                        "runAfter": {
+                            "Switch_Action": ["Failed", "Skipped", "TimedOut"]
+                        }
                     }
                 },
                 "else": {
