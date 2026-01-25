@@ -1,0 +1,333 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "triggers": {
+    "When_an_HTTP_request_is_received": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "method": "POST",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "action": { "type": "string" },
+            "employeeId": { "type": "string" },
+            "personalCode": { "type": "string" },
+            "employeeName": { "type": "string" },
+            "attendanceDate": { "type": "string" },
+            "startTime": { "type": "string" },
+            "endTime": { "type": "string" },
+            "workHours": { "type": "number" },
+            "activityType": { "type": "string" },
+            "schoolName": { "type": "string" },
+            "municipality": { "type": "string" },
+            "programName": { "type": "string" },
+            "sessionNumber": { "type": "integer" },
+            "kilometers": { "type": "number" },
+            "totalExpenses": { "type": "number" },
+            "expensesDetails": { "type": "string" },
+            "notes": { "type": "string" },
+            "employmentType": { "type": "string" },
+            "team": { "type": "string" },
+            "role": { "type": "string" },
+            "recordId": { "type": "integer" }
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "Switch_Action": {
+      "type": "Switch",
+      "expression": "@triggerBody()?['action']",
+      "cases": {
+        "auth": {
+          "case": "auth",
+          "actions": {
+            "Get_Employee_Auth": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "get",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Employees')}/items",
+                "queries": {
+                  "$filter": "EmployeeId eq '@{triggerBody()?['employeeId']}' and PersonalCode eq '@{triggerBody()?['personalCode']}'"
+                }
+              }
+            },
+            "Check_Auth_Result": {
+              "type": "If",
+              "runAfter": { "Get_Employee_Auth": ["Succeeded"] },
+              "expression": {
+                "and": [{ "greater": ["@length(body('Get_Employee_Auth')?['value'])", 0] }]
+              },
+              "actions": {
+                "Response_Auth_Success": {
+                  "type": "Response",
+                  "inputs": {
+                    "statusCode": 200,
+                    "headers": {
+                      "Content-Type": "application/json",
+                      "Access-Control-Allow-Origin": "*"
+                    },
+                    "body": {
+                      "success": true,
+                      "employeeName": "@{body('Get_Employee_Auth')?['value'][0]['EmployeeName']}",
+                      "role": "@{body('Get_Employee_Auth')?['value'][0]['Role']}",
+                      "team": "@{body('Get_Employee_Auth')?['value'][0]['Team']}",
+                      "employmentType": "@{body('Get_Employee_Auth')?['value'][0]['EmploymentType']}"
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Response_Auth_Failed": {
+                    "type": "Response",
+                    "inputs": {
+                      "statusCode": 200,
+                      "headers": {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*"
+                      },
+                      "body": {
+                        "success": false,
+                        "message": "מספר עובד או קוד אישי שגויים"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "submit": {
+          "case": "submit",
+          "actions": {
+            "Create_Attendance_Record": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "post",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Attendance')}/items",
+                "body": {
+                  "EmployeeId": "@{triggerBody()?['employeeId']}",
+                  "EmployeeName": "@{triggerBody()?['employeeName']}",
+                  "AttendanceDate": "@{triggerBody()?['attendanceDate']}",
+                  "StartTime": "@{triggerBody()?['startTime']}",
+                  "EndTime": "@{triggerBody()?['endTime']}",
+                  "WorkHours": "@{triggerBody()?['workHours']}",
+                  "ActivityType": "@{triggerBody()?['activityType']}",
+                  "SchoolName": "@{triggerBody()?['schoolName']}",
+                  "Municipality": "@{triggerBody()?['municipality']}",
+                  "ProgramName": "@{triggerBody()?['programName']}",
+                  "SessionNumber": "@{triggerBody()?['sessionNumber']}",
+                  "Kilometers": "@{triggerBody()?['kilometers']}",
+                  "TotalExpenses": "@{triggerBody()?['totalExpenses']}",
+                  "ExpensesDetails": "@{triggerBody()?['expensesDetails']}",
+                  "Notes": "@{triggerBody()?['notes']}",
+                  "EmploymentType": "@{triggerBody()?['employmentType']}",
+                  "Team": "@{triggerBody()?['team']}"
+                }
+              }
+            },
+            "Response_Submit_Success": {
+              "type": "Response",
+              "runAfter": { "Create_Attendance_Record": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*"
+                },
+                "body": {
+                  "success": true,
+                  "recordId": "@{body('Create_Attendance_Record')?['ID']}"
+                }
+              }
+            }
+          }
+        },
+        "getHistory": {
+          "case": "getHistory",
+          "actions": {
+            "Initialize_Filter": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [{
+                  "name": "filterQuery",
+                  "type": "string",
+                  "value": ""
+                }]
+              }
+            },
+            "Set_Filter_By_Role": {
+              "type": "Switch",
+              "runAfter": { "Initialize_Filter": ["Succeeded"] },
+              "expression": "@triggerBody()?['role']",
+              "cases": {
+                "instructor": {
+                  "case": "instructor",
+                  "actions": {
+                    "Set_Instructor_Filter": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "filterQuery",
+                        "value": "EmployeeId eq '@{triggerBody()?['employeeId']}'"
+                      }
+                    }
+                  }
+                },
+                "manager": {
+                  "case": "manager",
+                  "actions": {
+                    "Set_Manager_Filter": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "filterQuery",
+                        "value": "Team eq '@{triggerBody()?['team']}'"
+                      }
+                    }
+                  }
+                }
+              },
+              "default": {
+                "actions": {
+                  "Set_No_Filter": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "filterQuery",
+                      "value": ""
+                    }
+                  }
+                }
+              }
+            },
+            "Get_Attendance_Records": {
+              "type": "ApiConnection",
+              "runAfter": { "Set_Filter_By_Role": ["Succeeded"] },
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "get",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Attendance')}/items",
+                "queries": {
+                  "$filter": "@variables('filterQuery')",
+                  "$orderby": "AttendanceDate desc",
+                  "$top": "500"
+                }
+              }
+            },
+            "Response_GetHistory": {
+              "type": "Response",
+              "runAfter": { "Get_Attendance_Records": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*"
+                },
+                "body": {
+                  "success": true,
+                  "records": "@body('Get_Attendance_Records')?['value']"
+                }
+              }
+            }
+          }
+        },
+        "updateRecord": {
+          "case": "updateRecord",
+          "actions": {
+            "Update_Attendance_Record": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "patch",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Attendance')}/items/@{triggerBody()?['recordId']}",
+                "body": {
+                  "EmployeeId": "@{triggerBody()?['employeeId']}",
+                  "EmployeeName": "@{triggerBody()?['employeeName']}",
+                  "AttendanceDate": "@{triggerBody()?['attendanceDate']}",
+                  "StartTime": "@{triggerBody()?['startTime']}",
+                  "EndTime": "@{triggerBody()?['endTime']}",
+                  "WorkHours": "@{triggerBody()?['workHours']}",
+                  "ActivityType": "@{triggerBody()?['activityType']}",
+                  "SchoolName": "@{triggerBody()?['schoolName']}",
+                  "Municipality": "@{triggerBody()?['municipality']}",
+                  "ProgramName": "@{triggerBody()?['programName']}",
+                  "SessionNumber": "@{triggerBody()?['sessionNumber']}",
+                  "Kilometers": "@{triggerBody()?['kilometers']}",
+                  "TotalExpenses": "@{triggerBody()?['totalExpenses']}",
+                  "ExpensesDetails": "@{triggerBody()?['expensesDetails']}",
+                  "Notes": "@{triggerBody()?['notes']}",
+                  "EmploymentType": "@{triggerBody()?['employmentType']}",
+                  "Team": "@{triggerBody()?['team']}"
+                }
+              }
+            },
+            "Response_Update_Success": {
+              "type": "Response",
+              "runAfter": { "Update_Attendance_Record": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*"
+                },
+                "body": { "success": true }
+              }
+            }
+          }
+        },
+        "deleteRecord": {
+          "case": "deleteRecord",
+          "actions": {
+            "Delete_Attendance_Record": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['sharepointonline']['connectionId']" } },
+                "method": "delete",
+                "path": "/datasets/@{encodeURIComponent('https://yoursite.sharepoint.com/sites/yoursite')}/tables/@{encodeURIComponent('Attendance')}/items/@{triggerBody()?['recordId']}"
+              }
+            },
+            "Response_Delete_Success": {
+              "type": "Response",
+              "runAfter": { "Delete_Attendance_Record": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": "*"
+                },
+                "body": { "success": true }
+              }
+            }
+          }
+        }
+      },
+      "default": {
+        "actions": {
+          "Response_Invalid_Action": {
+            "type": "Response",
+            "inputs": {
+              "statusCode": 400,
+              "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+              },
+              "body": {
+                "success": false,
+                "message": "Invalid action"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "parameters": {
+    "$connections": {
+      "defaultValue": {},
+      "type": "Object"
+    }
+  }
+}
