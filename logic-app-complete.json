@@ -294,6 +294,41 @@
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
                                         }
                                     },
+                                    "Transform_All_Records": {
+                                        "type": "Select",
+                                        "inputs": {
+                                            "from": "@body('Get_All_Records')?['value']",
+                                            "select": {
+                                                "ID": "@item()?['ID']",
+                                                "employeeId": "@item()?['employeeId']",
+                                                "employeeName": "@item()?['employeeName']",
+                                                "attendanceDate": "@item()?['attendanceDate']",
+                                                "startTime": "@item()?['startTime']",
+                                                "endTime": "@item()?['endTime']",
+                                                "workHours": "@item()?['workHours']",
+                                                "activityType": "@coalesce(item()?['activityType']?['Value'], item()?['activityType'])",
+                                                "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
+                                                "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
+                                                "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
+                                                "sessionNumber": "@item()?['sessionNumber']",
+                                                "kilometers": "@item()?['kilometers']",
+                                                "totalExpenses": "@item()?['totalExpenses']",
+                                                "expensesDetails": "@item()?['expensesDetails']",
+                                                "notes": "@item()?['notes']",
+                                                "status": "@coalesce(item()?['status']?['Value'], item()?['status'])",
+                                                "approvedBy": "@item()?['approvedBy']",
+                                                "approvedDate": "@item()?['approvedDate']",
+                                                "rejectReason": "@item()?['rejectReason']",
+                                                "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
+                                                "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Get_All_Records": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    },
                                     "Response_All_Records": {
                                         "type": "Response",
                                         "kind": "Http",
@@ -304,11 +339,11 @@
                                             },
                                             "body": {
                                                 "success": true,
-                                                "records": "@body('Get_All_Records')?['value']"
+                                                "records": "@body('Transform_All_Records')"
                                             }
                                         },
                                         "runAfter": {
-                                            "Get_All_Records": [
+                                            "Transform_All_Records": [
                                                 "Succeeded"
                                             ]
                                         }
@@ -340,6 +375,41 @@
                                                         }
                                                     }
                                                 },
+                                                "Transform_Team_Records": {
+                                                    "type": "Select",
+                                                    "inputs": {
+                                                        "from": "@body('Get_Team_Records')?['value']",
+                                                        "select": {
+                                                            "ID": "@item()?['ID']",
+                                                            "employeeId": "@item()?['employeeId']",
+                                                            "employeeName": "@item()?['employeeName']",
+                                                            "attendanceDate": "@item()?['attendanceDate']",
+                                                            "startTime": "@item()?['startTime']",
+                                                            "endTime": "@item()?['endTime']",
+                                                            "workHours": "@item()?['workHours']",
+                                                            "activityType": "@coalesce(item()?['activityType']?['Value'], item()?['activityType'])",
+                                                            "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
+                                                            "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
+                                                            "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
+                                                            "sessionNumber": "@item()?['sessionNumber']",
+                                                            "kilometers": "@item()?['kilometers']",
+                                                            "totalExpenses": "@item()?['totalExpenses']",
+                                                            "expensesDetails": "@item()?['expensesDetails']",
+                                                            "notes": "@item()?['notes']",
+                                                            "status": "@coalesce(item()?['status']?['Value'], item()?['status'])",
+                                                            "approvedBy": "@item()?['approvedBy']",
+                                                            "approvedDate": "@item()?['approvedDate']",
+                                                            "rejectReason": "@item()?['rejectReason']",
+                                                            "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
+                                                            "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
+                                                        }
+                                                    },
+                                                    "runAfter": {
+                                                        "Get_Team_Records": [
+                                                            "Succeeded"
+                                                        ]
+                                                    }
+                                                },
                                                 "Response_Team_Records": {
                                                     "type": "Response",
                                                     "kind": "Http",
@@ -350,11 +420,11 @@
                                                         },
                                                         "body": {
                                                             "success": true,
-                                                            "records": "@body('Get_Team_Records')?['value']"
+                                                            "records": "@body('Transform_Team_Records')"
                                                         }
                                                     },
                                                     "runAfter": {
-                                                        "Get_Team_Records": [
+                                                        "Transform_Team_Records": [
                                                             "Succeeded"
                                                         ]
                                                     }
@@ -377,6 +447,41 @@
                                                             }
                                                         }
                                                     },
+                                                    "Transform_Own_Records": {
+                                                        "type": "Select",
+                                                        "inputs": {
+                                                            "from": "@body('Get_Own_Records')?['value']",
+                                                            "select": {
+                                                                "ID": "@item()?['ID']",
+                                                                "employeeId": "@item()?['employeeId']",
+                                                                "employeeName": "@item()?['employeeName']",
+                                                                "attendanceDate": "@item()?['attendanceDate']",
+                                                                "startTime": "@item()?['startTime']",
+                                                                "endTime": "@item()?['endTime']",
+                                                                "workHours": "@item()?['workHours']",
+                                                                "activityType": "@coalesce(item()?['activityType']?['Value'], item()?['activityType'])",
+                                                                "schoolName": "@coalesce(item()?['schoolName']?['Value'], item()?['schoolName'])",
+                                                                "municipality": "@coalesce(item()?['municipality']?['Value'], item()?['municipality'])",
+                                                                "programName": "@coalesce(item()?['programName']?['Value'], item()?['programName'])",
+                                                                "sessionNumber": "@item()?['sessionNumber']",
+                                                                "kilometers": "@item()?['kilometers']",
+                                                                "totalExpenses": "@item()?['totalExpenses']",
+                                                                "expensesDetails": "@item()?['expensesDetails']",
+                                                                "notes": "@item()?['notes']",
+                                                                "status": "@coalesce(item()?['status']?['Value'], item()?['status'])",
+                                                                "approvedBy": "@item()?['approvedBy']",
+                                                                "approvedDate": "@item()?['approvedDate']",
+                                                                "rejectReason": "@item()?['rejectReason']",
+                                                                "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
+                                                                "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
+                                                            }
+                                                        },
+                                                        "runAfter": {
+                                                            "Get_Own_Records": [
+                                                                "Succeeded"
+                                                            ]
+                                                        }
+                                                    },
                                                     "Response_Own_Records": {
                                                         "type": "Response",
                                                         "kind": "Http",
@@ -387,11 +492,11 @@
                                                             },
                                                             "body": {
                                                                 "success": true,
-                                                                "records": "@body('Get_Own_Records')?['value']"
+                                                                "records": "@body('Transform_Own_Records')"
                                                             }
                                                         },
                                                         "runAfter": {
-                                                            "Get_Own_Records": [
+                                                            "Transform_Own_Records": [
                                                                 "Succeeded"
                                                             ]
                                                         }
