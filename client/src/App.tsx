@@ -18,12 +18,28 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, action: "login" }),
       });
-      const data = await response.json();
+      const responseText = await response.text();
+
+      if (!responseText) {
+        throw new Error("Empty response from server");
+      }
+
+      let data: { success?: boolean; message?: string; records?: unknown[] };
+
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Invalid JSON response:", responseText, parseError);
+        throw new Error("Invalid response from server");
+      }
+
+      const records = Array.isArray(data.records) ? data.records : [];
       
       if (data.success) {
         setIsLoggedIn(true);
       } else {
-        setError(data.reason || "Login failed");
+        console.warn("Login failed response records:", records);
+        setError(data.message || "Login failed");
       }
     } catch (err) {
       setError("Connection error");
