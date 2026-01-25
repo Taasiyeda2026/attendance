@@ -464,24 +464,6 @@
       background: #f8fafc;
     }
 
-    /* Status Badge */
-    .status-badge {
-      padding: 4px 10px;
-      border-radius: 5px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .status-badge.sent {
-      background: #dcfce7;
-      color: #16a34a;
-    }
-
-    .status-badge.pending {
-      background: #fef3c7;
-      color: #d97706;
-    }
-
     /* Buttons */
     .btn {
       padding: 8px 16px;
@@ -1851,10 +1833,6 @@
               <i class="fas fa-file-excel"></i>
               ייצוא חודשי
             </button>
-            <button class="btn" onclick="exportApprovedOnly()" style="background: #3b82f6; color: white;">
-              <i class="fas fa-check-circle"></i>
-              ייצוא מאושרות בלבד
-            </button>
           </div>
         </div>
         <div class="card-body">
@@ -2196,34 +2174,6 @@
           <button class="btn" onclick="closeExportModal()" style="background: #e2e8f0; color: #475569;">
             <i class="fas fa-times"></i>
             ביטול
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Reject Modal -->
-    <div id="rejectModal" class="modal">
-      <div class="modal-content" style="max-width: 400px;">
-        <div class="modal-header">
-          <h3>דחיית רשומה</h3>
-          <button class="close-btn" onclick="closeRejectModal()">×</button>
-        </div>
-        
-        <div style="padding: 20px;">
-          <div class="form-field">
-            <label for="rejectReason">סיבת הדחייה (אופציונלי)</label>
-            <textarea id="rejectReason" rows="3" placeholder="הזן סיבת דחייה..."></textarea>
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button class="btn" onclick="closeRejectModal()" style="background: #e2e8f0; color: #475569;">
-            <i class="fas fa-times"></i>
-            ביטול
-          </button>
-          <button class="btn" onclick="confirmReject()" style="background: #ef4444; color: white;">
-            <i class="fas fa-times-circle"></i>
-            דחייה
           </button>
         </div>
       </div>
@@ -2620,30 +2570,10 @@ function canDeleteRecord(record) {
   return role === 'system_admin' || role === 'operations_controller';
 }
 
-function canApproveRecord(record) {
-  const user = getCurrentUserData();
-  if (!user) return false;
-  
-  const role = user.role;
-  
-  // payroll_officer = view only, no approve
-  return role === 'system_admin' || role === 'operations_controller' || role === 'manager';
-}
-
 function canAddRecord() {
   const user = getCurrentUserData();
   if (!user) return false;
   return user.role === 'instructor';
-}
-
-function getStatusBadge(status) {
-  const statusMap = {
-    'pending': { text: 'ממתין', class: 'status-pending', color: '#f59e0b', bg: '#fef3c7' },
-    'approved': { text: 'מאושר', class: 'status-approved', color: '#10b981', bg: '#d1fae5' },
-    'rejected': { text: 'נדחה', class: 'status-rejected', color: '#ef4444', bg: '#fee2e2' }
-  };
-  const s = statusMap[status] || statusMap['pending'];
-  return `<span style="background: ${s.bg}; color: ${s.color}; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${s.text}</span>`;
 }
 
 // =============== Sync from SharePoint ===============
@@ -2724,10 +2654,6 @@ async function loadMyRecordsFromServer() {
       totalExpenses: rec.totalExpenses || 0,
       expensesDetail: rec.expensesDetails || '',
       notes: rec.notes || '',
-      status: extractValue(rec.status) || extractValue(rec.Status) || 'pending',
-      approvedBy: rec.approvedBy || '',
-      approvedDate: rec.approvedDate || '',
-      rejectReason: rec.rejectReason || '',
       employmentType: extractValue(rec.employmentType) || extractValue(rec.EmploymentType) || '',
       attachments: []
     }));
@@ -2767,11 +2693,7 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     expensesDetails: String(updatedRecord.expensesDetail || ''),
     notes: String(updatedRecord.notes || ''),
     employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || 'תעשיידע'),
-    team: String(updatedRecord.team || localStorage.getItem("team") || ''),
-    status: String(updatedRecord.status || 'pending'),
-    approvedBy: String(updatedRecord.approvedBy || ''),
-    approvedDate: String(updatedRecord.approvedDate || ''),
-    rejectReason: String(updatedRecord.rejectReason || '')
+    team: String(updatedRecord.team || localStorage.getItem("team") || '')
   };
 
   const res = await fetch(LOGIC_APP_URL, {
@@ -3076,22 +2998,14 @@ function loadTeamRecords() {
   }
   
   const totalHours = records.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  const approvedCount = records.filter(rec => rec.approved).length;
   
   const tableHTML = `
-    <div style="margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-      <span style="color: #64748b;">סה"כ ${records.length} רשומות | ${approvedCount} מאושרות</span>
-      <button class="btn" onclick="approveAllRecords()" style="background: #10b981; color: white; padding: 8px 16px;">
-        <i class="fas fa-check-double"></i> אשר הכל
-      </button>
-      <button class="btn" onclick="unapproveAllRecords()" style="background: #f59e0b; color: white; padding: 8px 16px;">
-        <i class="fas fa-undo"></i> בטל אישורים
-      </button>
+    <div style="margin-bottom: 15px;">
+      <span style="color: #64748b;">סה"כ ${records.length} רשומות</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th style="width: 50px;">אישור</th>
           <th>תאריך</th>
           <th>עובד</th>
           <th>צוות</th>
@@ -3106,10 +3020,7 @@ function loadTeamRecords() {
       </thead>
       <tbody>
         ${records.map((rec, idx) => `
-          <tr style="${rec.approved ? 'background: #ecfdf5;' : ''}">
-            <td style="text-align: center;">
-              <input type="checkbox" ${rec.approved ? 'checked' : ''} onchange="toggleApproval(${idx})" style="width: 20px; height: 20px; cursor: pointer;">
-            </td>
+          <tr>
             <td>${rec.date}</td>
             <td>${rec.empName}</td>
             <td>${rec.team || '-'}</td>
@@ -3123,7 +3034,6 @@ function loadTeamRecords() {
           </tr>
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td></td>
           <td colspan="3" style="text-align: left;">סה"כ:</td>
           <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
           <td colspan="6"></td>
@@ -3133,26 +3043,6 @@ function loadTeamRecords() {
   `;
   
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
-}
-
-function toggleApproval(index) {
-  records[index].approved = !records[index].approved;
-  saveToLocalStorage();
-  loadTeamRecords();
-}
-
-function approveAllRecords() {
-  records.forEach(rec => rec.approved = true);
-  saveToLocalStorage();
-  loadTeamRecords();
-  showAlert('✅ כל הרשומות אושרו', 'success');
-}
-
-function unapproveAllRecords() {
-  records.forEach(rec => rec.approved = false);
-  saveToLocalStorage();
-  loadTeamRecords();
-  showAlert('⚠️ כל האישורים בוטלו', 'info');
 }
 
 function loadReports() {
@@ -3183,10 +3073,10 @@ function exportTeamToExcel() {
   // Create workbook with SheetJS (xlsx library)
   // Since we don't have xlsx library, create a multi-sheet CSV approach
   // Sheet 1: Detailed records
-  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות,מאושר\n';
+  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
   
   approvedRecords.forEach(rec => {
-    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}",${rec.approved ? 'כן' : 'לא'}\n`;
+    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
   });
   
   // Sheet 2: Summary by activity type (hours only) + general totals
@@ -3226,58 +3116,6 @@ function exportTeamToExcel() {
   link.click();
   
   showAlert('✅ הקובץ יוצא בהצלחה!', 'success');
-}
-
-function exportApprovedOnly() {
-  const approvedRecords = records.filter(rec => rec.approved === true);
-  
-  if (approvedRecords.length === 0) {
-    showAlert('⚠️ אין רשומות מאושרות לייצוא', 'error');
-    return;
-  }
-  
-  // Sheet 1: Detailed approved records
-  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
-  
-  approvedRecords.forEach(rec => {
-    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
-  });
-  
-  // Sheet 2: Summary by activity type (hours only) + general totals
-  let summaryCSV = '\n\n--- סיכום ---\n\n';
-  summaryCSV += 'סיכום שעות לפי סוג פעילות\n';
-  summaryCSV += 'סוג פעילות,סה"כ שעות\n';
-  
-  const hoursByActivity = {};
-  approvedRecords.forEach(rec => {
-    const activity = rec.activity || 'לא מוגדר';
-    hoursByActivity[activity] = (hoursByActivity[activity] || 0) + (parseFloat(rec.hours) || 0);
-  });
-  
-  Object.entries(hoursByActivity).forEach(([activity, hours]) => {
-    summaryCSV += `${activity},${hours.toFixed(2)}\n`;
-  });
-  
-  const totalKm = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
-  const totalExpenses = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
-  const totalHours = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  
-  summaryCSV += '\n\nסיכום כללי\n';
-  summaryCSV += `סה"כ שעות,${totalHours.toFixed(2)}\n`;
-  summaryCSV += `סה"כ קילומטר,${totalKm.toFixed(1)}\n`;
-  summaryCSV += `סה"כ הוצאות,${totalExpenses.toFixed(2)} ₪\n`;
-  summaryCSV += `סה"כ רשומות מאושרות,${approvedRecords.length}\n`;
-  
-  const fullCSV = detailedCSV + summaryCSV;
-  
-  const blob = new Blob(['\ufeff' + fullCSV], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  const monthName = new Date().toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
-  link.download = `דוח_מאושר_${monthName}.csv`;
-  link.click();
-  
-  showAlert(`✅ יוצאו ${approvedRecords.length} רשומות מאושרות!`, 'success');
 }
 
 function viewAllRecords() {
@@ -3392,8 +3230,7 @@ async function submitAll() {
         attachments: rec.attachments || [],
         attachmentsNames: formatAttachments(rec.attachments || []),
         employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
-        team: String(localStorage.getItem("team") || ''),
-        status: "pending"
+        team: String(localStorage.getItem("team") || '')
       };
       
       const response = await fetch(LOGIC_APP_URL, {
@@ -3405,7 +3242,7 @@ async function submitAll() {
       console.log('Response:', response.status, response.statusText);
       
       if (response.ok) {
-        rec.status = 'נשלח';
+        rec.synced = true;
         success++;
       } else {
         failed++;
@@ -3930,8 +3767,7 @@ async function addRecord() {
     expensesDetails: String(expensesDetail || ''),
     notes: String(notes || ''),
     employmentType: String(employmentType),
-    team: String(team),
-    status: "pending"
+    team: String(team)
   };
   
   // Send to SharePoint
@@ -3994,7 +3830,6 @@ function renderRecordsTable() {
   const user = getCurrentUserData();
   const userRole = user ? user.role : 'instructor';
   const showActionsColumn = userRole !== 'instructor';
-  const showApprovalColumn = canApproveRecord({});
   
   const tableHTML = `
     <table>
@@ -4006,7 +3841,6 @@ function renderRecordsTable() {
           <th>בית ספר</th>
           <th>רשות</th>
           <th>ק"מ</th>
-          <th>סטטוס</th>
           ${showActionsColumn ? '<th>פעולות</th>' : ''}
         </tr>
       </thead>
@@ -4019,21 +3853,8 @@ function renderRecordsTable() {
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
             <td>${rec.km}</td>
-            <td>
-              ${getStatusBadge(rec.status || 'pending')}
-            </td>
             ${showActionsColumn ? `
             <td style="white-space: nowrap;">
-              ${showApprovalColumn && rec.status !== 'approved' ? `
-              <button onclick="approveRecord(${idx})" style="background: #d1fae5; color: #059669; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="אישור">
-                <i class="fas fa-check"></i>
-              </button>
-              ` : ''}
-              ${showApprovalColumn && rec.status !== 'rejected' ? `
-              <button onclick="openRejectModal(${idx})" style="background: #fee2e2; color: #dc2626; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="דחייה">
-                <i class="fas fa-times"></i>
-              </button>
-              ` : ''}
               ${canEditRecord(rec) ? `
               <button onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="עריכה">
                 <i class="fas fa-edit"></i>
@@ -4053,7 +3874,6 @@ function renderRecordsTable() {
           <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
           <td colspan="3"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
-          <td></td>
           ${showActionsColumn ? '<td></td>' : ''}
         </tr>
       </tbody>
@@ -4089,108 +3909,6 @@ async function deleteRecord(index) {
   } catch (e) {
     console.error(e);
     showAlert('❌ שגיאה במחיקה מהשרת', 'error');
-  }
-}
-
-// =============== Approve/Reject Records ===============
-let rejectingIndex = null;
-
-async function approveRecord(index) {
-  const rec = records[index];
-  if (!rec) return;
-  
-  if (!canApproveRecord(rec)) {
-    showAlert('❌ אין לך הרשאה לאשר רשומות', 'error');
-    return;
-  }
-  
-  showAlert('✅ מאשר רשומה...', 'info');
-  
-  try {
-    const user = getCurrentUserData();
-    const now = new Date().toISOString();
-    
-    const updatePayload = {
-      ...rec,
-      status: 'approved',
-      approvedBy: user.empName,
-      approvedDate: now,
-      rejectReason: '',
-      // Ensure hours are formatted simply for SharePoint
-      hours: rec.hours ? Number(rec.hours).toFixed(2) : '0'
-    };
-    
-    const ok = await updateRecordOnServer(updatePayload);
-    
-    if (!ok) {
-      showAlert('❌ אישור נכשל בשרת', 'error');
-      return;
-    }
-    
-    await loadMyRecordsFromServer();
-    showAlert('✅ הרשומה אושרה בהצלחה', 'success');
-  } catch (e) {
-    console.error(e);
-    showAlert('❌ שגיאה באישור הרשומה', 'error');
-  }
-}
-
-function openRejectModal(index) {
-  rejectingIndex = index;
-  document.getElementById('rejectReason').value = '';
-  document.getElementById('rejectModal').style.display = 'flex';
-}
-
-function closeRejectModal() {
-  rejectingIndex = null;
-  document.getElementById('rejectModal').style.display = 'none';
-}
-
-async function confirmReject() {
-  if (rejectingIndex === null) return;
-  
-  const rec = records[rejectingIndex];
-  if (!rec) return;
-  
-  const reason = document.getElementById('rejectReason').value.trim();
-  
-  if (!canApproveRecord(rec)) {
-    showAlert('❌ אין לך הרשאה לדחות רשומות', 'error');
-    closeRejectModal();
-    return;
-  }
-  
-  showAlert('❌ דוחה רשומה...', 'info');
-  
-  try {
-    const user = getCurrentUserData();
-    const now = new Date().toISOString();
-    
-    const updatePayload = {
-      ...rec,
-      status: 'rejected',
-      approvedBy: user.empName,
-      approvedDate: now,
-      rejectReason: reason,
-      // Ensure hours are formatted simply for SharePoint
-      hours: rec.hours ? Number(rec.hours).toFixed(2) : '0'
-    };
-    
-    const ok = await updateRecordOnServer(updatePayload);
-    
-    if (!ok) {
-      showAlert('❌ דחייה נכשלה בשרת', 'error');
-      closeRejectModal();
-      return;
-    }
-    
-    await loadMyRecordsFromServer();
-    closeRejectModal();
-    showAlert('✅ הרשומה נדחתה', 'success');
-  } catch (e) {
-    console.error(e);
-    showAlert('❌ שגיאה בדחיית הרשומה', 'error');
-    closeRejectModal();
   }
 }
 
@@ -4555,10 +4273,7 @@ async function loadReportData() {
           expensesDetail: rec.expensesDetails,
           notes: rec.notes,
           employmentType: rec.employmentType,
-          team: rec.team,
-          status: rec.status || 'pending',
-          approvedBy: rec.approvedBy,
-          approvedDate: rec.approvedDate
+          team: rec.team
         }));
       } else {
         reportRecords = getFilteredRecordsByMonth(records, month, year);
@@ -4703,11 +4418,10 @@ function exportReportToExcel(type = 'all') {
   let filename = '';
   
   if (type === 'all') {
-    csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות,סטטוס\n';
+    csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
     
     reportRecords.forEach(rec => {
-      const status = rec.status === 'approved' ? 'מאושר' : (rec.status === 'rejected' ? 'נדחה' : 'ממתין');
-      csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}",${status}\n`;
+      csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
     });
     
     filename = `דוח_נוכחות_מלא_${monthNames[parseInt(month) - 1]}_${year}.csv`;

@@ -235,7 +235,6 @@
                                                 "kilometers": "@triggerBody()?['kilometers']",
                                                 "expensesDetails": "@triggerBody()?['expensesDetails']",
                                                 "notes": "@triggerBody()?['notes']",
-                                                "status": "@triggerBody()?['status']",
                                                 "employmentType": "@triggerBody()?['employmentType']",
                                                 "team": "@triggerBody()?['team']"
                                             },
@@ -559,10 +558,6 @@
                                                 "kilometers": "@triggerBody()?['kilometers']",
                                                 "expensesDetails": "@triggerBody()?['expensesDetails']",
                                                 "notes": "@triggerBody()?['notes']",
-                                                "status": "@triggerBody()?['status']",
-                                                "approvedBy": "@triggerBody()?['approvedBy']",
-                                                "approvedDate": "@triggerBody()?['approvedDate']",
-                                                "rejectReason": "@triggerBody()?['rejectReason']",
                                                 "employmentType": "@triggerBody()?['employmentType']",
                                                 "team": "@triggerBody()?['team']"
                                             },
