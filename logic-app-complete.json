@@ -79,18 +79,6 @@
                             },
                             "role": {
                                 "type": "string"
-                            },
-                            "status": {
-                                "type": "string"
-                            },
-                            "approvedBy": {
-                                "type": "string"
-                            },
-                            "approvedDate": {
-                                "type": "string"
-                            },
-                            "rejectReason": {
-                                "type": "string"
                             }
                         },
                         "required": ["action"]
@@ -322,10 +310,6 @@
                                                         "totalExpenses": "@item()?['totalExpenses']",
                                                         "expensesDetails": "@item()?['expensesDetails']",
                                                         "notes": "@item()?['notes']",
-                                                        "status": "@coalesce(item()?['status']?['Value'], item()?['status'])",
-                                                        "approvedBy": "@item()?['approvedBy']",
-                                                        "approvedDate": "@item()?['approvedDate']",
-                                                        "rejectReason": "@item()?['rejectReason']",
                                                         "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
                                                         "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                     }
@@ -410,10 +394,6 @@
                                                                     "totalExpenses": "@item()?['totalExpenses']",
                                                                     "expensesDetails": "@item()?['expensesDetails']",
                                                                     "notes": "@item()?['notes']",
-                                                                    "status": "@coalesce(item()?['status']?['Value'], item()?['status'])",
-                                                                    "approvedBy": "@item()?['approvedBy']",
-                                                                    "approvedDate": "@item()?['approvedDate']",
-                                                                    "rejectReason": "@item()?['rejectReason']",
                                                                     "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
                                                                     "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                                 }
@@ -489,10 +469,6 @@
                                                                         "totalExpenses": "@item()?['totalExpenses']",
                                                                         "expensesDetails": "@item()?['expensesDetails']",
                                                                         "notes": "@item()?['notes']",
-                                                                        "status": "@coalesce(item()?['status']?['Value'], item()?['status'])",
-                                                                        "approvedBy": "@item()?['approvedBy']",
-                                                                        "approvedDate": "@item()?['approvedDate']",
-                                                                        "rejectReason": "@item()?['rejectReason']",
                                                                         "team": "@coalesce(item()?['team']?['Value'], item()?['Team']?['Value'], item()?['team'])",
                                                                         "employmentType": "@coalesce(item()?['employmentType']?['Value'], item()?['EmploymentType']?['Value'], item()?['employmentType'])"
                                                                     }
