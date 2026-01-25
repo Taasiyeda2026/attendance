@@ -3741,10 +3741,10 @@ async function addRecord() {
   const expensesDetail = document.getElementById('expensesDetail').value;
   const notes = document.getElementById('notesField').value;
   
+  // Use selectedFiles array (populated by drag-drop or file picker)
   const attachments = [];
-  const fileInput = document.getElementById('attachments');
-  if (fileInput && fileInput.files.length > 0) {
-    for (const file of fileInput.files) {
+  if (selectedFiles && selectedFiles.length > 0) {
+    for (const file of selectedFiles) {
       const base64 = await fileToBase64(file);
       attachments.push({
         name: file.name,
@@ -3840,7 +3840,7 @@ function clearAddForm() {
   document.getElementById('kmField').value = '';
   document.getElementById('totalExpenses').value = '';
   document.getElementById('expensesDetail').value = '';
-  if (document.getElementById('attachments')) document.getElementById('attachments').value = '';
+  clearSelectedFiles(); // Clear drag-drop file selection
   document.getElementById('notesField').value = '';
 }
 
