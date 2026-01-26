@@ -1071,9 +1071,11 @@
         padding-bottom: 80px;
       }
       
-      /* Hours display - hide range column on mobile */
-      #recordsPage .hours-range-column,
-      #teamRecordsPage .hours-range-column {
+      /* Hours display - hide start/end time columns on mobile, keep total */
+      #recordsPage .start-time-column,
+      #recordsPage .end-time-column,
+      #teamRecordsPage .start-time-column,
+      #teamRecordsPage .end-time-column {
         display: none;
       }
       
@@ -4247,8 +4249,9 @@ function renderRecordsTable() {
       <thead>
         <tr>
           <th>תאריך</th>
-          <th class="hours-range-column">טווח שעות</th>
-          <th class="hours-total-column">סה"כ</th>
+          <th class="start-time-column">שעת התחלה</th>
+          <th class="end-time-column">שעת סיום</th>
+          <th class="hours-total-column">סה"כ שעות</th>
           <th>פעילות</th>
           <th>בית ספר</th>
           <th>רשות</th>
@@ -4260,9 +4263,14 @@ function renderRecordsTable() {
         ${records.map((rec, idx) => `
           <tr>
             <td style="white-space: nowrap;">${rec.date}</td>
-            <td class="hours-range-column" style="direction: ltr; text-align: center; font-family: 'Courier New', monospace; font-size: 13px; white-space: nowrap;">
-              <span style="display: inline-block; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; color: #475569;">
-                ${rec.start || '--:--'} → ${rec.end || '--:--'}
+            <td class="start-time-column" style="direction: ltr; text-align: center; font-family: 'Courier New', monospace; font-size: 14px;">
+              <span style="display: inline-block; background: #f0fdf4; padding: 4px 10px; border-radius: 6px; color: #166534; font-weight: 600;">
+                ${rec.start || '--:--'}
+              </span>
+            </td>
+            <td class="end-time-column" style="direction: ltr; text-align: center; font-family: 'Courier New', monospace; font-size: 14px;">
+              <span style="display: inline-block; background: #fef3c7; padding: 4px 10px; border-radius: 6px; color: #92400e; font-weight: 600;">
+                ${rec.end || '--:--'}
               </span>
             </td>
             <td class="hours-total-column">
@@ -4290,7 +4298,8 @@ function renderRecordsTable() {
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td style="text-align: left; padding-right: 20px;">סה"כ:</td>
-          <td class="hours-range-column"></td>
+          <td class="start-time-column"></td>
+          <td class="end-time-column"></td>
           <td class="hours-total-column" style="color: #3b82f6; font-size: 16px;">${formatHoursDisplay(totalHours)}</td>
           <td colspan="2"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
