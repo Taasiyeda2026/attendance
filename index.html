@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -712,7 +713,7 @@
 
     /* Mobile Menu Toggle */
     .mobile-menu-toggle {
-      display: none;
+      display: none; /* Hidden on desktop */
       position: fixed;
       top: 5px;
       right: 10px;
@@ -726,6 +727,11 @@
       font-size: 20px;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+    
+    .mobile-menu-toggle:active {
+      transform: scale(0.95);
     }
 
     .mobile-overlay {
@@ -1071,27 +1077,19 @@
         padding-bottom: 80px;
       }
       
-      /* Hours display - hide start/end time columns on mobile, keep total */
-      #recordsPage .start-time-column,
-      #recordsPage .end-time-column,
-      #teamRecordsPage .start-time-column,
-      #teamRecordsPage .end-time-column {
+      /* Hide start/end time columns on mobile - keep only total hours */
+      #recordsPage table th:nth-child(2),
+      #recordsPage table td:nth-child(2),
+      #recordsPage table th:nth-child(3),
+      #recordsPage table td:nth-child(3) {
         display: none;
       }
       
-      #recordsPage table th.hours-total-column::before,
-      #teamRecordsPage table th.hours-total-column::before {
-        content: 'שעות';
-      }
-      
-      #recordsPage table th.hours-total-column,
-      #teamRecordsPage table th.hours-total-column {
-        font-size: 0;
-      }
-      
-      #recordsPage table td.hours-total-column strong,
-      #teamRecordsPage table td.hours-total-column strong {
-        font-size: 13px !important;
+      #teamRecordsPage table th:nth-child(2),
+      #teamRecordsPage table td:nth-child(2),
+      #teamRecordsPage table th:nth-child(3),
+      #teamRecordsPage table td:nth-child(3) {
+        display: none;
       }
     }
 
@@ -1379,7 +1377,7 @@
     </div>
     
     <div class="sidebar-user">
-      <div class="user-avatar">ע</div>
+      <div class="user-avatar" id="userAvatar">ע</div>
       <div class="user-info">
         <h3 id="userName">עידן נחום</h3>
         <p id="userRole">מנהל מערכת</p>
@@ -2913,6 +2911,7 @@ async function doLogin(event) {
       
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role);
+      document.getElementById('userAvatar').textContent = empData.empName ? empData.empName.charAt(0) : 'ע';
       document.getElementById('mobileUserGreeting').textContent = 'שלום, ' + empData.empName;
       
       updateMenuByRole(empData.role);
@@ -4249,9 +4248,9 @@ function renderRecordsTable() {
       <thead>
         <tr>
           <th>תאריך</th>
-          <th class="start-time-column">שעת התחלה</th>
-          <th class="end-time-column">שעת סיום</th>
-          <th class="hours-total-column">סה"כ שעות</th>
+          <th>שעת התחלה</th>
+          <th>שעת סיום</th>
+          <th>סה"כ שעות</th>
           <th>פעילות</th>
           <th>בית ספר</th>
           <th>רשות</th>
@@ -4262,24 +4261,20 @@ function renderRecordsTable() {
       <tbody>
         ${records.map((rec, idx) => `
           <tr>
-            <td style="white-space: nowrap;">${rec.date}</td>
-            <td class="start-time-column" style="direction: ltr; text-align: center; font-family: 'Courier New', monospace; font-size: 14px;">
-              <span style="display: inline-block; background: #f0fdf4; padding: 4px 10px; border-radius: 6px; color: #166534; font-weight: 600;">
-                ${rec.start || '--:--'}
-              </span>
+            <td>${rec.date}</td>
+            <td style="text-align: center; font-family: 'Courier New', monospace;">
+              ${rec.start || '--:--'}
             </td>
-            <td class="end-time-column" style="direction: ltr; text-align: center; font-family: 'Courier New', monospace; font-size: 14px;">
-              <span style="display: inline-block; background: #fef3c7; padding: 4px 10px; border-radius: 6px; color: #92400e; font-weight: 600;">
-                ${rec.end || '--:--'}
-              </span>
+            <td style="text-align: center; font-family: 'Courier New', monospace;">
+              ${rec.end || '--:--'}
             </td>
-            <td class="hours-total-column">
-              <strong style="color: #1e40af; font-size: 15px;">${formatHoursDisplay(rec.hours)}</strong>
+            <td style="text-align: center;">
+              <strong style="color: #1e40af;">${formatHoursDisplay(rec.hours)}</strong>
             </td>
             <td>${rec.activity}</td>
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
-            <td>${rec.km || 0}</td>
+            <td style="text-align: center;">${rec.km || 0}</td>
             ${showActionsColumn ? `
             <td style="white-space: nowrap;">
               ${canEditRecord(rec) ? `
@@ -4298,11 +4293,13 @@ function renderRecordsTable() {
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td style="text-align: left; padding-right: 20px;">סה"כ:</td>
-          <td class="start-time-column"></td>
-          <td class="end-time-column"></td>
-          <td class="hours-total-column" style="color: #3b82f6; font-size: 16px;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="2"></td>
-          <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
+          <td></td>
+          <td></td>
+          <td style="text-align: center; color: #3b82f6; font-size: 16px;">${formatHoursDisplay(totalHours)}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td style="text-align: center; color: #3b82f6;">${totalKm.toFixed(1)}</td>
           ${showActionsColumn ? '<td></td>' : ''}
         </tr>
       </tbody>
@@ -5003,6 +5000,7 @@ window.addEventListener('DOMContentLoaded', function() {
       
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role || 'instructor');
+      document.getElementById('userAvatar').textContent = empData.empName ? empData.empName.charAt(0) : 'ע';
       document.getElementById('mobileUserGreeting').textContent = 'שלום, ' + empData.empName;
       
       updateMenuByRole(empData.role || 'instructor');
