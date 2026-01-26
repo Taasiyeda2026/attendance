@@ -1071,6 +1071,27 @@
       .main-content {
         padding-bottom: 80px;
       }
+      
+      /* Hours display - hide range column on mobile */
+      #recordsPage .hours-range-column,
+      #teamRecordsPage .hours-range-column {
+        display: none;
+      }
+      
+      #recordsPage table th.hours-total-column::before,
+      #teamRecordsPage table th.hours-total-column::before {
+        content: 'שעות';
+      }
+      
+      #recordsPage table th.hours-total-column,
+      #teamRecordsPage table th.hours-total-column {
+        font-size: 0;
+      }
+      
+      #recordsPage table td.hours-total-column strong,
+      #teamRecordsPage table td.hours-total-column strong {
+        font-size: 13px !important;
+      }
     }
 
     /* Responsive - Small Mobile */
@@ -1377,7 +1398,7 @@
         <i class="fas fa-table"></i>
         <span>רשומות נוכחות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
         <span>רשומות הצוות</span>
       </a>
@@ -1813,31 +1834,58 @@
       </div>
     </div>
 
-    <!-- Team Records Page (for manager, operations_controller, system_admin) -->
+    <!-- Team Records Page (for manager, operations_controller, system_admin, payroll_officer) -->
     <div id="teamRecordsPage" class="page hidden">
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h1>רשומות הצוות</h1>
-          <p id="teamRecordsSubtitle">צפייה ועריכה של רשומות הצוות</p>
+          <h1>סיכום נוכחות</h1>
+          <p id="teamRecordsSubtitle">סיכום לפי עובד - לחץ על שם לפירוט</p>
         </div>
         <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
       </div>
-      
+
       <div class="content-card">
-        <div class="card-header">
-          <h2 class="card-title">רשומות צוות <span id="teamName"></span></h2>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="card-header" style="flex-direction: column; gap: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+            <h2 class="card-title">סיכום צוות <span id="teamName"></span></h2>
             <button class="btn" onclick="exportTeamToExcel()" style="background: #10b981; color: white;">
               <i class="fas fa-file-excel"></i>
-              ייצוא חודשי
+              ייצוא ל-Excel
+            </button>
+          </div>
+          <!-- Month/Year Filter -->
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; width: 100%;">
+            <label style="font-weight: 500; color: #475569;">תקופה:</label>
+            <select id="teamMonthFilter" onchange="loadTeamRecords()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
+              <option value="1">ינואר</option>
+              <option value="2">פברואר</option>
+              <option value="3">מרץ</option>
+              <option value="4">אפריל</option>
+              <option value="5">מאי</option>
+              <option value="6">יוני</option>
+              <option value="7">יולי</option>
+              <option value="8">אוגוסט</option>
+              <option value="9">ספטמבר</option>
+              <option value="10">אוקטובר</option>
+              <option value="11">נובמבר</option>
+              <option value="12">דצמבר</option>
+            </select>
+            <select id="teamYearFilter" onchange="loadTeamRecords()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+            </select>
+            <button class="btn" onclick="loadTeamRecords()" style="background: #3b82f6; color: white; padding: 8px 16px;">
+              <i class="fas fa-sync-alt"></i>
+              רענן
             </button>
           </div>
         </div>
         <div class="card-body">
           <div id="teamRecordsTable">
-            <p style="text-align: center; color: #94a3b8; padding: 40px;">טוען רשומות צוות...</p>
+            <p style="text-align: center; color: #94a3b8; padding: 40px;">בחר חודש ושנה לצפייה בסיכום</p>
           </div>
         </div>
       </div>
@@ -2217,6 +2265,46 @@
 // =============== Configuration ===============
 
 const LOGIC_APP_URL = "https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g";
+
+// =============== Fixed Lists (Constant Values) ===============
+const TEAMS_LIST = [
+  'גיל',
+  'לינוי',
+  'הכל'
+];
+
+const EMPLOYMENT_TYPES = [
+  'תעשיידע',
+  'מעוף',
+  'מנפאואר',
+  'עצמאי'
+];
+
+const ACTIVITY_TYPES = [
+  'ביטול זמן',
+  'הכשרה',
+  'סדנה',
+  'סיור',
+  'קורס',
+  'תפעול'
+];
+
+const PROGRAMS_LIST = [
+  'השמיים אינם הגבול',
+  'התנסות בתעשייה',
+  'ביומימיקרי',
+  'ביומימיקרי לחטיבות',
+  'בינה מלאכותית',
+  'יישומי AI',
+  'מייקרים טכנו-כיף',
+  'מנהיגות ירוקה',
+  'מקורות',
+  'משחקי קופסה',
+  'פורצות דרך',
+  'רוקחים עולם',
+  'טכנולוגיות החלל',
+  'תמיר'
+];
 
 // =============== State ===============
 let records = [];
@@ -2784,7 +2872,7 @@ async function doLogin(event) {
       body: JSON.stringify({ 
         action: "auth",
         employeeId: employeeId, 
-        personalCode: personalCode 
+        password: personalCode 
       })
     });
     
@@ -2794,9 +2882,16 @@ async function doLogin(event) {
     
     if (data.success) {
       currentUser = data.employeeName;
-      // Check both "role" and "Role" field names
-      const rawRole = data.role || data.Role || data.ROLE || 'instructor';
-      console.log('Raw role value:', rawRole);
+      
+      // Extract role - handle SharePoint lookup format {Value: "..."}
+      let rawRole = data.role || data.Role || 'instructor';
+      if (typeof rawRole === 'object' && rawRole !== null && rawRole.Value) {
+        rawRole = rawRole.Value;
+      }
+      
+      console.log('Server role:', data.role);
+      console.log('Extracted role:', rawRole);
+      
       const empData = {
         empNum: employeeId,
         empName: data.employeeName,
@@ -2954,9 +3049,9 @@ function showPage(event, pageName) {
     pageName = 'team-records';
   }
   
-  // Role guard: payroll_officer can only access dashboard
-  if (role === 'payroll_officer' && pageName !== 'dashboard') {
-    pageName = 'dashboard';
+  // Role guard: payroll_officer can only access dashboard and team-records
+  if (role === 'payroll_officer' && pageName !== 'dashboard' && pageName !== 'team-records') {
+    pageName = 'team-records';
   }
   
   // Close mobile menu when navigating
@@ -3004,74 +3099,362 @@ function showPage(event, pageName) {
 }
 
 // =============== Team Records Functions ===============
-function loadTeamRecords() {
+let teamRecordsCache = [];
+let expandedEmployees = {};
+
+async function loadTeamRecords() {
   const user = getCurrentUserData();
   if (!user) return;
-  
+
+  // Set default month/year to current
+  const now = new Date();
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+
+  if (monthSelect && !monthSelect.dataset.initialized) {
+    monthSelect.value = now.getMonth() + 1;
+    monthSelect.dataset.initialized = 'true';
+  }
+  if (yearSelect && !yearSelect.dataset.initialized) {
+    yearSelect.value = now.getFullYear();
+    yearSelect.dataset.initialized = 'true';
+  }
+
+  const selectedMonth = monthSelect ? parseInt(monthSelect.value) : now.getMonth() + 1;
+  const selectedYear = yearSelect ? parseInt(yearSelect.value) : now.getFullYear();
+
   const teamName = document.getElementById('teamName');
-  if (user.role === 'system_admin' || user.role === 'operations_controller') {
+  if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'payroll_officer') {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
   }
-  
-  // Show local records for now (will be replaced with team records after sync)
-  if (records.length === 0) {
+
+  // Show loading
+  document.getElementById('teamRecordsTable').innerHTML = `
+    <p style="text-align: center; color: #64748b; padding: 40px;">
+      <i class="fas fa-spinner fa-spin"></i> טוען נתונים לחודש ${selectedMonth}/${selectedYear}...
+    </p>
+  `;
+
+  try {
+    // Get summary data from server - filtered by month/year
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'getSummary',
+        employeeId: user.empNum,
+        role: user.role,
+        team: user.team,
+        month: selectedMonth,
+        year: selectedYear
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success && Array.isArray(data.records)) {
+      teamRecordsCache = data.records;
+      renderTeamSummary(data.records);
+    } else {
+      document.getElementById('teamRecordsTable').innerHTML = `
+        <p style="text-align: center; color: #64748b; padding: 40px;">
+          <i class="fas fa-info-circle"></i> אין רשומות להצגה
+        </p>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading team records:', error);
+    // Fallback to local records
+    renderTeamSummary(records);
+  }
+}
+
+function renderTeamSummary(recordsList) {
+  if (!recordsList || recordsList.length === 0) {
     document.getElementById('teamRecordsTable').innerHTML = `
       <p style="text-align: center; color: #64748b; padding: 40px;">
-        <i class="fas fa-info-circle"></i>
-        אין רשומות להצגה
+        <i class="fas fa-info-circle"></i> אין רשומות להצגה
       </p>
     `;
     return;
   }
-  
-  const totalHours = records.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  
+
+  // Group by employee and calculate summary
+  const employeeSummary = {};
+  recordsList.forEach(rec => {
+    const empId = rec.employeeId || rec.empNum || rec.EmployeeId;
+    const empName = rec.employeeName || rec.empName || rec.EmployeeName || '';
+    const team = rec.team || rec.Team || '';
+    const empType = rec.employmentType || rec.EmploymentType || '';
+    const hours = parseFloat(rec.workHours || rec.hours || rec.WorkHours || 0);
+    const km = parseFloat(rec.kilometers || rec.km || rec.Kilometers || 0);
+    const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
+
+    if (!employeeSummary[empId]) {
+      employeeSummary[empId] = {
+        empId,
+        empName,
+        team,
+        employmentType: empType,
+        totalRecords: 0,
+        totalHours: 0,
+        totalKm: 0,
+        totalExpenses: 0
+      };
+    }
+
+    employeeSummary[empId].totalRecords++;
+    employeeSummary[empId].totalHours += hours;
+    employeeSummary[empId].totalKm += km;
+    employeeSummary[empId].totalExpenses += expenses;
+  });
+
+  const summaryList = Object.values(employeeSummary);
+  const grandTotalHours = summaryList.reduce((sum, emp) => sum + emp.totalHours, 0);
+  const grandTotalKm = summaryList.reduce((sum, emp) => sum + emp.totalKm, 0);
+  const grandTotalExpenses = summaryList.reduce((sum, emp) => sum + emp.totalExpenses, 0);
+  const grandTotalRecords = summaryList.reduce((sum, emp) => sum + emp.totalRecords, 0);
+
   const tableHTML = `
     <div style="margin-bottom: 15px;">
-      <span style="color: #64748b;">סה"כ ${records.length} רשומות</span>
+      <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים | ${grandTotalRecords} רשומות</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>תאריך</th>
-          <th>עובד</th>
+          <th style="width: 30px;"></th>
+          <th>שם עובד</th>
           <th>צוות</th>
-          <th>שעות</th>
-          <th>פעילות</th>
-          <th>בית ספר</th>
-          <th>רשות</th>
           <th>סוג העסקה</th>
-          <th>ק"מ</th>
-          <th>הוצאות</th>
+          <th>רשומות</th>
+          <th>סה"כ שעות</th>
+          <th>סה"כ ק"מ</th>
+          <th>סה"כ הוצאות</th>
         </tr>
       </thead>
       <tbody>
-        ${records.map((rec, idx) => `
-          <tr>
-            <td>${rec.date}</td>
-            <td>${rec.empName}</td>
-            <td>${rec.team || '-'}</td>
-            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
-            <td>${rec.activity}</td>
-            <td>${rec.school || '-'}</td>
-            <td>${rec.municipality}</td>
-            <td>${rec.employmentType || '-'}</td>
-            <td>${rec.km || 0}</td>
-            <td>${rec.totalExpenses || 0} ₪</td>
+        ${summaryList.map(emp => `
+          <tr class="employee-summary-row" onclick="toggleEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
+            <td><i class="fas fa-chevron-left" id="chevron-${emp.empId}" style="transition: transform 0.3s;"></i></td>
+            <td><strong style="color: #3b82f6;">${emp.empName}</strong></td>
+            <td>${emp.team || '-'}</td>
+            <td>${emp.employmentType || '-'}</td>
+            <td>${emp.totalRecords}</td>
+            <td><strong>${formatHoursDisplay(emp.totalHours)}</strong></td>
+            <td>${emp.totalKm.toFixed(1)}</td>
+            <td>${emp.totalExpenses.toFixed(2)} ₪</td>
+          </tr>
+          <tr id="details-${emp.empId}" class="employee-details-row" style="display: none;">
+            <td colspan="8" style="padding: 0; background: #f8fafc;">
+              <div id="details-content-${emp.empId}" style="padding: 15px;">
+                <i class="fas fa-spinner fa-spin"></i> טוען פרטים...
+              </div>
+            </td>
           </tr>
         `).join('')}
-        <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td colspan="3" style="text-align: left;">סה"כ:</td>
-          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="6"></td>
+        <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
+          <td colspan="4" style="text-align: left;">סה"כ:</td>
+          <td>${grandTotalRecords}</td>
+          <td style="color: #3b82f6;">${formatHoursDisplay(grandTotalHours)}</td>
+          <td>${grandTotalKm.toFixed(1)}</td>
+          <td>${grandTotalExpenses.toFixed(2)} ₪</td>
         </tr>
       </tbody>
     </table>
   `;
-  
+
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
+}
+
+async function toggleEmployeeDetails(empId) {
+  const detailsRow = document.getElementById(`details-${empId}`);
+  const chevron = document.getElementById(`chevron-${empId}`);
+  const detailsContent = document.getElementById(`details-content-${empId}`);
+
+  if (expandedEmployees[empId]) {
+    // Collapse
+    detailsRow.style.display = 'none';
+    chevron.style.transform = 'rotate(0deg)';
+    expandedEmployees[empId] = false;
+  } else {
+    // Expand
+    detailsRow.style.display = 'table-row';
+    chevron.style.transform = 'rotate(-90deg)';
+    expandedEmployees[empId] = true;
+
+    // Load details if not already loaded
+    if (!detailsContent.dataset.loaded) {
+      try {
+        const user = getCurrentUserData();
+        const monthSelect = document.getElementById('teamMonthFilter');
+        const yearSelect = document.getElementById('teamYearFilter');
+        const selectedMonth = monthSelect ? parseInt(monthSelect.value) : new Date().getMonth() + 1;
+        const selectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
+
+        const response = await fetch(LOGIC_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'getEmployeeRecords',
+            employeeId: empId,
+            month: selectedMonth,
+            year: selectedYear
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.records)) {
+          renderEmployeeDetails(empId, data.records);
+          detailsContent.dataset.loaded = 'true';
+        } else {
+          detailsContent.innerHTML = '<p style="color: #94a3b8;">אין רשומות</p>';
+        }
+      } catch (error) {
+        console.error('Error loading employee details:', error);
+        // Fallback: filter from cached records
+        const empRecords = teamRecordsCache.filter(r =>
+          (r.employeeId || r.empNum || r.EmployeeId) === empId
+        );
+        renderEmployeeDetails(empId, empRecords);
+      }
+    }
+  }
+}
+
+function renderEmployeeDetails(empId, records) {
+  const detailsContent = document.getElementById(`details-content-${empId}`);
+  const user = getCurrentUserData();
+  const canEdit = user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'manager';
+  const canDelete = user.role === 'system_admin' || user.role === 'operations_controller';
+
+  if (!records || records.length === 0) {
+    detailsContent.innerHTML = '<p style="color: #94a3b8;">אין רשומות</p>';
+    return;
+  }
+
+  const detailsHTML = `
+    <table style="width: 100%; font-size: 13px; margin: 0;">
+      <thead>
+        <tr style="background: #e2e8f0;">
+          <th>תאריך</th>
+          <th>התחלה</th>
+          <th>סיום</th>
+          <th>שעות</th>
+          <th>פעילות</th>
+          <th>בית ספר</th>
+          <th>רשות</th>
+          <th>ק"מ</th>
+          <th>הוצאות</th>
+          <th>הערות</th>
+          ${canEdit || canDelete ? '<th>פעולות</th>' : ''}
+        </tr>
+      </thead>
+      <tbody>
+        ${records.map(rec => {
+          const recordId = rec.ID || rec.Id || rec.id || rec.recordId;
+          const date = rec.attendanceDate || rec.date || rec.AttendanceDate || '';
+          const start = rec.startTime || rec.start || rec.StartTime || '';
+          const end = rec.endTime || rec.end || rec.EndTime || '';
+          const hours = rec.workHours || rec.hours || rec.WorkHours || 0;
+          const activity = rec.activityType || rec.activity || rec.ActivityType || '';
+          const school = rec.schoolName || rec.school || rec.SchoolName || '';
+          const municipality = rec.municipality || rec.Municipality || '';
+          const km = rec.kilometers || rec.km || rec.Kilometers || 0;
+          const expenses = rec.totalExpenses || rec.TotalExpenses || 0;
+          const notes = rec.notes || rec.Notes || '';
+
+          return `
+            <tr>
+              <td>${date}</td>
+              <td>${start}</td>
+              <td>${end}</td>
+              <td><strong>${formatHoursDisplay(hours)}</strong></td>
+              <td>${activity}</td>
+              <td>${school || '-'}</td>
+              <td>${municipality || '-'}</td>
+              <td>${km}</td>
+              <td>${expenses} ₪</td>
+              <td>${notes || '-'}</td>
+              ${canEdit || canDelete ? `
+                <td>
+                  ${canEdit ? `<button onclick="editTeamRecord(${recordId})" class="btn-icon" title="עריכה"><i class="fas fa-edit"></i></button>` : ''}
+                  ${canDelete ? `<button onclick="deleteTeamRecord(${recordId})" class="btn-icon" style="color: #dc2626;" title="מחיקה"><i class="fas fa-trash"></i></button>` : ''}
+                </td>
+              ` : ''}
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  detailsContent.innerHTML = detailsHTML;
+}
+
+function editTeamRecord(recordId) {
+  // Find record in cache and open edit modal
+  const record = teamRecordsCache.find(r =>
+    (r.ID || r.Id || r.id || r.recordId) == recordId
+  );
+  if (record) {
+    // Map to local format and edit
+    const localRecord = {
+      recordId: recordId,
+      empNum: record.employeeId || record.EmployeeId,
+      empName: record.employeeName || record.EmployeeName,
+      date: record.attendanceDate || record.AttendanceDate,
+      start: record.startTime || record.StartTime,
+      end: record.endTime || record.EndTime,
+      hours: record.workHours || record.WorkHours,
+      activity: record.activityType || record.ActivityType,
+      school: record.schoolName || record.SchoolName,
+      municipality: record.municipality || record.Municipality,
+      program: record.programName || record.ProgramName,
+      session: record.sessionNumber || record.SessionNumber,
+      km: record.kilometers || record.Kilometers,
+      totalExpenses: record.totalExpenses || record.TotalExpenses,
+      expensesDetail: record.expensesDetails || record.ExpensesDetails,
+      notes: record.notes || record.Notes,
+      team: record.team || record.Team,
+      employmentType: record.employmentType || record.EmploymentType
+    };
+
+    const idx = records.findIndex(r => r.recordId == recordId);
+    if (idx >= 0) {
+      editRecord(idx);
+    } else {
+      // Add to records temporarily and edit
+      records.push(localRecord);
+      editRecord(records.length - 1);
+    }
+  }
+}
+
+async function deleteTeamRecord(recordId) {
+  if (!confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) return;
+
+  try {
+    const response = await fetch(LOGIC_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'deleteRecord',
+        recordId: recordId
+      })
+    });
+
+    if (response.ok) {
+      showAlert('הרשומה נמחקה בהצלחה', 'success');
+      loadTeamRecords(); // Reload
+    } else {
+      showAlert('שגיאה במחיקה', 'error');
+    }
+  } catch (error) {
+    showAlert('שגיאה במחיקה', 'error');
+  }
 }
 
 function loadReports() {
@@ -3865,7 +4248,8 @@ function renderRecordsTable() {
       <thead>
         <tr>
           <th>תאריך</th>
-          <th>שעות</th>
+          <th class="hours-range-column">טווח שעות</th>
+          <th class="hours-total-column">סה"כ</th>
           <th>פעילות</th>
           <th>בית ספר</th>
           <th>רשות</th>
@@ -3876,12 +4260,19 @@ function renderRecordsTable() {
       <tbody>
         ${records.map((rec, idx) => `
           <tr>
-            <td>${rec.date}</td>
-            <td><strong>${formatHoursDisplay(rec.hours)}</strong></td>
+            <td style="white-space: nowrap;">${rec.date}</td>
+            <td class="hours-range-column" style="direction: ltr; text-align: center; font-family: 'Courier New', monospace; font-size: 13px; white-space: nowrap;">
+              <span style="display: inline-block; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; color: #475569;">
+                ${rec.start || '--:--'} → ${rec.end || '--:--'}
+              </span>
+            </td>
+            <td class="hours-total-column">
+              <strong style="color: #1e40af; font-size: 15px;">${formatHoursDisplay(rec.hours)}</strong>
+            </td>
             <td>${rec.activity}</td>
             <td>${rec.school || '-'}</td>
             <td>${rec.municipality}</td>
-            <td>${rec.km}</td>
+            <td>${rec.km || 0}</td>
             ${showActionsColumn ? `
             <td style="white-space: nowrap;">
               ${canEditRecord(rec) ? `
@@ -3900,8 +4291,9 @@ function renderRecordsTable() {
         `).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td style="text-align: left; padding-right: 20px;">סה"כ:</td>
-          <td style="color: #3b82f6;">${formatHoursDisplay(totalHours)}</td>
-          <td colspan="3"></td>
+          <td class="hours-range-column"></td>
+          <td class="hours-total-column" style="color: #3b82f6; font-size: 16px;">${formatHoursDisplay(totalHours)}</td>
+          <td colspan="2"></td>
           <td style="color: #3b82f6;">${totalKm.toFixed(1)}</td>
           ${showActionsColumn ? '<td></td>' : ''}
         </tr>
@@ -4203,49 +4595,23 @@ function populateTeamFilter() {
   const teamSelect = document.getElementById('reportTeam');
   if (!teamSelect) return;
   
-  const teams = new Set();
-  records.forEach(rec => {
-    if (rec.team) teams.add(rec.team);
-  });
-  
   const currentValue = teamSelect.value;
   teamSelect.innerHTML = '<option value="all">הכל</option>';
   
-  Array.from(teams).sort().forEach(team => {
+  // Use constant list instead of dynamic
+  TEAMS_LIST.forEach(team => {
     const option = document.createElement('option');
     option.value = team;
     option.textContent = team;
     teamSelect.appendChild(option);
   });
   
-  if (currentValue && teams.has(currentValue)) {
+  // Restore previous selection
+  if (currentValue && TEAMS_LIST.includes(currentValue)) {
     teamSelect.value = currentValue;
   }
 }
 
-function populateTeamFilterFromRecords(recordsList) {
-  const teamSelect = document.getElementById('reportTeam');
-  if (!teamSelect) return;
-  
-  const teams = new Set();
-  recordsList.forEach(rec => {
-    if (rec.team) teams.add(rec.team);
-  });
-  
-  const currentValue = teamSelect.value;
-  teamSelect.innerHTML = '<option value="all">הכל</option>';
-  
-  Array.from(teams).sort().forEach(team => {
-    const option = document.createElement('option');
-    option.value = team;
-    option.textContent = team;
-    teamSelect.appendChild(option);
-  });
-  
-  if (currentValue && teams.has(currentValue)) {
-    teamSelect.value = currentValue;
-  }
-}
 
 function getFilteredRecordsByMonth(recordsList, month, year) {
   return recordsList.filter(rec => {
@@ -4310,8 +4676,6 @@ async function loadReportData() {
     }
     
     reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
-    
-    populateTeamFilterFromRecords(reportRecords);
     
     if (employmentType !== 'all') {
       reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
