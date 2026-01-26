@@ -3822,7 +3822,13 @@ function renderTeamSummary(recordsList) {
     const empId = rec.employeeId || rec.empNum || rec.EmployeeId;
     const empName = rec.employeeName || rec.empName || rec.EmployeeName || 'לא ידוע';
     const team = rec.team || rec.Team || '-';
-    const empType = rec.employmentType || rec.EmploymentType || 'תעשיידע';
+    // Handle employmentType - could be string or object
+    let empType = 'תעשיידע';
+    if (rec.employmentType) {
+      empType = typeof rec.employmentType === 'object' ? (rec.employmentType.Value || rec.employmentType.Label || 'תעשיידע') : rec.employmentType;
+    } else if (rec.EmploymentType) {
+      empType = typeof rec.EmploymentType === 'object' ? (rec.EmploymentType.Value || rec.EmploymentType.Label || 'תעשיידע') : rec.EmploymentType;
+    }
     const hours = parseFloat(rec.workHours || rec.hours || rec.WorkHours || 0);
     const km = parseFloat(rec.kilometers || rec.km || rec.Kilometers || 0);
     const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
