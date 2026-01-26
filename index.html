@@ -3656,12 +3656,12 @@ async function loadTeamRecords() {
   `;
 
   try {
-    // Get summary data from server - filtered by month/year
+    // Get team records from server - filtered by month/year
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'getSummary',
+        action: 'getHistory',
         employeeId: user.empNum,
         role: user.role,
         team: user.team,
