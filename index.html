@@ -859,11 +859,17 @@
       /* Sidebar Mobile */
       .sidebar {
         position: fixed;
-        right: -300px;
-        width: 300px;
+        right: -280px;
+        width: 280px;
+        max-width: 85vw;
+        height: 100vh;
+        max-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
         transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 150;
         box-shadow: -8px 0 30px rgba(0,0,0,0.15);
+        -webkit-overflow-scrolling: touch;
       }
 
       .sidebar.open {
@@ -1127,6 +1133,31 @@
         min-width: 50px;
       }
       
+      /* Admin/Payroll Tables - Compact for mobile */
+      .admin-table {
+        font-size: 10px !important;
+        min-width: 600px !important;
+      }
+      
+      .admin-table th,
+      .admin-table td {
+        padding: 8px 4px !important;
+        white-space: nowrap;
+      }
+      
+      #payrollDashboard .card-header,
+      #adminControllerDashboard .card-header {
+        flex-direction: column !important;
+        gap: 12px !important;
+        align-items: stretch !important;
+      }
+      
+      #payrollDashboard .card-header .btn,
+      #adminControllerDashboard .card-header .btn {
+        width: 100% !important;
+        justify-content: center;
+      }
+      
       #recordsPage .page-header,
       #teamRecordsPage .page-header {
         padding: 8px 0;
@@ -1338,23 +1369,25 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
-      padding: 8px 12px;
+      gap: 2px;
+      padding: 6px 4px;
       border: none;
       background: none;
       color: #64748b;
-      font-size: 10px;
+      font-size: 9px;
       font-family: inherit;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
-      min-width: 60px;
+      min-width: 48px;
+      flex: 1;
+      max-width: 70px;
       border-radius: 8px;
       -webkit-tap-highlight-color: transparent;
     }
 
     .mobile-nav-item i {
-      font-size: 20px;
+      font-size: 18px;
       transition: transform 0.2s ease;
     }
 
@@ -1879,9 +1912,13 @@
         <i class="fas fa-list"></i>
         <span>רשומות</span>
       </button>
-      <button class="mobile-nav-item" onclick="toggleMobileMenu()" id="mobileNavMenu" data-roles="instructor,manager,operations_controller,system_admin">
+      <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,system_admin,payroll_officer">
+        <i class="fas fa-users"></i>
+        <span>צוות</span>
+      </button>
+      <button class="mobile-nav-item" onclick="toggleMobileMenu()" id="mobileNavMenu" data-roles="all">
         <i class="fas fa-bars"></i>
-        <span>תפריט</span>
+        <span>עוד</span>
       </button>
       <button class="mobile-nav-item" onclick="logout()" style="color: #dc2626;" data-roles="all">
         <i class="fas fa-sign-out-alt"></i>
@@ -1917,7 +1954,7 @@
             </button>
           </div>
           <div class="card-body" style="overflow-x: auto;">
-            <table id="payrollSummaryTable" style="width: 100%; min-width: 900px;">
+            <table id="payrollSummaryTable" class="admin-table" style="width: 100%;">
               <thead>
                 <tr>
                   <th style="text-align: right; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שם המדריך</th>
@@ -1974,7 +2011,7 @@
           </div>
 
           <div class="card-body" style="overflow-x: auto;">
-            <table id="adminDashboardTable" style="width: 100%; min-width: 1000px;">
+            <table id="adminDashboardTable" class="admin-table" style="width: 100%;">
               <thead>
                 <tr>
                   <th style="width: 30px; text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;"></th>
@@ -3552,6 +3589,8 @@ function updateMobileNavActive(pageName) {
     document.getElementById('mobileNavAdd')?.classList.add('active');
   } else if (pageName === 'records') {
     document.getElementById('mobileNavRecords')?.classList.add('active');
+  } else if (pageName === 'team-records') {
+    document.getElementById('mobileNavTeamRecords')?.classList.add('active');
   }
 }
 
