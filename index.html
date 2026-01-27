@@ -3567,9 +3567,6 @@ async function deleteRecordOnServer(record) {
   }
 }
 
-  return res.ok;
-}
-
 // =============== Login ===============
 async function doLogin(event) {
   if (event) {
@@ -4344,7 +4341,6 @@ async function submitAll() {
   let failed = 0;
   
   for (const rec of pending) {
-    try {
     const payload = {
         action: "submit",
         employeeId: localStorage.getItem("employeeId") || rec.empNum,
