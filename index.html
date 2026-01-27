@@ -3602,18 +3602,40 @@ async function doLogin(event) {
     console.log('Login response:', JSON.stringify(data));
     
     if (data.success) {
-      // The original Logic App returns flat structure, not data.employee
-      // So we create an employee object from the flat response
-      const employeeFromServer = {
-        employeeId: employeeId,
-        EmployeeName: data.employeeName,
-        role: data.role,
-        Team: data.team,
-        EmploymentType: data.employmentType
-      };
+      // Support both formats:
+      // 1. New format: {success: true, employee: {...}}
+      // 2. Old format: {success: true, employeeName: "...", role: "..."}
+      
+      let employeeFromServer;
+      
+      if (data.employee) {
+        // New format - already has employee object
+        employeeFromServer = data.employee;
+        console.log('Using new format (employee object)');
+      } else {
+        // Old format - create employee object from flat response
+        employeeFromServer = {
+          employeeId: employeeId,
+          EmployeeName: data.employeeName,
+          role: data.role,
+          Team: data.team,
+          EmploymentType: data.employmentType
+        };
+        console.log('Using old format (flat structure)');
+      }
+      
+      console.log('employeeFromServer:', employeeFromServer);
       
       // Normalize employee data from server (PascalCase → frontend format)
       const emp = normalizeEmployeeFromServer(employeeFromServer);
+      
+      console.log('After normalize, emp:', emp);
+      
+      if (!emp || !emp.empName) {
+        errorEl.textContent = 'שגיאה בעיבוד נתוני משתמש';
+        errorEl.classList.add('show');
+        return false;
+      }
       
       currentUser = emp.empName;
       
