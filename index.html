@@ -3613,7 +3613,10 @@ function showPage(event, pageName) {
   }
   
   // Close mobile menu when navigating
+if (typeof closeMobileMenu === 'function') {
   closeMobileMenu();
+}
+
   
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
