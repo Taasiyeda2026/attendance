@@ -3604,14 +3604,24 @@ async function doLogin(event) {
     
     console.log('Login response:', JSON.stringify(data));
     
-    if (data.success && data.employee) {
+    if (data.success) {
+      // The original Logic App returns flat structure, not data.employee
+      // So we create an employee object from the flat response
+      const employeeFromServer = {
+        employeeId: employeeId,
+        EmployeeName: data.employeeName,
+        role: data.role,
+        Team: data.team,
+        EmploymentType: data.employmentType
+      };
+      
       // Normalize employee data from server (PascalCase → frontend format)
-      const emp = normalizeEmployeeFromServer(data.employee);
+      const emp = normalizeEmployeeFromServer(employeeFromServer);
       
       currentUser = emp.empName;
       
       // Extract role - handle SharePoint lookup format
-      let rawRole = data.employee.role || 'instructor';
+      let rawRole = data.role || 'instructor';
       if (typeof rawRole === 'object' && rawRole !== null && rawRole.Value) {
         rawRole = rawRole.Value;
       }
