@@ -3639,13 +3639,22 @@ async function doLogin(event) {
       
       currentUser = emp.empName;
       
-      // Extract role - handle SharePoint lookup format
-      let rawRole = data.role || 'instructor';
+      // Extract role from the correct location
+      let rawRole;
+      if (data.employee) {
+        // New format - role is in data.employee.role
+        rawRole = data.employee.role || employeeFromServer.role || 'instructor';
+      } else {
+        // Old format - role is in data.role
+        rawRole = data.role || 'instructor';
+      }
+      
+      // Handle SharePoint lookup format
       if (typeof rawRole === 'object' && rawRole !== null && rawRole.Value) {
         rawRole = rawRole.Value;
       }
       
-      console.log('Server role:', rawRole);
+      console.log('Raw role from server:', rawRole);
       console.log('Normalized employee:', emp);
       
       const empData = {
