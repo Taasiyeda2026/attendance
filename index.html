@@ -3968,6 +3968,11 @@ function renderEmployeeDetails(empId, records) {
 
   detailsContent.innerHTML = detailsHTML;
 }
+function toggleMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  sidebar.classList.toggle('open');
+}
 
 function editTeamRecord(recordId) {
   // Find record in cache and open edit modal
