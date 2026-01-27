@@ -760,39 +760,6 @@
     }
 
     /* Mobile Menu Toggle */
-    .mobile-menu-toggle {
-      display: none; /* Hidden on desktop */
-      position: fixed;
-      top: 5px;
-      right: 10px;
-      z-index: 200;
-      background: #1e40af;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      width: 44px;
-      height: 44px;
-      font-size: 20px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      transition: transform 0.2s ease;
-    }
-    
-    .mobile-menu-toggle:active {
-      transform: scale(0.95);
-    }
-
-    .mobile-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 99;
-    }
-
     /* Responsive - Tablet */
     @media (max-width: 1024px) {
       .sidebar {
@@ -857,29 +824,15 @@
         display: flex;
         height: 56px;
         right: 0;
-        padding-right: 60px;
+        padding-right: 16px;
       }
       
       /* ===== הצגת לוגו במובייל ===== */
       .mobile-greeting .mobile-logo {
         display: block !important;
       }
-
-      .mobile-menu-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 46px;
-        height: 46px;
-        top: 5px;
-        right: 8px;
-      }
-
-      .mobile-overlay.active {
-        display: block;
-      }
       
-      /* Sidebar Mobile */
+      /* Sidebar Mobile - מוסתר לגמרי */
       .sidebar {
         position: fixed;
         right: -280px;
@@ -1451,6 +1404,25 @@
         overflow-x: hidden;
       }
       
+      /* ===== תיקון page-header למובייל ===== */
+      .page-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      
+      .page-header > div {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+      }
+      
+      .page-header button {
+        width: 100% !important;
+        max-width: none !important;
+      }
+      
       /* ===== הזזת הודעות למעלה כדי לא לכסות שם משתמש ===== */
       .alert {
         top: 10px !important;
@@ -1466,6 +1438,17 @@
         padding: 8px 10px !important;
       }
       
+      /* ===== תיקון form-groups בעמוד דוחות ===== */
+      #reportsPage .form-group {
+        min-width: 0 !important;
+        width: 100% !important;
+        flex: 1 1 auto !important;
+      }
+      
+      #reportsPage .card-body > div {
+        flex-direction: column !important;
+      }
+      
       /* ===== הקטנת כל ה-inputs במובייל ===== */
       input:not([type="checkbox"]):not([type="radio"]), 
       .form-field input:not([type="checkbox"]):not([type="radio"]) {
@@ -1479,13 +1462,6 @@
       #recordsPage table td:nth-child(2),
       #recordsPage table th:nth-child(3),
       #recordsPage table td:nth-child(3) {
-        display: none;
-      }
-      
-      #teamRecordsPage table th:nth-child(2),
-      #teamRecordsPage table td:nth-child(2),
-      #teamRecordsPage table th:nth-child(3),
-      #teamRecordsPage table td:nth-child(3) {
         display: none;
       }
     }
@@ -1907,14 +1883,6 @@
     <img src="./logo.png" alt="לוגו" class="mobile-logo">
     <span id="mobileUserGreeting">שלום</span>
   </div>
-  
-  <!-- Mobile Menu Toggle -->
-  <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" data-roles="instructor,manager,operations_controller,system_admin">
-    <i class="fas fa-bars" id="mobileMenuIcon"></i>
-  </button>
-  
-  <!-- Mobile Overlay -->
-  <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
   
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar">
@@ -3179,18 +3147,6 @@ function updateMenuByRole(role) {
     }
   });
 
-  // Handle mobile menu toggle via data-roles
-  const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-  if (mobileMenuToggle) {
-    const allowedRoles = mobileMenuToggle.getAttribute('data-roles');
-    if (!allowedRoles || allowedRoles === 'all') {
-      mobileMenuToggle.style.display = 'flex';
-    } else {
-      const roles = allowedRoles.split(',');
-      mobileMenuToggle.style.display = roles.includes(role) ? 'flex' : 'none';
-    }
-  }
-
   // Hide dashboard "add record" button for non-instructors
   const dashboardAddBtn = document.getElementById('dashboardAddRecordBtn');
   if (dashboardAddBtn) {
@@ -3618,31 +3574,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // =============== Mobile Menu ===============
-function toggleMobileMenu() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('mobileOverlay');
-  const icon = document.getElementById('mobileMenuIcon');
-  
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('active');
-  
-  if (sidebar.classList.contains('open')) {
-    icon.className = 'fas fa-times';
-  } else {
-    icon.className = 'fas fa-bars';
-  }
-}
-
-function closeMobileMenu() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('mobileOverlay');
-  const icon = document.getElementById('mobileMenuIcon');
-  
-  sidebar.classList.remove('open');
-  overlay.classList.remove('active');
-  icon.className = 'fas fa-bars';
-}
-
 function mobileNavTo(pageName) {
   showPage(null, pageName);
   updateMobileNavActive(pageName);
