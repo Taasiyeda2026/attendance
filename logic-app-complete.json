@@ -230,98 +230,176 @@
           "submit": {
             "case": "submit",
             "actions": {
-              "Create_Attendance_Record": {
-                "type": "ApiConnection",
-                "inputs": {
-                  "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
-                  "method": "post",
-                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
-                  "body": {
-                    "employeeId": "@triggerBody()?['employeeId']",
-                    "employeeName": "@triggerBody()?['employeeName']",
-                    "team": "@triggerBody()?['team']",
-                    "attendanceDate": "@triggerBody()?['attendanceDate']",
-                    "startTime": "@triggerBody()?['startTime']",
-                    "endTime": "@triggerBody()?['endTime']",
-                    "workHours": "@triggerBody()?['workHours']",
-                    "activityType": "@triggerBody()?['activityType']",
-                    "schoolName": "@triggerBody()?['schoolName']",
-                    "municipality": "@triggerBody()?['municipality']",
-                    "programName": "@triggerBody()?['programName']",
-                    "sessionNumber": "@triggerBody()?['sessionNumber']",
-                    "kilometers": "@triggerBody()?['kilometers']",
-                    "totalExpenses": "@triggerBody()?['totalExpenses']",
-                    "expensesDetails": "@triggerBody()?['expensesDetails']",
-                    "notes": "@triggerBody()?['notes']",
-                    "employmentType": "@triggerBody()?['employmentType']"
+              "Validate_Submit_Permission": {
+                "type": "If",
+                "expression": {
+                  "or": [
+                    {"equals": ["@triggerBody()?['role']", "instructor"]},
+                    {"equals": ["@triggerBody()?['role']", "manager"]},
+                    {"equals": ["@triggerBody()?['role']", "operations_controller"]},
+                    {"equals": ["@triggerBody()?['role']", "system_admin"]}
+                  ]
+                },
+                "actions": {
+                  "Create_Attendance_Record": {
+                    "type": "ApiConnection",
+                    "inputs": {
+                      "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
+                      "method": "post",
+                      "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                      "body": {
+                        "employeeId": "@triggerBody()?['employeeId']",
+                        "employeeName": "@triggerBody()?['employeeName']",
+                        "team": "@triggerBody()?['team']",
+                        "attendanceDate": "@triggerBody()?['attendanceDate']",
+                        "startTime": "@triggerBody()?['startTime']",
+                        "endTime": "@triggerBody()?['endTime']",
+                        "workHours": "@triggerBody()?['workHours']",
+                        "activityType": "@triggerBody()?['activityType']",
+                        "schoolName": "@triggerBody()?['schoolName']",
+                        "municipality": "@triggerBody()?['municipality']",
+                        "programName": "@triggerBody()?['programName']",
+                        "sessionNumber": "@triggerBody()?['sessionNumber']",
+                        "kilometers": "@triggerBody()?['kilometers']",
+                        "totalExpenses": "@triggerBody()?['totalExpenses']",
+                        "expensesDetails": "@triggerBody()?['expensesDetails']",
+                        "notes": "@triggerBody()?['notes']",
+                        "employmentType": "@triggerBody()?['employmentType']"
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Response_Submit_Success": {
+                    "type": "Response",
+                    "inputs": {
+                      "statusCode": 200,
+                      "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                      "body": {"success": true, "message": "הרשומה נוספה בהצלחה", "recordId": "@body('Create_Attendance_Record')?['ID']"}
+                    },
+                    "runAfter": {"Create_Attendance_Record": ["Succeeded"]}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Response_Submit_Forbidden": {
+                      "type": "Response",
+                      "inputs": {
+                        "statusCode": 403,
+                        "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                        "body": {"success": false, "message": "אין הרשאה להוספת רשומות"}
+                      },
+                      "runAfter": {}
+                    }
                   }
                 },
                 "runAfter": {}
-              },
-              "Response_Submit_Success": {
-                "type": "Response",
-                "inputs": {
-                  "statusCode": 200,
-                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
-                  "body": {"success": true, "message": "הרשומה נוספה בהצלחה", "recordId": "@body('Create_Attendance_Record')?['ID']"}
-                },
-                "runAfter": {"Create_Attendance_Record": ["Succeeded"]}
               }
             }
           },
           "updateRecord": {
             "case": "updateRecord",
             "actions": {
-              "Update_Attendance_Record": {
-                "type": "ApiConnection",
-                "inputs": {
-                  "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
-                  "method": "patch",
-                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}",
-                  "body": {
-                    "attendanceDate": "@triggerBody()?['attendanceDate']",
-                    "startTime": "@triggerBody()?['startTime']",
-                    "endTime": "@triggerBody()?['endTime']",
-                    "workHours": "@triggerBody()?['workHours']",
-                    "activityType": "@triggerBody()?['activityType']",
-                    "kilometers": "@triggerBody()?['kilometers']",
-                    "totalExpenses": "@triggerBody()?['totalExpenses']",
-                    "notes": "@triggerBody()?['notes']"
+              "Validate_Update_Permission": {
+                "type": "If",
+                "expression": {
+                  "or": [
+                    {"equals": ["@triggerBody()?['role']", "manager"]},
+                    {"equals": ["@triggerBody()?['role']", "operations_controller"]},
+                    {"equals": ["@triggerBody()?['role']", "system_admin"]}
+                  ]
+                },
+                "actions": {
+                  "Update_Attendance_Record": {
+                    "type": "ApiConnection",
+                    "inputs": {
+                      "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
+                      "method": "patch",
+                      "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}",
+                      "body": {
+                        "attendanceDate": "@triggerBody()?['attendanceDate']",
+                        "startTime": "@triggerBody()?['startTime']",
+                        "endTime": "@triggerBody()?['endTime']",
+                        "workHours": "@triggerBody()?['workHours']",
+                        "activityType": "@triggerBody()?['activityType']",
+                        "kilometers": "@triggerBody()?['kilometers']",
+                        "totalExpenses": "@triggerBody()?['totalExpenses']",
+                        "notes": "@triggerBody()?['notes']"
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Response_Update_Success": {
+                    "type": "Response",
+                    "inputs": {
+                      "statusCode": 200,
+                      "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                      "body": {"success": true, "message": "הרשומה עודכנה בהצלחה"}
+                    },
+                    "runAfter": {"Update_Attendance_Record": ["Succeeded"]}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Response_Update_Forbidden": {
+                      "type": "Response",
+                      "inputs": {
+                        "statusCode": 403,
+                        "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                        "body": {"success": false, "message": "אין הרשאה לעדכון רשומות"}
+                      },
+                      "runAfter": {}
+                    }
                   }
                 },
                 "runAfter": {}
-              },
-              "Response_Update_Success": {
-                "type": "Response",
-                "inputs": {
-                  "statusCode": 200,
-                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
-                  "body": {"success": true, "message": "הרשומה עודכנה בהצלחה"}
-                },
-                "runAfter": {"Update_Attendance_Record": ["Succeeded"]}
               }
             }
           },
           "deleteRecord": {
             "case": "deleteRecord",
             "actions": {
-              "Delete_Attendance_Record": {
-                "type": "ApiConnection",
-                "inputs": {
-                  "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
-                  "method": "delete",
-                  "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}"
+              "Validate_Delete_Permission": {
+                "type": "If",
+                "expression": {
+                  "or": [
+                    {"equals": ["@triggerBody()?['role']", "operations_controller"]},
+                    {"equals": ["@triggerBody()?['role']", "system_admin"]}
+                  ]
+                },
+                "actions": {
+                  "Delete_Attendance_Record": {
+                    "type": "ApiConnection",
+                    "inputs": {
+                      "host": {"connection": {"name": "@parameters('$connections')['sharepointonline']['connectionId']"}},
+                      "method": "delete",
+                      "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{triggerBody()?['recordId']}"
+                    },
+                    "runAfter": {}
+                  },
+                  "Response_Delete_Success": {
+                    "type": "Response",
+                    "inputs": {
+                      "statusCode": 200,
+                      "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                      "body": {"success": true, "message": "הרשומה נמחקה בהצלחה"}
+                    },
+                    "runAfter": {"Delete_Attendance_Record": ["Succeeded"]}
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Response_Delete_Forbidden": {
+                      "type": "Response",
+                      "inputs": {
+                        "statusCode": 403,
+                        "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
+                        "body": {"success": false, "message": "אין הרשאה למחיקת רשומות"}
+                      },
+                      "runAfter": {}
+                    }
+                  }
                 },
                 "runAfter": {}
-              },
-              "Response_Delete_Success": {
-                "type": "Response",
-                "inputs": {
-                  "statusCode": 200,
-                  "headers": {"Access-Control-Allow-Origin": "*", "Content-Type": "application/json"},
-                  "body": {"success": true, "message": "הרשומה נמחקה בהצלחה"}
-                },
-                "runAfter": {"Delete_Attendance_Record": ["Succeeded"]}
               }
             }
           }

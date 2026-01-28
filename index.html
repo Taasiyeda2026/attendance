@@ -2525,6 +2525,7 @@ function hasPermission(action, targetTeam = null) {
     case 'view_all':
       return ['operations_controller', 'system_admin', 'payroll_officer'].includes(role);
     case 'edit_own':
+      // Intentionally disabled: records are append-only, no self-editing allowed
       return false;
     case 'edit_team':
       if (role === 'manager') {
@@ -2545,18 +2546,21 @@ function hasPermission(action, targetTeam = null) {
 function canEditRecord(record) {
   const user = getCurrentUserData();
   if (!user) return false;
-  
+
   const role = user.role;
-  
-  // payroll_officer = view only, no edit
+
+  // system_admin and operations_controller can edit all records
   if (role === 'system_admin' || role === 'operations_controller') {
     return true;
   }
-  
+
+  // manager can only edit records from their own team
   if (role === 'manager') {
-    return true;
+    const recordTeam = extractLookupValue(record.team);
+    return recordTeam === user.team;
   }
-  
+
+  // instructor and payroll_officer cannot edit records
   return false;
 }
 
