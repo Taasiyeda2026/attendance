@@ -2134,6 +2134,21 @@
           <div class="stat-card-label">סה"כ נסיעות</div>
         </div>
       </div>
+
+      <!-- Monthly Approval (Instructor only) -->
+      <div class="content-card" id="monthlyApprovalCard" style="margin-top: 24px; display: none;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <h2 class="card-title"><i class="fas fa-calendar-check" style="margin-left: 8px; color: #3b82f6;"></i>אישור חודש נוכחי</h2>
+          <span id="monthlyApprovalMonthLabel" style="color: #64748b; font-size: 13px;"></span>
+        </div>
+        <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div id="monthlyApprovalStatus" style="color: #475569; font-size: 14px;">טוען סטטוס...</div>
+          <button class="btn btn-success" id="monthlyApprovalBtn" onclick="approveMonthlyReport()" style="min-width: 140px; height: 40px;">
+            <i class="fas fa-check-circle"></i>
+            אשר חודש
+          </button>
+        </div>
+      </div>
       
       <!-- כפתורי פעולות -->
       <div style="text-align: center; margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
@@ -2433,6 +2448,22 @@
         <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
+      </div>
+
+      <!-- Monthly Approvals Status (Manager/System Admin) -->
+      <div class="content-card" id="monthlyApprovalsCard" style="margin-bottom: 20px; display: none;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <h2 class="card-title"><i class="fas fa-user-check" style="margin-left: 8px; color: #3b82f6;"></i>סטטוס אישורי חודש</h2>
+          <button class="btn" onclick="loadMonthlyApprovalsTable()" style="background: #3b82f6; color: white;">
+            <i class="fas fa-sync-alt"></i>
+            רענן סטטוס
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="monthlyApprovalsTable">
+            <p style="text-align: center; color: #94a3b8; padding: 30px;">טוען סטטוס אישורים...</p>
+          </div>
+        </div>
       </div>
 
       <div class="content-card">
@@ -3358,6 +3389,8 @@ function updateMenuByRole(role) {
   } else {
     if (regularDashboardContent) regularDashboardContent.style.display = 'block';
   }
+
+  updateMonthlyApprovalVisibility();
 }
 
 function hasPermission(action, targetTeam = null) {
@@ -3835,6 +3868,7 @@ if (typeof closeMobileMenu === 'function') {
   if (pageName === 'dashboard') {
     updateDashboard();
     renderSummaryTable();
+    loadInstructorMonthlyApprovalStatus();
   }
   if (pageName === 'records') renderRecordsTable();
   if (pageName === 'team-records') loadTeamRecords();
@@ -3846,6 +3880,229 @@ if (typeof closeMobileMenu === 'function') {
       document.getElementById('displayEmpNum').textContent = user.empNum || '';
       document.getElementById('displayEmpName').textContent = user.empName || '';
     }
+  }
+}
+
+// =============== Monthly Approvals Functions ===============
+let instructorApprovalInfo = null;
+
+function getApprovalMonthKey(month, year) {
+  const monthValue = String(month).padStart(2, '0');
+  return `${year}-${monthValue}`;
+}
+
+function getApprovalMonthLabel(month, year) {
+  const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  return `חודש ${monthNames[Number(month) - 1]} ${year}`;
+}
+
+function formatApprovalDate(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('he-IL');
+}
+
+function getHoursUntilUnlock(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  const diffMs = (date.getTime() + 24 * 60 * 60 * 1000) - Date.now();
+  if (diffMs <= 0) return 0;
+  return Math.ceil(diffMs / (60 * 60 * 1000));
+}
+
+function updateMonthlyApprovalVisibility() {
+  const user = getCurrentUserData();
+  const instructorCard = document.getElementById('monthlyApprovalCard');
+  const approvalsCard = document.getElementById('monthlyApprovalsCard');
+
+  if (!user) {
+    if (instructorCard) instructorCard.style.display = 'none';
+    if (approvalsCard) approvalsCard.style.display = 'none';
+    return;
+  }
+
+  if (instructorCard) {
+    instructorCard.style.display = user.role === 'instructor' ? 'block' : 'none';
+  }
+
+  if (approvalsCard) {
+    approvalsCard.style.display = ['manager', 'system_admin'].includes(user.role) ? 'block' : 'none';
+  }
+}
+
+async function loadInstructorMonthlyApprovalStatus() {
+  const user = getCurrentUserData();
+  const statusEl = document.getElementById('monthlyApprovalStatus');
+  const buttonEl = document.getElementById('monthlyApprovalBtn');
+  const monthLabel = document.getElementById('monthlyApprovalMonthLabel');
+
+  if (!statusEl || !buttonEl || !monthLabel) return;
+
+  if (!user || user.role !== 'instructor') {
+    statusEl.textContent = 'סטטוס אישור לא זמין';
+    buttonEl.disabled = true;
+    return;
+  }
+
+  const now = new Date();
+  const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+  monthLabel.textContent = getApprovalMonthLabel(now.getMonth() + 1, now.getFullYear());
+  statusEl.textContent = 'טוען סטטוס...';
+  buttonEl.disabled = true;
+
+  try {
+    const data = await apiRequest('getTeamApprovals', {
+      team: user.team || '',
+      month: monthKey
+    });
+
+    if (!data || !data.success || !Array.isArray(data.employees)) {
+      statusEl.textContent = 'לא נמצא סטטוס אישור לחודש זה';
+      buttonEl.disabled = false;
+      instructorApprovalInfo = null;
+      return;
+    }
+
+    const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
+    const approvalRow = data.employees.find(emp => String(emp.employeeId || emp.EmployeeId || emp.empId || '') === employeeId);
+    const approvalDate = approvalRow?.approvalDate || approvalRow?.ApprovalDate || null;
+    instructorApprovalInfo = { monthKey, approvalDate };
+
+    if (approvalDate) {
+      const hoursLeft = getHoursUntilUnlock(approvalDate);
+      const approvedText = `אושר בתאריך ${formatApprovalDate(approvalDate)}`;
+      if (hoursLeft && hoursLeft > 0) {
+        statusEl.textContent = `${approvedText} · נעול לעוד ${hoursLeft} שעות`;
+        buttonEl.disabled = true;
+      } else {
+        statusEl.textContent = approvedText;
+        buttonEl.disabled = false;
+      }
+    } else {
+      statusEl.textContent = 'טרם אושר החודש';
+      buttonEl.disabled = false;
+    }
+  } catch (error) {
+    console.error('Load approval status error:', error);
+    statusEl.textContent = 'שגיאה בטעינת סטטוס האישור';
+    buttonEl.disabled = false;
+  }
+}
+
+async function approveMonthlyReport() {
+  const user = getCurrentUserData();
+  if (!user || user.role !== 'instructor') {
+    showAlert('❌ אין הרשאה לבצע אישור חודשי', 'error');
+    return;
+  }
+
+  const now = new Date();
+  const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+
+  if (instructorApprovalInfo?.approvalDate && getHoursUntilUnlock(instructorApprovalInfo.approvalDate) > 0) {
+    showAlert('⏳ לא ניתן לאשר שוב בתוך 24 שעות', 'error');
+    return;
+  }
+
+  const buttonEl = document.getElementById('monthlyApprovalBtn');
+  if (buttonEl) {
+    buttonEl.disabled = true;
+  }
+
+  try {
+    const data = await apiRequest('approveMonth', {
+      employeeId: String(user.empNum || localStorage.getItem('employeeId') || ''),
+      employeeName: String(user.empName || localStorage.getItem('employeeName') || ''),
+      team: user.team || '',
+      month: monthKey
+    });
+
+    if (data && data.success) {
+      showAlert('✅ האישור החודשי נשמר בהצלחה', 'success');
+      instructorApprovalInfo = {
+        monthKey,
+        approvalDate: data.approvalDate || new Date().toISOString()
+      };
+      await loadInstructorMonthlyApprovalStatus();
+    } else {
+      showAlert(data?.message || '❌ שגיאה בשמירת אישור חודשי', 'error');
+    }
+  } catch (error) {
+    console.error('Approve month error:', error);
+    showAlert('❌ שגיאה בשמירת אישור חודשי', 'error');
+  } finally {
+    if (buttonEl) {
+      buttonEl.disabled = false;
+    }
+  }
+}
+
+async function loadMonthlyApprovalsTable() {
+  const user = getCurrentUserData();
+  const container = document.getElementById('monthlyApprovalsTable');
+
+  if (!container) return;
+  if (!user || !['manager', 'system_admin'].includes(user.role)) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין הרשאה לצפייה בסטטוס אישורים</p>';
+    return;
+  }
+
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+  const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
+  const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
+  const monthKey = getApprovalMonthKey(month, year);
+  const team = user.role === 'system_admin' ? 'הכל' : (user.team || '');
+
+  container.innerHTML = `
+    <p style="text-align: center; color: #94a3b8; padding: 30px;">
+      <i class="fas fa-spinner fa-spin"></i> טוען סטטוס אישורים לחודש ${month}/${year}...
+    </p>
+  `;
+
+  try {
+    const data = await apiRequest('getTeamApprovals', {
+      team: team,
+      month: monthKey
+    });
+
+    if (!data || !data.success || !Array.isArray(data.employees) || data.employees.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין נתוני אישורים להצגה</p>';
+      return;
+    }
+
+    const rows = data.employees.map(emp => {
+      const approvalDate = emp.approvalDate || emp.ApprovalDate || null;
+      return `
+        <tr>
+          <td>${emp.EmployeeName || emp.employeeName || '—'}</td>
+          <td>${emp.employeeId || emp.EmployeeId || '—'}</td>
+          <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
+          <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>שם עובד</th>
+              <th>מספר עובד</th>
+              <th>תאריך אישור</th>
+              <th>סטטוס</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Load monthly approvals error:', error);
+    container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 30px;">שגיאה בטעינת סטטוס אישורים</p>';
   }
 }
 
@@ -3918,6 +4175,8 @@ async function loadTeamRecords() {
     console.error('Error loading team records:', error);
     // Fallback to local records
     renderTeamSummary(records);
+  } finally {
+    loadMonthlyApprovalsTable();
   }
 }
 
