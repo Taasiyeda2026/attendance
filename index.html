@@ -3273,23 +3273,23 @@ function normalizeEmployeeFromServer(emp) {
 function normalizeRecordFromServer(rec) {
   if (!rec) return null;
   return {
-    id: rec.ID || rec.id,
-    empNum: rec.employeeId,
-    empName: rec.employeeName,  // Already camelCase from Attendance table
-    date: rec.attendanceDate,
-    start: rec.startTime || '',
-    end: rec.endTime || '',
-    hours: Number(rec.workHours || 0),
-    activity: rec.activityType,
-    school: rec.schoolName || '',
-    municipality: rec.municipality,
-    program: rec.programName || '',
-    session: Number(rec.sessionNumber || 0),
-    km: Number(rec.kilometers || 0),
-    totalExpenses: Number(rec.totalExpenses || 0),
-    expensesDetail: rec.expensesDetails || '',
-    notes: rec.notes || '',
-    team: rec.team || '',
+    id: rec.ID || rec.Id || rec.id,
+    empNum: rec.employeeId || rec.EmployeeId,
+    empName: rec.employeeName || rec.EmployeeName,  // Support camelCase + PascalCase
+    date: rec.attendanceDate || rec.AttendanceDate,
+    start: rec.startTime || rec.StartTime || '',
+    end: rec.endTime || rec.EndTime || '',
+    hours: Number(rec.workHours || rec.WorkHours || 0),
+    activity: rec.activityType || rec.ActivityType,
+    school: rec.schoolName || rec.SchoolName || '',
+    municipality: rec.municipality || rec.Municipality,
+    program: rec.programName || rec.ProgramName || '',
+    session: Number(rec.sessionNumber || rec.SessionNumber || 0),
+    km: Number(rec.kilometers || rec.Kilometers || 0),
+    totalExpenses: Number(rec.totalExpenses || rec.TotalExpenses || 0),
+    expensesDetail: rec.expensesDetails || rec.ExpensesDetails || '',
+    notes: rec.notes || rec.Notes || '',
+    team: rec.team || rec.Team || '',
     employmentType: normalizeEmploymentType(rec, '')
   };
 }
@@ -3844,6 +3844,14 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
   }
   
   try {
+    const teamValue = extractLookupValue(
+      updatedRecord.team || localStorage.getItem("team") || '',
+      ''
+    );
+    const employmentTypeValue = normalizeEmploymentType(
+      updatedRecord.employmentType || localStorage.getItem("employmentType") || '',
+      ''
+    );
     const data = await apiRequest('updateRecord', {
       recordId: Number(updatedRecord.recordId),
       employeeId: String(updatedRecord.empNum),
@@ -3861,8 +3869,8 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
       totalExpenses: Number(updatedRecord.totalExpenses) || 0,
       expensesDetails: String(updatedRecord.expensesDetail || ''),
       notes: String(updatedRecord.notes || ''),
-      employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || 'תעשיידע'),
-      team: String(updatedRecord.team || localStorage.getItem("team") || '')
+      employmentType: String(employmentTypeValue),
+      team: String(teamValue)
     });
     
     return data.success;
