@@ -3119,27 +3119,50 @@ function extractLookupValue(field, defaultValue = '') {
 function normalizeEmploymentType(source, defaultValue = '') {
   if (!source) return defaultValue;
 
+  let extractedValue = '';
+
   if (typeof source === 'object') {
     if (source.Value || source.Label) {
-      return source.Value || source.Label || defaultValue;
-    }
+      extractedValue = source.Value || source.Label || '';
+    } else {
+      const possibleFields = [
+        source.employmentType,
+        source.EmploymentType,
+        source.EmployeeType,
+        source.employeeType,
+        source['Employment_x0020_Type'],
+        source.SogHaasaka
+      ];
 
-    const possibleFields = [
-      source.employmentType,
-      source.EmploymentType,
-      source.EmployeeType,
-      source.employeeType,
-      source['Employment_x0020_Type'],
-      source.SogHaasaka
-    ];
-
-    for (const field of possibleFields) {
-      const value = extractLookupValue(field, '');
-      if (value) return value;
+      for (const field of possibleFields) {
+        const value = extractLookupValue(field, '');
+        if (value) {
+          extractedValue = value;
+          break;
+        }
+      }
     }
+  } else {
+    extractedValue = extractLookupValue(source, '');
   }
 
-  return extractLookupValue(source, defaultValue);
+  // Validate against allowed EMPLOYMENT_TYPES list
+  if (extractedValue && EMPLOYMENT_TYPES.includes(extractedValue)) {
+    return extractedValue;
+  }
+
+  // If extracted value doesn't match, log warning and return default
+  if (extractedValue && !EMPLOYMENT_TYPES.includes(extractedValue)) {
+    console.warn('Invalid employment type value:', extractedValue, '- using default:', defaultValue);
+  }
+
+  return defaultValue;
+}
+
+// =============== Helper: Validate Activity Type ===============
+function isValidActivityType(activityType) {
+  if (!activityType) return false;
+  return ACTIVITY_TYPES.includes(activityType);
 }
 
 // =============== Payload Normalization ===============
@@ -3275,29 +3298,44 @@ function normalizeRecordFromServer(rec) {
  * API Request with retry logic
  */
 async function apiRequest(action, data, retryCount = 0) {
+  const payload = normalizePayload(action, data);
+  // Sanitize payload for logging (remove sensitive data like personalCode)
+  const sanitizedPayload = { ...payload };
+  if (sanitizedPayload.personalCode) sanitizedPayload.personalCode = '***';
+
   try {
-    const payload = normalizePayload(action, data);
-    
     const response = await fetch(CONFIG.LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error(`=== API ERROR (${response.status}) ===`);
+      console.error('Action:', action);
+      console.error('Payload:', JSON.stringify(sanitizedPayload, null, 2));
+      console.error('Response:', response.status, response.statusText);
+      console.error('Error data:', errorData);
       throw new Error(errorData.message || `Server error: ${response.status}`);
     }
-    
+
     return await response.json();
-    
+
   } catch (error) {
     // Retry logic for network errors
-    if (retryCount < CONFIG.MAX_RETRY && 
+    if (retryCount < CONFIG.MAX_RETRY &&
         (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
       console.warn(`🔄 Retry ${retryCount + 1}/${CONFIG.MAX_RETRY} for ${action}`);
       await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY * (retryCount + 1)));
       return apiRequest(action, data, retryCount + 1);
+    }
+    // Log final error after all retries
+    if (retryCount >= CONFIG.MAX_RETRY) {
+      console.error('=== API REQUEST FAILED (all retries exhausted) ===');
+      console.error('Action:', action);
+      console.error('Payload:', JSON.stringify(sanitizedPayload, null, 2));
+      console.error('Error:', error.message || error);
     }
     throw error;
   }
@@ -3608,17 +3646,18 @@ function canEditRecord(record) {
 
   const role = user.role;
 
-  // system_admin and operations_controller can edit all records
+  // system_admin and operations_controller can edit all records (bypass approval lock)
   if (role === 'system_admin' || role === 'operations_controller') {
     return true;
   }
 
-  // manager can edit team records
+  // manager can edit team records (bypass approval lock for team management)
   if (role === 'manager') {
     return true;
   }
 
   // instructor can edit only their own records until end of record's month
+  // AND only if they haven't approved the month (or 24-hour lockout has passed)
   if (role === 'instructor') {
     const recordEmpNum = record.empNum || record.employeeId;
     const userEmpNum = user.empNum || localStorage.getItem('employeeId');
@@ -3641,11 +3680,84 @@ function canEditRecord(record) {
     const lastDayOfRecordMonth = new Date(recordYear, recordMonth + 1, 0);
     lastDayOfRecordMonth.setHours(23, 59, 59, 999);
 
-    return now <= lastDayOfRecordMonth;
+    // First check: must be within the record's calendar month
+    if (now > lastDayOfRecordMonth) {
+      return false;
+    }
+
+    // Second check: if monthly approval exists and is locked (within 24 hours), block edit
+    if (instructorApprovalInfo && instructorApprovalInfo.approvalDate) {
+      const recordMonthKey = `${recordYear}-${String(recordMonth + 1).padStart(2, '0')}`;
+      // Only apply approval lock if record is for the approved month
+      if (instructorApprovalInfo.monthKey === recordMonthKey) {
+        const hoursLeft = getHoursUntilUnlock(instructorApprovalInfo.approvalDate);
+        if (hoursLeft && hoursLeft > 0) {
+          // Monthly report is approved and locked - cannot edit
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   // payroll_officer and others = view only, no edit
   return false;
+}
+
+// Helper function to get detailed reason why editing is blocked
+function getEditBlockReason(record) {
+  const user = getCurrentUserData();
+  if (!user) return 'משתמש לא מחובר';
+
+  const role = user.role;
+
+  // Admins can always edit
+  if (role === 'system_admin' || role === 'operations_controller' || role === 'manager') {
+    return null; // No block reason
+  }
+
+  if (role === 'payroll_officer') {
+    return 'אחראית שכר - צפייה בלבד';
+  }
+
+  if (role === 'instructor') {
+    const recordEmpNum = record.empNum || record.employeeId;
+    const userEmpNum = user.empNum || localStorage.getItem('employeeId');
+
+    if (String(recordEmpNum) !== String(userEmpNum)) {
+      return 'ניתן לערוך רק רשומות שלך';
+    }
+
+    const recordDateStr = record.date || record.attendanceDate;
+    if (!recordDateStr) return 'תאריך רשומה לא תקין';
+
+    const recordDate = new Date(recordDateStr);
+    const now = new Date();
+    const recordYear = recordDate.getFullYear();
+    const recordMonth = recordDate.getMonth();
+    const lastDayOfRecordMonth = new Date(recordYear, recordMonth + 1, 0);
+    lastDayOfRecordMonth.setHours(23, 59, 59, 999);
+
+    if (now > lastDayOfRecordMonth) {
+      return 'לא ניתן לערוך רשומות מחודשים קודמים';
+    }
+
+    // Check approval lock
+    if (instructorApprovalInfo && instructorApprovalInfo.approvalDate) {
+      const recordMonthKey = `${recordYear}-${String(recordMonth + 1).padStart(2, '0')}`;
+      if (instructorApprovalInfo.monthKey === recordMonthKey) {
+        const hoursLeft = getHoursUntilUnlock(instructorApprovalInfo.approvalDate);
+        if (hoursLeft && hoursLeft > 0) {
+          return `הדוח החודשי אושר ונעול לעוד ${hoursLeft} שעות`;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  return 'אין הרשאה לערוך';
 }
 
 function canDeleteRecord(record) {
@@ -4011,7 +4123,13 @@ function showPage(event, pageName) {
   if (pageName === 'records' && role !== 'instructor') {
     pageName = 'team-records';
   }
-  
+
+  // Role guard: only instructors can access 'add-record' page
+  if (pageName === 'add-record' && role !== 'instructor') {
+    showAlert('❌ רק מדריכים יכולים להוסיף ימי עבודה', 'error');
+    pageName = 'dashboard';
+  }
+
   // Role guard: payroll_officer can only access dashboard and team-records
   if (role === 'payroll_officer' && pageName !== 'dashboard' && pageName !== 'team-records') {
     pageName = 'team-records';
@@ -4777,10 +4895,28 @@ function loadFromLocalStorage() {
   try {
     const data = localStorage.getItem('attendanceRecords');
     if (data) {
-      records = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      // Validate that parsed data is an array
+      if (Array.isArray(parsed)) {
+        // Validate each record has minimum required fields
+        records = parsed.filter(rec => {
+          if (!rec || typeof rec !== 'object') return false;
+          // Must have at least a date and empNum to be valid
+          if (!rec.date && !rec.attendanceDate) return false;
+          if (!rec.empNum && !rec.employeeId) return false;
+          return true;
+        });
+        console.log(`Loaded ${records.length} valid records from localStorage`);
+      } else {
+        console.warn('localStorage attendanceRecords is not an array, resetting');
+        records = [];
+        localStorage.removeItem('attendanceRecords');
+      }
     }
   } catch(e) {
-    console.error('שגיאה בטעינת נתונים:', e);
+    console.error('Error loading from localStorage, resetting:', e);
+    records = [];
+    localStorage.removeItem('attendanceRecords');
   }
 }
 
@@ -5352,7 +5488,7 @@ async function addRecord() {
       });
     }
   }
-  
+
   const missing = [];
   if (!date) missing.push('תאריך');
   if (!startTime) missing.push('שעת התחלה');
@@ -5363,12 +5499,32 @@ async function addRecord() {
   if (!municipality) missing.push('רשות');
   if (!program) missing.push('תוכנית');
   if (!session) missing.push('מספר מפגש');
-  
+
   if (missing.length > 0) {
     showAlert('⚠️ אנא מלא את כל השדות החובה: ' + missing.join(', '), 'error');
     return;
   }
-  
+
+  // Validate activity type against allowed values
+  if (!isValidActivityType(activity)) {
+    showAlert('⚠️ סוג פעילות לא חוקי', 'error');
+    console.error('Invalid activity type:', activity, '- allowed:', ACTIVITY_TYPES);
+    return;
+  }
+
+  // Duplicate submission check - prevent same date + start time + activity
+  const potentialKey = `${empNum}_${date}_${startTime}_${activity}`;
+  const existingDuplicate = records.find(rec => {
+    const recKey = generateRecordKey(rec);
+    return recKey === potentialKey;
+  });
+
+  if (existingDuplicate) {
+    showAlert('⚠️ כבר קיים דיווח עם אותו תאריך, שעת התחלה וסוג פעילות', 'error');
+    console.warn('Duplicate submission blocked:', { date, startTime, activity, existingRecord: existingDuplicate });
+    return;
+  }
+
   const currentUserData = getCurrentUserData();
   const rawEmploymentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
   const employmentType = normalizeEmploymentType(rawEmploymentType, 'תעשיידע');
@@ -5412,7 +5568,10 @@ async function addRecord() {
       showAlert('❌ ' + (data.message || 'שגיאה בשליחה'), 'error');
     }
   } catch (error) {
-    console.error('Submit error:', error);
+    console.error('=== SUBMISSION ERROR ===');
+    console.error('Endpoint: submit');
+    console.error('Payload:', JSON.stringify(payload, null, 2));
+    console.error('Error:', error.message || error);
     showAlert('❌ ' + (error.message || 'שגיאה בשליחה לשרת'), 'error');
   }
 }
@@ -5455,17 +5614,46 @@ function renderRecordsTable() {
   if (isMobileView()) {
     const totalExpenses = records.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
     const pendingCount = records.filter(rec => rec.status !== 'נשלח').length;
+    const user = getCurrentUserData();
+    const canEdit = user && user.role === 'instructor';
+
+    // Mobile: Show summary card AND individual record cards with edit buttons
+    const recordCards = records.map((rec, idx) => {
+      const canEditThis = canEditRecord(rec);
+      return `
+        <div class="mobile-record-card" style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="font-weight: 600; color: #1e40af;">${rec.date}</div>
+            <div style="background: #dbeafe; padding: 4px 8px; border-radius: 6px; font-size: 13px; color: #1e40af;">
+              ${formatHoursDisplay(rec.hours)} שעות
+            </div>
+          </div>
+          <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">
+            <strong>${rec.activity}</strong> | ${rec.school || '-'}
+          </div>
+          <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
+            ${rec.start || '--:--'} - ${rec.end || '--:--'} | ${rec.km || 0} ק"מ
+          </div>
+          ${canEdit && canEditThis ? `
+          <button onclick="editRecord(${idx})" style="width: 100%; background: #3b82f6; color: white; padding: 10px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fas fa-edit"></i> עריכה
+          </button>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
 
     recordsContainer.innerHTML = `
       <div class="records-summary-list">
-        <div class="records-summary-card">
-          <h4>סיכום חודשי</h4>
-          <div class="records-summary-row"><span>ימי עבודה</span><strong>${records.length}</strong></div>
-          <div class="records-summary-row"><span>סה"כ שעות</span><strong>${formatHoursDisplay(totalHours)}</strong></div>
-          <div class="records-summary-row"><span>סה"כ ק"מ</span><strong>${totalKm.toFixed(1)}</strong></div>
-          <div class="records-summary-row"><span>סה"כ הוצאות</span><strong>${totalExpenses.toFixed(2)} ₪</strong></div>
-          <div class="records-summary-row"><span>ממתינים לשליחה</span><strong>${pendingCount}</strong></div>
+        <div class="records-summary-card" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 16px;">סיכום חודשי</h4>
+          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>ימי עבודה</span><strong>${records.length}</strong></div>
+          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>סה"כ שעות</span><strong>${formatHoursDisplay(totalHours)}</strong></div>
+          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>סה"כ ק"מ</span><strong>${totalKm.toFixed(1)}</strong></div>
+          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>סה"כ הוצאות</span><strong>${totalExpenses.toFixed(2)} ₪</strong></div>
         </div>
+        <h4 style="margin: 16px 0 12px 0; font-size: 15px; color: #334155;">פירוט ימי עבודה</h4>
+        ${recordCards || '<p style="text-align: center; color: #94a3b8;">אין רשומות להצגה</p>'}
       </div>
     `;
     return;
@@ -5473,8 +5661,10 @@ function renderRecordsTable() {
   
   const user = getCurrentUserData();
   const userRole = user ? user.role : 'instructor';
-  const showActionsColumn = userRole !== 'instructor';
-  
+  // Show actions column for any user who can potentially edit or delete records
+  // Instructors can edit their own records within the month, so they also get an actions column
+  const showActionsColumn = userRole !== 'payroll_officer';
+
   const tableHTML = `
     <table>
       <thead>
@@ -5573,9 +5763,10 @@ async function deleteRecord(index) {
 // =============== Edit Record ===============
 function editRecord(index) {
   const rec = records[index];
-  
+
   if (!canEditRecord(rec)) {
-    showAlert('❌ אין לך הרשאה לערוך ימי עבודה', 'error');
+    const reason = getEditBlockReason(rec);
+    showAlert('❌ ' + (reason || 'אין לך הרשאה לערוך ימי עבודה'), 'error');
     return;
   }
   
@@ -6511,35 +6702,67 @@ window.addEventListener('DOMContentLoaded', function() {
   populateSchools();
   populateTimeDropdowns();
   initFileUpload();
-  
+
   const savedUser = localStorage.getItem('currentUser');
   if (savedUser) {
     try {
       const empData = JSON.parse(savedUser);
+
+      // Validate user data structure - must have essential fields
+      if (!empData || typeof empData !== 'object' || !empData.empNum || !empData.empName) {
+        console.warn('Invalid user data in localStorage, clearing session');
+        clearUserSession();
+        return;
+      }
+
+      // Validate role is a known value
+      const validRoles = ['instructor', 'manager', 'payroll_officer', 'operations_controller', 'admin_assistant', 'system_admin'];
+      if (empData.role && !validRoles.includes(empData.role)) {
+        console.warn('Invalid role in localStorage:', empData.role, '- defaulting to instructor');
+        empData.role = 'instructor';
+        localStorage.setItem('currentUser', JSON.stringify(empData));
+        localStorage.setItem('role', 'instructor');
+      }
+
       currentUser = empData.empName;
-      
+
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
-      
+
       document.getElementById('userName').textContent = empData.empName;
       document.getElementById('userRole').textContent = getRoleDisplayName(empData.role || 'instructor');
       document.getElementById('userAvatar').textContent = empData.empName ? empData.empName.charAt(0) : 'ע';
       document.getElementById('mobileUserGreeting').textContent = 'שלום, ' + empData.empName;
-      
+
       updateMenuByRole(empData.role || 'instructor');
       loadFromLocalStorage();
       updateStats();
       showPage(null, 'dashboard');
-      
-      // Load records from server
+
+      // Load fresh records from server to ensure data is not stale
       if (localStorage.getItem('employeeId')) {
         loadMyRecordsFromServer();
       }
     } catch(e) {
-      console.error('שגיאה:', e);
+      console.error('Error loading user session:', e);
+      // Clear corrupted data and show login
+      clearUserSession();
     }
   }
 });
+
+// Helper to clear user session on invalid data
+function clearUserSession() {
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('employeeId');
+  localStorage.removeItem('employeeName');
+  localStorage.removeItem('role');
+  localStorage.removeItem('employmentType');
+  localStorage.removeItem('team');
+  localStorage.removeItem('attendanceRecords');
+  records = [];
+  currentUser = '';
+}
 </script>
 
 <script>
