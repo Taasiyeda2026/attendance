@@ -9,54 +9,60 @@
  */
 async function exportTeamApprovalToExcel() {
   try {
-    showAlert('⏳ מכין קובץ Excel...', 'info');
-    
+    showAlert('מכין קובץ Excel...', 'info');
+
     const team = localStorage.getItem('team');
     const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
     const monthName = getHebrewMonthName(currentMonth);
-    
-    // Fetch data
-    const approvalData = await apiRequest('getTeamApprovals', {
-      team: team,
-      month: currentMonth
-    });
-    
-    const recordsData = await apiRequest('getTeamRecords', {
-      team: team,
-      month: currentMonth
-    });
-    
-    if (!approvalData.success || !recordsData.success) {
-      showAlert('❌ שגיאה בטעינת נתונים', 'error');
-      return;
-    }
-    
+
+    // Get approval data from localStorage (since backend doesn't support getTeamApprovals)
+    const localApprovals = getLocalApprovalsForTeam(team, currentMonth);
+    const approvalEmployees = localApprovals.map(a => ({
+      employeeName: a.employeeName,
+      employeeId: a.employeeId,
+      approvalDate: a.approvalDate,
+      totalHours: 0,
+      recordCount: 0
+    }));
+
+    // Get records from cache (teamRecordsCache is populated by loadTeamRecords)
+    const records = typeof teamRecordsCache !== 'undefined' ? teamRecordsCache : [];
+
     // Create workbook
     const wb = XLSX.utils.book_new();
-    
-    // Sheet 1: Approval Status
-    const approvalSheet = createApprovalSheet(approvalData.employees, monthName);
-    XLSX.utils.book_append_sheet(wb, approvalSheet, 'סטטוס אישורים');
-    
-    // Sheet 2: Detailed Records
-    const recordsSheet = createRecordsSheet(recordsData.records);
-    XLSX.utils.book_append_sheet(wb, recordsSheet, 'רשומות מפורטות');
-    
-    // Sheet 3: Hours Summary
-    const summarySheet = createSummarySheet(approvalData.employees, recordsData.records);
-    XLSX.utils.book_append_sheet(wb, summarySheet, 'סיכום שעות');
-    
+
+    // Sheet 1: Approval Status (only if we have approvals)
+    if (approvalEmployees.length > 0) {
+      const approvalSheet = createApprovalSheet(approvalEmployees, monthName);
+      XLSX.utils.book_append_sheet(wb, approvalSheet, 'סטטוס אישורים');
+    }
+
+    // Sheet 2: Detailed Records (only if we have records)
+    if (records.length > 0) {
+      const recordsSheet = createRecordsSheet(records);
+      XLSX.utils.book_append_sheet(wb, recordsSheet, 'רשומות מפורטות');
+
+      // Sheet 3: Hours Summary
+      const summarySheet = createSummarySheet(approvalEmployees, records);
+      XLSX.utils.book_append_sheet(wb, summarySheet, 'סיכום שעות');
+    }
+
+    if (wb.SheetNames.length === 0) {
+      showAlert('אין נתונים לייצוא', 'error');
+      return;
+    }
+
     // Generate filename
     const filename = `דוח_נוכחות_צוות_${team}_${monthName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-    
+
     // Download
     XLSX.writeFile(wb, filename);
-    
-    showAlert('✅ הקובץ הורד בהצלחה!', 'success');
-    
+
+    showAlert('הקובץ הורד בהצלחה!', 'success');
+
   } catch (error) {
     console.error('Excel export error:', error);
-    showAlert('❌ שגיאה ביצירת קובץ Excel', 'error');
+    showAlert('שגיאה ביצירת קובץ Excel', 'error');
   }
 }
 
@@ -321,33 +327,39 @@ function getHebrewMonthName(monthStr) {
  */
 async function exportApprovalStatusOnly() {
   try {
-    showAlert('⏳ מכין קובץ...', 'info');
-    
+    showAlert('מכין קובץ...', 'info');
+
     const team = localStorage.getItem('team');
     const currentMonth = new Date().toISOString().slice(0, 7);
     const monthName = getHebrewMonthName(currentMonth);
-    
-    const data = await apiRequest('getTeamApprovals', {
-      team: team,
-      month: currentMonth
-    });
-    
-    if (!data.success) {
-      showAlert('❌ שגיאה בטעינת נתונים', 'error');
+
+    // Get approval data from localStorage (since backend doesn't support getTeamApprovals)
+    const localApprovals = getLocalApprovalsForTeam(team, currentMonth);
+
+    if (localApprovals.length === 0) {
+      showAlert('אין נתוני אישורים לייצוא', 'error');
       return;
     }
-    
+
+    const approvalEmployees = localApprovals.map(a => ({
+      employeeName: a.employeeName,
+      employeeId: a.employeeId,
+      approvalDate: a.approvalDate,
+      totalHours: 0,
+      recordCount: 0
+    }));
+
     const wb = XLSX.utils.book_new();
-    const ws = createApprovalSheet(data.employees, monthName);
+    const ws = createApprovalSheet(approvalEmployees, monthName);
     XLSX.utils.book_append_sheet(wb, ws, 'סטטוס אישורים');
-    
+
     const filename = `סטטוס_אישורים_${team}_${monthName}.xlsx`;
     XLSX.writeFile(wb, filename);
-    
-    showAlert('✅ הקובץ הורד בהצלחה!', 'success');
-    
+
+    showAlert('הקובץ הורד בהצלחה!', 'success');
+
   } catch (error) {
     console.error('Excel export error:', error);
-    showAlert('❌ שגיאה ביצירת קובץ', 'error');
+    showAlert('שגיאה ביצירת קובץ', 'error');
   }
 }
