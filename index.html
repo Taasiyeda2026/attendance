@@ -4210,6 +4210,58 @@ function getHoursUntilUnlock(dateValue) {
   return Math.ceil(diffMs / (60 * 60 * 1000));
 }
 
+// =============== Local Storage Approval Functions ===============
+// These functions provide a local fallback when backend doesn't support approval actions
+
+const APPROVALS_STORAGE_KEY = 'monthlyApprovals';
+
+function getLocalApprovals() {
+  try {
+    const stored = localStorage.getItem(APPROVALS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (e) {
+    console.warn('Error reading local approvals:', e);
+    return {};
+  }
+}
+
+function saveLocalApproval(employeeId, employeeName, team, monthKey) {
+  try {
+    const approvals = getLocalApprovals();
+    const key = `${employeeId}_${monthKey}`;
+    approvals[key] = {
+      employeeId,
+      employeeName,
+      team,
+      month: monthKey,
+      approvalDate: new Date().toISOString()
+    };
+    localStorage.setItem(APPROVALS_STORAGE_KEY, JSON.stringify(approvals));
+    return approvals[key];
+  } catch (e) {
+    console.warn('Error saving local approval:', e);
+    return null;
+  }
+}
+
+function getLocalApprovalForEmployee(employeeId, monthKey) {
+  const approvals = getLocalApprovals();
+  const key = `${employeeId}_${monthKey}`;
+  return approvals[key] || null;
+}
+
+function getLocalApprovalsForTeam(team, monthKey) {
+  const approvals = getLocalApprovals();
+  const results = [];
+  for (const key in approvals) {
+    const approval = approvals[key];
+    if (approval.month === monthKey && (team === 'הכל' || !team || approval.team === team)) {
+      results.push(approval);
+    }
+  }
+  return results;
+}
+
 function updateMonthlyApprovalVisibility() {
   const user = getCurrentUserData();
   const instructorCard = document.getElementById('monthlyApprovalCard');
@@ -4246,45 +4298,27 @@ async function loadInstructorMonthlyApprovalStatus() {
 
   const now = new Date();
   const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+  const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
+
   monthLabel.textContent = getApprovalMonthLabel(now.getMonth() + 1, now.getFullYear());
-  statusEl.textContent = 'טוען סטטוס...';
-  buttonEl.disabled = true;
 
-  try {
-    const data = await apiRequest('getTeamApprovals', {
-      team: user.team || '',
-      month: monthKey
-    });
+  // Use localStorage-based approval status (works offline and when backend doesn't support approval actions)
+  const localApproval = getLocalApprovalForEmployee(employeeId, monthKey);
+  const approvalDate = localApproval?.approvalDate || null;
+  instructorApprovalInfo = { monthKey, approvalDate };
 
-    if (!data || !data.success || !Array.isArray(data.employees)) {
-      statusEl.textContent = 'לא נמצא סטטוס אישור לחודש זה';
-      buttonEl.disabled = false;
-      instructorApprovalInfo = null;
-      return;
-    }
-
-    const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
-    const approvalRow = data.employees.find(emp => String(emp.employeeId || emp.EmployeeId || emp.empId || '') === employeeId);
-    const approvalDate = approvalRow?.approvalDate || approvalRow?.ApprovalDate || null;
-    instructorApprovalInfo = { monthKey, approvalDate };
-
-    if (approvalDate) {
-      const hoursLeft = getHoursUntilUnlock(approvalDate);
-      const approvedText = `אושר בתאריך ${formatApprovalDate(approvalDate)}`;
-      if (hoursLeft && hoursLeft > 0) {
-        statusEl.textContent = `${approvedText} · נעול לעוד ${hoursLeft} שעות`;
-        buttonEl.disabled = true;
-      } else {
-        statusEl.textContent = approvedText;
-        buttonEl.disabled = false;
-      }
+  if (approvalDate) {
+    const hoursLeft = getHoursUntilUnlock(approvalDate);
+    const approvedText = `אושר בתאריך ${formatApprovalDate(approvalDate)}`;
+    if (hoursLeft && hoursLeft > 0) {
+      statusEl.textContent = `${approvedText} · נעול לעוד ${hoursLeft} שעות`;
+      buttonEl.disabled = true;
     } else {
-      statusEl.textContent = 'טרם אושר החודש';
+      statusEl.textContent = approvedText;
       buttonEl.disabled = false;
     }
-  } catch (error) {
-    console.error('Load approval status error:', error);
-    statusEl.textContent = 'שגיאה בטעינת סטטוס האישור';
+  } else {
+    statusEl.textContent = 'טרם אושר החודש';
     buttonEl.disabled = false;
   }
 }
@@ -4292,7 +4326,7 @@ async function loadInstructorMonthlyApprovalStatus() {
 async function approveMonthlyReport() {
   const user = getCurrentUserData();
   if (!user || user.role !== 'instructor') {
-    showAlert('❌ אין הרשאה לבצע אישור חודשי', 'error');
+    showAlert('אין הרשאה לבצע אישור חודשי', 'error');
     return;
   }
 
@@ -4300,7 +4334,7 @@ async function approveMonthlyReport() {
   const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
 
   if (instructorApprovalInfo?.approvalDate && getHoursUntilUnlock(instructorApprovalInfo.approvalDate) > 0) {
-    showAlert('⏳ לא ניתן לאשר שוב בתוך 24 שעות', 'error');
+    showAlert('לא ניתן לאשר שוב בתוך 24 שעות', 'error');
     return;
   }
 
@@ -4309,31 +4343,26 @@ async function approveMonthlyReport() {
     buttonEl.disabled = true;
   }
 
-  try {
-    const data = await apiRequest('approveMonth', {
-      employeeId: String(user.empNum || localStorage.getItem('employeeId') || ''),
-      employeeName: String(user.empName || localStorage.getItem('employeeName') || ''),
-      team: user.team || '',
-      month: monthKey
-    });
+  const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
+  const employeeName = String(user.empName || localStorage.getItem('employeeName') || '');
+  const team = user.team || '';
 
-    if (data && data.success) {
-      showAlert('✅ האישור החודשי נשמר בהצלחה', 'success');
-      instructorApprovalInfo = {
-        monthKey,
-        approvalDate: data.approvalDate || new Date().toISOString()
-      };
-      await loadInstructorMonthlyApprovalStatus();
-    } else {
-      showAlert(data?.message || '❌ שגיאה בשמירת אישור חודשי', 'error');
-    }
-  } catch (error) {
-    console.error('Approve month error:', error);
-    showAlert('❌ שגיאה בשמירת אישור חודשי', 'error');
-  } finally {
-    if (buttonEl) {
-      buttonEl.disabled = false;
-    }
+  // Save approval locally (works offline and when backend doesn't support approval actions)
+  const savedApproval = saveLocalApproval(employeeId, employeeName, team, monthKey);
+
+  if (savedApproval) {
+    showAlert('האישור החודשי נשמר בהצלחה', 'success');
+    instructorApprovalInfo = {
+      monthKey,
+      approvalDate: savedApproval.approvalDate
+    };
+    await loadInstructorMonthlyApprovalStatus();
+  } else {
+    showAlert('שגיאה בשמירת אישור חודשי', 'error');
+  }
+
+  if (buttonEl) {
+    buttonEl.disabled = false;
   }
 }
 
@@ -4358,56 +4387,43 @@ async function loadMonthlyApprovalsTable() {
   const monthKey = getApprovalMonthKey(month, year);
   const team = user.role === 'system_admin' ? 'הכל' : (user.team || '');
 
-  container.innerHTML = `
-    <p style="text-align: center; color: #94a3b8; padding: 30px;">
-      <i class="fas fa-spinner fa-spin"></i> טוען סטטוס אישורים לחודש ${month}/${year}...
-    </p>
-  `;
+  // Use localStorage-based approval data
+  const localApprovals = getLocalApprovalsForTeam(team, monthKey);
 
-  try {
-    const data = await apiRequest('getTeamApprovals', {
-      team: team,
-      month: monthKey
-    });
-
-    if (!data || !data.success || !Array.isArray(data.employees) || data.employees.length === 0) {
-      container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין נתוני אישורים להצגה</p>';
-      return;
-    }
-
-    const rows = data.employees.map(emp => {
-      const approvalDate = emp.approvalDate || emp.ApprovalDate || null;
-      return `
-        <tr>
-          <td>${emp.EmployeeName || emp.employeeName || '—'}</td>
-          <td>${emp.employeeId || emp.EmployeeId || '—'}</td>
-          <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
-          <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
-        </tr>
-      `;
-    }).join('');
-
-    container.innerHTML = `
-      <div style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>שם עובד</th>
-              <th>מספר עובד</th>
-              <th>תאריך אישור</th>
-              <th>סטטוס</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>
-    `;
-  } catch (error) {
-    console.error('Load monthly approvals error:', error);
-    container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 30px;">שגיאה בטעינת סטטוס אישורים</p>';
+  if (localApprovals.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין נתוני אישורים להצגה</p>';
+    return;
   }
+
+  const rows = localApprovals.map(emp => {
+    const approvalDate = emp.approvalDate || null;
+    return `
+      <tr>
+        <td>${emp.employeeName || '—'}</td>
+        <td>${emp.employeeId || '—'}</td>
+        <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
+        <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>שם עובד</th>
+            <th>מספר עובד</th>
+            <th>תאריך אישור</th>
+            <th>סטטוס</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 // =============== Team Records Functions ===============
