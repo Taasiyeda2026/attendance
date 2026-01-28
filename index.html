@@ -596,6 +596,28 @@
       color: #3b82f6;
     }
 
+    .mobile-info-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #e0f2fe;
+      color: #0f172a;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid #bae6fd;
+      margin: 0 0 12px 0;
+      position: sticky;
+      top: 56px;
+      z-index: 180;
+      min-height: 44px;
+    }
+
+    .mobile-info-banner span {
+      line-height: 1.4;
+    }
+
     /* Form */
     .form-grid {
       display: grid;
@@ -838,6 +860,10 @@
         right: 0;
         padding-right: 16px;
       }
+
+      .mobile-info-banner {
+        display: flex;
+      }
       
       /* ===== הצגת לוגו במובייל ===== */
       .mobile-greeting .mobile-logo {
@@ -914,7 +940,7 @@
       /* Main Content */
       .main-content {
         margin-right: 0;
-        padding: 72px 12px 100px 12px;
+        padding: 84px 12px 100px 12px;
       }
 
       .page-header {
@@ -1164,6 +1190,12 @@
         padding: 10px 14px;
         min-height: 44px;
         width: 100%;
+      }
+
+      .records-summary-card,
+      .team-summary-card {
+        border-radius: 12px;
+        padding: 12px;
       }
 
       /* Modal */
@@ -1437,7 +1469,7 @@
       
       /* ===== הזזת הודעות למעלה כדי לא לכסות שם משתמש ===== */
       .alert {
-        top: 10px !important;
+        top: calc(56px + 44px + 12px) !important;
         font-size: 13px !important;
         padding: 10px 16px !important;
         z-index: 9999 !important;
@@ -1481,7 +1513,7 @@
     /* ============= SMALL MOBILE - 480px ============= */
     @media (max-width: 480px) {
       .main-content {
-        padding: 68px 10px 95px 10px;
+        padding: 78px 10px 95px 10px;
       }
       
       .mobile-greeting {
@@ -1853,6 +1885,75 @@
       color: #dc2626;
       font-weight: bold;
     }
+
+    #recordsPage table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    #recordsPage table th,
+    #recordsPage table td {
+      text-align: right;
+      vertical-align: middle;
+    }
+
+    #recordsPage table th:nth-child(2),
+    #recordsPage table td:nth-child(2),
+    #recordsPage table th:nth-child(3),
+    #recordsPage table td:nth-child(3),
+    #recordsPage table th:nth-child(4),
+    #recordsPage table td:nth-child(4),
+    #recordsPage table th:nth-child(8),
+    #recordsPage table td:nth-child(8),
+    #recordsPage table th:last-child,
+    #recordsPage table td:last-child {
+      text-align: center;
+    }
+
+    .records-summary-list,
+    .team-summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .records-summary-card,
+    .team-summary-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .records-summary-card h4,
+    .team-summary-card h4 {
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #1e40af;
+    }
+
+    .records-summary-row,
+    .team-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #475569;
+      padding: 4px 0;
+      gap: 12px;
+    }
+
+    .mobile-report-summary {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      color: #475569;
+      text-align: center;
+      font-size: 14px;
+    }
 </style>
 </head>
 <body>
@@ -1984,6 +2085,10 @@
     <div class="alert" id="alertBox">
       <i class="fas fa-check-circle"></i>
       <span id="alertText"></span>
+    </div>
+
+    <div class="mobile-info-banner" id="mobileInfoBanner">
+      <span>ℹ️ לתצוגה מלאה – יש להיכנס ממחשב.</span>
     </div>
     
     <!-- Dashboard Page -->
@@ -3845,6 +3950,10 @@ function updateMobileNavActive(pageName) {
   }
 }
 
+function isMobileView() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
 // =============== Page Navigation ===============
 function showPage(event, pageName) {
   if (event) {
@@ -4255,6 +4364,35 @@ function renderTeamSummary(recordsList) {
   const grandTotalExpenses = summaryList.reduce((sum, emp) => sum + emp.totalExpenses, 0);
   const grandTotalRecords = summaryList.reduce((sum, emp) => sum + emp.totalRecords, 0);
 
+  if (isMobileView()) {
+    const cardsHTML = summaryList.map(emp => `
+      <div class="team-summary-card">
+        <h4>${emp.empName}</h4>
+        <div class="team-summary-row"><span>צוות</span><strong>${emp.team || '-'}</strong></div>
+        <div class="team-summary-row"><span>סוג העסקה</span><strong>${emp.employmentType || '-'}</strong></div>
+        <div class="team-summary-row"><span>רשומות</span><strong>${emp.totalRecords}</strong></div>
+        <div class="team-summary-row"><span>שעות</span><strong>${formatHoursDisplay(emp.totalHours)}</strong></div>
+        <div class="team-summary-row"><span>ק"מ</span><strong>${emp.totalKm.toFixed(1)}</strong></div>
+        <div class="team-summary-row"><span>הוצאות</span><strong>${emp.totalExpenses.toFixed(2)} ₪</strong></div>
+      </div>
+    `).join('');
+
+    document.getElementById('teamRecordsTable').innerHTML = `
+      <div class="team-summary-list">
+        <div class="team-summary-card">
+          <h4>סיכום צוות</h4>
+          <div class="team-summary-row"><span>עובדים</span><strong>${summaryList.length}</strong></div>
+          <div class="team-summary-row"><span>רשומות</span><strong>${grandTotalRecords}</strong></div>
+          <div class="team-summary-row"><span>סה"כ שעות</span><strong>${formatHoursDisplay(grandTotalHours)}</strong></div>
+          <div class="team-summary-row"><span>סה"כ ק"מ</span><strong>${grandTotalKm.toFixed(1)}</strong></div>
+          <div class="team-summary-row"><span>סה"כ הוצאות</span><strong>${grandTotalExpenses.toFixed(2)} ₪</strong></div>
+        </div>
+        ${cardsHTML}
+      </div>
+    `;
+    return;
+  }
+
   const tableHTML = `
     <div style="margin-bottom: 15px;">
       <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים | ${grandTotalRecords} רשומות</span>
@@ -4307,6 +4445,10 @@ function renderTeamSummary(recordsList) {
 }
 
 async function toggleEmployeeDetails(empId) {
+  if (isMobileView()) {
+    return;
+  }
+
   const detailsRow = document.getElementById(`details-${empId}`);
   const chevron = document.getElementById(`chevron-${empId}`);
   const detailsContent = document.getElementById(`details-content-${empId}`);
@@ -5258,9 +5400,35 @@ function renderRecordsTable() {
   
   const totalHours = records.reduce((sum, rec) => sum + (rec.hours || 0), 0);
   const totalKm = records.reduce((sum, rec) => sum + (rec.km || 0), 0);
+  const recordsContainer = document.getElementById('recordsTable');
+  if (!recordsContainer) return;
   
   if (records.length === 0) {
-    document.getElementById('recordsTable').innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות להצגה</p>';
+    recordsContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות להצגה</p>';
+    return;
+  }
+
+  if (isMobileView()) {
+    const cardsHTML = records.map(rec => `
+      <div class="records-summary-card">
+        <h4>${rec.date || 'ללא תאריך'}</h4>
+        <div class="records-summary-row"><span>פעילות</span><strong>${rec.activity || '-'}</strong></div>
+        <div class="records-summary-row"><span>שעות</span><strong>${formatHoursDisplay(rec.hours)}</strong></div>
+        <div class="records-summary-row"><span>ק"מ</span><strong>${(rec.km || 0).toFixed(1)}</strong></div>
+      </div>
+    `).join('');
+
+    recordsContainer.innerHTML = `
+      <div class="records-summary-list">
+        <div class="records-summary-card">
+          <h4>סיכום חודשי</h4>
+          <div class="records-summary-row"><span>רשומות</span><strong>${records.length}</strong></div>
+          <div class="records-summary-row"><span>סה"כ שעות</span><strong>${formatHoursDisplay(totalHours)}</strong></div>
+          <div class="records-summary-row"><span>סה"כ ק"מ</span><strong>${totalKm.toFixed(1)}</strong></div>
+        </div>
+        ${cardsHTML}
+      </div>
+    `;
     return;
   }
   
@@ -5331,7 +5499,7 @@ function renderRecordsTable() {
     </table>
   `;
   
-  document.getElementById('recordsTable').innerHTML = tableHTML;
+  recordsContainer.innerHTML = tableHTML;
 }
 
 async function deleteRecord(index) {
@@ -6006,6 +6174,26 @@ function renderReportByEmployee() {
   
   if (reportRecords.length === 0) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות לתקופה הנבחרת</p>';
+    return;
+  }
+
+  if (isMobileView()) {
+    const totals = {
+      count: reportRecords.length,
+      hours: reportRecords.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0),
+      km: reportRecords.reduce((s, r) => s + (parseFloat(r.km) || 0), 0),
+      expenses: reportRecords.reduce((s, r) => s + (parseFloat(r.totalExpenses) || 0), 0)
+    };
+
+    container.innerHTML = `
+      <div class="mobile-report-summary">
+        <div style="font-weight: 600; margin-bottom: 8px;">במובייל מוצג סיכום כללי בלבד.</div>
+        <div>רשומות: <strong>${totals.count}</strong></div>
+        <div>שעות: <strong>${formatHoursDisplay(totals.hours)}</strong></div>
+        <div>ק"מ: <strong>${totals.km.toFixed(0)}</strong></div>
+        <div>הוצאות: <strong>${totals.expenses.toFixed(0)} ₪</strong></div>
+      </div>
+    `;
     return;
   }
   
