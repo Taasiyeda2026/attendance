@@ -2964,6 +2964,33 @@ function extractLookupValue(field, defaultValue = '') {
   return defaultValue;
 }
 
+// =============== Helper: Normalize Employment Type ===============
+function normalizeEmploymentType(source, defaultValue = '') {
+  if (!source) return defaultValue;
+
+  if (typeof source === 'object') {
+    if (source.Value || source.Label) {
+      return source.Value || source.Label || defaultValue;
+    }
+
+    const possibleFields = [
+      source.employmentType,
+      source.EmploymentType,
+      source.EmployeeType,
+      source.employeeType,
+      source['Employment_x0020_Type'],
+      source.SogHaasaka
+    ];
+
+    for (const field of possibleFields) {
+      const value = extractLookupValue(field, '');
+      if (value) return value;
+    }
+  }
+
+  return extractLookupValue(source, defaultValue);
+}
+
 // =============== Payload Normalization ===============
 /**
  * Normalize payload between Employee table (PascalCase) and Attendance table (camelCase)
@@ -3062,7 +3089,7 @@ function normalizeEmployeeFromServer(emp) {
     empName: emp.EmployeeName || emp.employeeName,  // Handle both cases
     role: emp.role || 'instructor',
     team: emp.Team || emp.team || '',
-    employmentType: emp.EmploymentType || emp.employmentType || ''
+    employmentType: normalizeEmploymentType(emp, '')
   };
 }
 
@@ -3089,7 +3116,7 @@ function normalizeRecordFromServer(rec) {
     expensesDetail: rec.expensesDetails || '',
     notes: rec.notes || '',
     team: rec.team || '',
-    employmentType: rec.employmentType || ''
+    employmentType: normalizeEmploymentType(rec, '')
   };
 }
 
@@ -4198,13 +4225,7 @@ function renderTeamSummary(recordsList) {
     const empId = rec.employeeId || rec.empNum || rec.EmployeeId;
     const empName = rec.employeeName || rec.empName || rec.EmployeeName || 'לא ידוע';
     const team = rec.team || rec.Team || '-';
-    // Handle employmentType - could be string or object
-    let empType = 'תעשיידע';
-    if (rec.employmentType) {
-      empType = typeof rec.employmentType === 'object' ? (rec.employmentType.Value || rec.employmentType.Label || 'תעשיידע') : rec.employmentType;
-    } else if (rec.EmploymentType) {
-      empType = typeof rec.EmploymentType === 'object' ? (rec.EmploymentType.Value || rec.EmploymentType.Label || 'תעשיידע') : rec.EmploymentType;
-    }
+    const empType = normalizeEmploymentType(rec, 'תעשיידע');
     const hours = parseFloat(rec.workHours || rec.hours || rec.WorkHours || 0);
     const km = parseFloat(rec.kilometers || rec.km || rec.Kilometers || 0);
     const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
@@ -4434,7 +4455,7 @@ function editTeamRecord(recordId) {
       expensesDetail: record.expensesDetails || record.ExpensesDetails,
       notes: record.notes || record.Notes,
       team: record.team || record.Team,
-      employmentType: record.employmentType || record.EmploymentType
+      employmentType: normalizeEmploymentType(record, '')
     };
 
     const idx = records.findIndex(r => r.recordId == recordId);
@@ -5164,7 +5185,7 @@ async function addRecord() {
   
   const currentUserData = getCurrentUserData();
   const rawEmploymentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
-  const employmentType = extractLookupValue(rawEmploymentType, 'תעשיידע');
+  const employmentType = normalizeEmploymentType(rawEmploymentType, 'תעשיידע');
   
   const rawTeam = localStorage.getItem("team") || '';
   const team = extractLookupValue(rawTeam, '');
@@ -5625,7 +5646,7 @@ async function updateAdminDashboard() {
         };
         
         employeesMap[emp.employeeId || emp.EmployeeId || emp.ID] = {
-          employmentType: extractValue(emp.employmentType) || extractValue(emp.EmploymentType) || 'תעשיידע',
+          employmentType: normalizeEmploymentType(emp, 'תעשיידע'),
           team: extractValue(emp.team) || extractValue(emp.Team) || '-',
           name: extractValue(emp.employeeName) || extractValue(emp.EmployeeName) || ''
         };
@@ -5662,28 +5683,6 @@ async function updateAdminDashboard() {
       return '';
     };
     
-    // Helper to get employment type with all possible field names
-    const getEmploymentType = (rec) => {
-      const possibleFields = [
-        rec.employmentType,
-        rec.EmploymentType,
-        rec.EmployeeType,
-        rec.employeeType,
-        rec['Employment_x0020_Type'],
-        rec.SogHaasaka
-      ];
-      
-      for (let field of possibleFields) {
-        const value = extractValue(field);
-        if (value && value !== '') {
-          console.log('Found employmentType:', value, 'for employee', rec.employeeId);
-          return value;
-        }
-      }
-      
-      return ''; // Return empty if not found
-    };
-    
     // Filter to current month
     const currentMonthRecords = data.records.filter(rec => {
       if (!rec.attendanceDate) return false;
@@ -5701,7 +5700,7 @@ async function updateAdminDashboard() {
       // Try to get employmentType and team from employees list first
       const empFromList = employeesMap[empId];
       const team = (empFromList && empFromList.team) || extractValue(rec.team) || extractValue(rec.Team) || '-';
-      const empType = (empFromList && empFromList.employmentType) || getEmploymentType(rec) || 'תעשיידע';
+      const empType = (empFromList && empFromList.employmentType) || normalizeEmploymentType(rec, 'תעשיידע');
       
       if (!employeeData[empId]) {
         employeeData[empId] = {
