@@ -3262,7 +3262,7 @@ function normalizeEmployeeFromServer(emp) {
     employeeId: emp.employeeId,
     empName: emp.EmployeeName || emp.employeeName,  // Handle both cases
     role: emp.role || 'instructor',
-    team: emp.Team || emp.team || '',
+    team: extractLookupValue(emp.Team || emp.team || '', ''),
     employmentType: normalizeEmploymentType(emp, '')
   };
 }
