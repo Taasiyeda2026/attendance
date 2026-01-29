@@ -2080,7 +2080,7 @@
         <i class="fas fa-users"></i>
         <span>ימי עבודה בצוות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,admin_assistant,system_admin">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
       </a>
@@ -2113,7 +2113,7 @@
         <i class="fas fa-list"></i>
         <span>ימי עבודה</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,system_admin,payroll_officer">
+      <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,admin_assistant,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
         <span>צוות</span>
       </button>
@@ -3480,10 +3480,10 @@ function normalizeRole(role) {
     'admin': 'system_admin',
     'Administrator': 'system_admin',
     'administrator': 'system_admin',
-    'Admin Assistant': 'system_admin',
-    'admin assistant': 'system_admin',
-    'עוזרת אדמין': 'system_admin',
-    'עוזר אדמין': 'system_admin',
+    'Admin Assistant': 'admin_assistant',
+    'admin assistant': 'admin_assistant',
+    'עוזרת אדמין': 'admin_assistant',
+    'עוזר אדמין': 'admin_assistant',
     'מנהל מערכת': 'system_admin',
     'אדמין': 'system_admin',
     // Manager variations
@@ -3532,6 +3532,7 @@ function getRoleDisplayName(role) {
   const normalizedRole = normalizeRole(role);
   const roleNames = {
     'system_admin': 'מנהל מערכת',
+    'admin_assistant': 'עוזרת אדמין',
     'manager': 'מנהל/ת פעילויות',
     'payroll_officer': 'אחראית שכר',
     'operations_controller': 'מבקרת תפעול',
@@ -3593,7 +3594,7 @@ function updateMenuByRole(role) {
   // Show the appropriate dashboard
   if (role === 'payroll_officer') {
     if (payrollDashboard) payrollDashboard.style.display = 'block';
-  } else if (role === 'system_admin' || role === 'operations_controller') {
+  } else if (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant') {
     if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
     // Show filters only for admin and payroll (payroll already handled above)
     const filters = document.getElementById('adminDashboardFilters');
@@ -3619,18 +3620,18 @@ function hasPermission(action, targetTeam = null) {
     case 'view_own':
       return true;
     case 'view_team':
-      return ['manager', 'operations_controller', 'system_admin'].includes(role);
+      return ['manager', 'operations_controller', 'system_admin', 'admin_assistant'].includes(role);
     case 'view_all':
-      return ['operations_controller', 'system_admin', 'payroll_officer'].includes(role);
+      return ['operations_controller', 'system_admin', 'admin_assistant', 'payroll_officer'].includes(role);
     case 'edit_own':
       return role === 'instructor';
     case 'edit_team':
       if (role === 'manager') {
         return user.team === targetTeam;
       }
-      return ['operations_controller', 'system_admin'].includes(role);
+      return ['operations_controller', 'system_admin', 'admin_assistant'].includes(role);
     case 'edit_all':
-      return ['operations_controller', 'system_admin'].includes(role);
+      return ['operations_controller', 'system_admin', 'admin_assistant'].includes(role);
     case 'delete':
       return ['operations_controller', 'system_admin'].includes(role);
     case 'admin':
@@ -3646,8 +3647,8 @@ function canEditRecord(record) {
 
   const role = user.role;
 
-  // system_admin and operations_controller can edit all records (bypass approval lock)
-  if (role === 'system_admin' || role === 'operations_controller') {
+  // system_admin, operations_controller, and admin_assistant can edit all records (bypass approval lock)
+  if (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant') {
     return true;
   }
 
@@ -3713,7 +3714,7 @@ function getEditBlockReason(record) {
   const role = user.role;
 
   // Admins can always edit
-  if (role === 'system_admin' || role === 'operations_controller' || role === 'manager') {
+  if (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant' || role === 'manager') {
     return null; // No block reason
   }
 
@@ -4286,7 +4287,7 @@ function updateMonthlyApprovalVisibility() {
   }
 
   if (approvalsCard) {
-    approvalsCard.style.display = (!isMobileView() && ['manager', 'system_admin'].includes(user.role)) ? 'block' : 'none';
+    approvalsCard.style.display = (!isMobileView() && ['manager', 'system_admin', 'admin_assistant'].includes(user.role)) ? 'block' : 'none';
   }
 }
 
@@ -4383,7 +4384,7 @@ async function loadMonthlyApprovalsTable() {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">הסיכום המלא זמין בדסקטופ בלבד</p>';
     return;
   }
-  if (!user || !['manager', 'system_admin'].includes(user.role)) {
+  if (!user || !['manager', 'system_admin', 'admin_assistant'].includes(user.role)) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין הרשאה לצפייה בסטטוס אישורים</p>';
     return;
   }
@@ -4393,7 +4394,7 @@ async function loadMonthlyApprovalsTable() {
   const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
   const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
   const monthKey = getApprovalMonthKey(month, year);
-  const team = user.role === 'system_admin' ? 'הכל' : (user.team || '');
+  const team = (user.role === 'system_admin' || user.role === 'admin_assistant') ? 'הכל' : (user.team || '');
 
   // Use localStorage-based approval data
   const localApprovals = getLocalApprovalsForTeam(team, monthKey);
@@ -4460,7 +4461,7 @@ async function loadTeamRecords() {
   const selectedYear = yearSelect ? parseInt(yearSelect.value) : now.getFullYear();
 
   const teamName = document.getElementById('teamName');
-  if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'payroll_officer') {
+  if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'admin_assistant' || user.role === 'payroll_officer') {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
@@ -4686,7 +4687,7 @@ async function toggleEmployeeDetails(empId) {
 function renderEmployeeDetails(empId, records) {
   const detailsContent = document.getElementById(`details-content-${empId}`);
   const user = getCurrentUserData();
-  const canEdit = user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'manager';
+  const canEdit = user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'admin_assistant' || user.role === 'manager';
   const canDelete = user.role === 'system_admin' || user.role === 'operations_controller';
 
   if (!records || records.length === 0) {
@@ -5138,7 +5139,7 @@ function updateDashboard() {
   const role = localStorage.getItem("role") || '';
   if (role === 'payroll_officer') {
     updatePayrollSummaryTable();
-  } else if (!isMobileView() && (role === 'system_admin' || role === 'operations_controller')) {
+  } else if (!isMobileView() && (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant')) {
     updateAdminDashboard();
   }
 }
