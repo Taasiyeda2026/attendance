@@ -3480,10 +3480,10 @@ function normalizeRole(role) {
     'admin': 'system_admin',
     'Administrator': 'system_admin',
     'administrator': 'system_admin',
-    'Admin Assistant': 'system_admin',
-    'admin assistant': 'system_admin',
-    'עוזרת אדמין': 'system_admin',
-    'עוזר אדמין': 'system_admin',
+    'Admin Assistant': 'operations_controller',
+    'admin assistant': 'operations_controller',
+    'עוזרת אדמין': 'operations_controller',
+    'עוזר אדמין': 'operations_controller',
     'מנהל מערכת': 'system_admin',
     'אדמין': 'system_admin',
     // Manager variations
@@ -6740,7 +6740,7 @@ window.addEventListener('DOMContentLoaded', function() {
       }
 
       // Validate role is a known value
-      const validRoles = ['instructor', 'manager', 'payroll_officer', 'operations_controller', 'admin_assistant', 'system_admin'];
+      const validRoles = ['instructor', 'manager', 'payroll_officer', 'operations_controller', 'system_admin'];
       if (empData.role && !validRoles.includes(empData.role)) {
         console.warn('Invalid role in localStorage:', empData.role, '- defaulting to instructor');
         empData.role = 'instructor';
