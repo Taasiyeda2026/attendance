@@ -286,11 +286,38 @@
                                             "name": "@parameters('$connections')['sharepointonline']['connectionId']"
                                         }
                                     },
-                                    "method": "get",
-                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
-                                    "queries": {
-                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{outputs('Submit_Month_Key')}')",
-                                        "$top": 1
+                                    "method": "post",
+                                    "body": {
+                                        "employeeName": "@triggerBody()?['employeeName']",
+                                        "employeeId": "@triggerBody()?['employeeId']",
+                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                        "startTime": "@triggerBody()?['startTime']",
+                                        "endTime": "@triggerBody()?['endTime']",
+                                        "activityType": "@triggerBody()?['activityType']",
+                                        "schoolName": "@triggerBody()?['schoolName']",
+                                        "municipality": "@triggerBody()?['municipality']",
+                                        "programName": "@triggerBody()?['programName']",
+                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
+                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                        "workHours": "@triggerBody()?['workHours']",
+                                        "kilometers": "@triggerBody()?['kilometers']",
+                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                        "notes": "@triggerBody()?['notes']",
+                                        "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                    },
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                }
+                            },
+                            "Response_Submit_Success": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "message": "הרשומה נשמרה בהצלחה",
+                                        "recordId": "@body('Create_Attendance_Record')?['ID']"
                                     }
                                 },
                                 "runAfter": {
@@ -435,10 +462,8 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "status": "Submitted",
-                                                "approvedBy": "@triggerBody()?['employeeId']",
-                                                "ApprovalDate": "@utcNow()",
-                                                "MonthApproved": "@triggerBody()?['month']"
+                                                "MonthApproved": "@triggerBody()?['month']",
+                                                "ApprovalDate": "@triggerBody()?['approvalDate']"
                                             },
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(item()?['ID'])}"
                                         }
@@ -877,6 +902,74 @@
                                         "success": true,
                                         "employees": []
                                     }
+                                }
+                            }
+                        },
+                        "case": "getEmployees"
+                    },
+                    "getEmployeeRecords": {
+                        "actions": {
+                            "Response_Get_Employee_Records": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "records": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getEmployeeRecords"
+                    },
+                    "getAllTeams": {
+                        "actions": {
+                            "Response_Get_All_Teams": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "teams": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getAllTeams"
+                    },
+                    "update": {
+                        "actions": {
+                            "Response_Get_Employees": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                            "method": "patch",
+                                            "body": {
+                                                "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                                "startTime": "@triggerBody()?['startTime']",
+                                                "endTime": "@triggerBody()?['endTime']",
+                                        "activityType": "@triggerBody()?['activityType']",
+                                        "schoolName": "@triggerBody()?['schoolName']",
+                                        "municipality": "@triggerBody()?['municipality']",
+                                        "programName": "@triggerBody()?['programName']",
+                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
+                                            "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                            "workHours": "@triggerBody()?['workHours']",
+                                            "kilometers": "@triggerBody()?['kilometers']",
+                                            "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                            "notes": "@triggerBody()?['notes']",
+                                            "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                        },
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
                                 }
                             }
                         },

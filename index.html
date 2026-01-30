@@ -3849,11 +3849,6 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
   }
   
   try {
-    const canUpdate = await ensureMonthEditable(
-      String(updatedRecord.empNum || localStorage.getItem("employeeId") || ''),
-      updatedRecord.date
-    );
-    if (!canUpdate) return false;
     const data = await apiRequest('updateRecord', {
       recordId: Number(updatedRecord.recordId),
       employeeId: String(updatedRecord.empNum),
@@ -5050,7 +5045,9 @@ async function submitAll() {
         totalExpenses: rec.totalExpenses || 0,
         expensesDetails: rec.expensesDetail || '',
         notes: rec.notes || '',
-        attachmentsNames: formatAttachments(rec.attachments || [])
+        attachmentsNames: formatAttachments(rec.attachments || []),
+        employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
+        team: String(localStorage.getItem("team") || '')
       };
       
       try {
