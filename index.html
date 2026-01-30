@@ -3081,14 +3081,6 @@ const API_FEATURES = {
   exports: false
 };
 
-const CHOICE_FIELDS = new Set([
-  'role',
-  'activityType',
-  'programName',
-  'employmentType',
-  'team'
-]);
-
 function isApprovalsSupported() {
   return API_FEATURES.approvals;
 }
@@ -3103,45 +3095,6 @@ function isRecordDeleteSupported() {
 
 function isExportSupported() {
   return API_FEATURES.exports;
-}
-
-function normalizeChoiceValue(value) {
-  if (value === null || value === undefined || value === '') return undefined;
-  if (typeof value === 'object' && value.Value) return value;
-  if (typeof value === 'object' && value.value) return { Value: value.value };
-  return { Value: String(value) };
-}
-
-function normalizeFieldValue(fieldName, value) {
-  if (CHOICE_FIELDS.has(fieldName)) {
-    return normalizeChoiceValue(value);
-  }
-  return value;
-}
-
-function buildSubmitPayload(data) {
-  return {
-    action: 'submit',
-    employeeId: data.employeeId,
-    employeeName: data.employeeName,
-    team: normalizeFieldValue('team', data.team),
-    employmentType: normalizeFieldValue('employmentType', data.employmentType),
-    role: normalizeFieldValue('role', data.role),
-    attendanceDate: data.attendanceDate,
-    startTime: data.startTime,
-    endTime: data.endTime,
-    workHours: Number(data.workHours || 0),
-    activityType: normalizeFieldValue('activityType', data.activityType),
-    schoolName: data.schoolName,
-    municipality: data.municipality,
-    programName: normalizeFieldValue('programName', data.programName),
-    sessionNumber: Number(data.sessionNumber || 0),
-    kilometers: Number(data.kilometers || 0),
-    totalExpenses: Number(data.totalExpenses || 0),
-    expensesDetails: data.expensesDetails || '',
-    notes: data.notes || '',
-    attachmentsNames: data.attachmentsNames || ''
-  };
 }
 
 // =============== Fixed Lists (Constant Values) ===============
@@ -3290,7 +3243,16 @@ function normalizePayload(action, data) {
       };
       
     case 'submit':
-      return cleanPayload(buildSubmitPayload(data));
+      return cleanPayload({
+        action: 'submit',
+        employeeId: data.employeeId,
+        employeeName: data.employeeName,  // camelCase for Attendance table
+        team: data.team,
+        role: data.role,
+        attendanceDate: data.attendanceDate,
+        workHours: Number(data.workHours || 0),
+        kilometers: Number(data.kilometers || 0)
+      });
       
     case 'getsummary':
       return {
