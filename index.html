@@ -2080,7 +2080,7 @@
         <i class="fas fa-users"></i>
         <span>ימי עבודה בצוות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,admin_assistant,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
       </a>
@@ -2113,7 +2113,7 @@
         <i class="fas fa-list"></i>
         <span>ימי עבודה</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,admin_assistant,system_admin,payroll_officer">
+      <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
         <span>צוות</span>
       </button>
@@ -2614,6 +2614,10 @@
               <i class="fas fa-unlock"></i>
               שחרור חודש
             </button>
+            <button class="btn" id="unlockMonthBtn" onclick="unlockTeamMonth()" style="background: #ef4444; color: white; display: none;">
+              <i class="fas fa-lock-open"></i>
+              פתיחת חודש
+            </button>
           </div>
         </div>
         <div class="card-body">
@@ -3038,6 +3042,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 // =============== Configuration ===============
 
@@ -3179,6 +3184,12 @@ function isValidActivityType(activityType) {
  * Attendance table fields: employeeName, team, employmentType (camelCase)
  */
 function normalizePayload(action, data) {
+  const cleanPayload = (payload) => {
+    return Object.fromEntries(
+      Object.entries(payload).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
+    );
+  };
+
   switch (action) {
     case 'auth':
       return {
@@ -3189,10 +3200,13 @@ function normalizePayload(action, data) {
       
     case 'submit':
     case 'submitRecord':
-      return {
+      return cleanPayload({
         action: 'submit',
         employeeId: data.employeeId,
         employeeName: data.employeeName,  // camelCase for Attendance table
+        team: data.team,
+        employmentType: data.employmentType,
+        role: data.role,
         attendanceDate: data.attendanceDate,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -3207,7 +3221,7 @@ function normalizePayload(action, data) {
         expensesDetails: data.expensesDetails || '',
         notes: data.notes || '',
         attachmentsNames: data.attachmentsNames || ''
-      };
+      });
       
     case 'getRecords':
     case 'getHistory':
@@ -3222,11 +3236,14 @@ function normalizePayload(action, data) {
       };
       
     case 'updateRecord':
-      return {
+      return cleanPayload({
         action: 'updateRecord',
         recordId: data.recordId,
         employeeId: data.employeeId,
         employeeName: data.employeeName,
+        team: data.team,
+        employmentType: data.employmentType,
+        role: data.role,
         attendanceDate: data.attendanceDate,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -3241,13 +3258,15 @@ function normalizePayload(action, data) {
         expensesDetails: data.expensesDetails || '',
         notes: data.notes || '',
         attachmentsNames: data.attachmentsNames || ''
-      };
+      });
       
     case 'deleteRecord':
-      return {
+      return cleanPayload({
         action: 'deleteRecord',
-        recordId: data.recordId
-      };
+        recordId: data.recordId,
+        role: data.role,
+        employeeId: data.employeeId
+      });
       
     case 'getEmployees':
       return { action: 'getEmployees' };
@@ -3484,10 +3503,6 @@ function normalizeRole(role) {
     'admin': 'system_admin',
     'Administrator': 'system_admin',
     'administrator': 'system_admin',
-    'Admin Assistant': 'admin_assistant',
-    'admin assistant': 'admin_assistant',
-    'עוזרת אדמין': 'admin_assistant',
-    'עוזר אדמין': 'admin_assistant',
     'מנהל מערכת': 'system_admin',
     'אדמין': 'system_admin',
     // Manager variations
@@ -3536,7 +3551,6 @@ function getRoleDisplayName(role) {
   const normalizedRole = normalizeRole(role);
   const roleNames = {
     'system_admin': 'מנהל מערכת',
-    'admin_assistant': 'עוזרת אדמין',
     'manager': 'מנהל/ת פעילויות',
     'payroll_officer': 'אחראית שכר',
     'operations_controller': 'מבקרת תפעול',
@@ -3598,7 +3612,7 @@ function updateMenuByRole(role) {
   // Show the appropriate dashboard
   if (role === 'payroll_officer') {
     if (payrollDashboard) payrollDashboard.style.display = 'block';
-  } else if (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant') {
+  } else if (role === 'system_admin' || role === 'operations_controller') {
     if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
     // Show filters only for admin and payroll (payroll already handled above)
     const filters = document.getElementById('adminDashboardFilters');
@@ -3624,20 +3638,20 @@ function hasPermission(action, targetTeam = null) {
     case 'view_own':
       return true;
     case 'view_team':
-      return ['manager', 'operations_controller', 'system_admin', 'admin_assistant'].includes(role);
+      return role === 'manager';
     case 'view_all':
-      return ['operations_controller', 'system_admin', 'admin_assistant', 'payroll_officer'].includes(role);
+      return ['operations_controller', 'system_admin', 'payroll_officer'].includes(role);
     case 'edit_own':
       return role === 'instructor';
     case 'edit_team':
       if (role === 'manager') {
         return user.team === targetTeam;
       }
-      return ['operations_controller', 'system_admin', 'admin_assistant'].includes(role);
+      return role === 'system_admin';
     case 'edit_all':
-      return ['operations_controller', 'system_admin', 'admin_assistant'].includes(role);
+      return role === 'system_admin';
     case 'delete':
-      return ['operations_controller', 'system_admin'].includes(role);
+      return role === 'system_admin';
     case 'admin':
       return role === 'system_admin';
     default:
@@ -3651,18 +3665,19 @@ function canEditRecord(record) {
 
   const role = user.role;
 
-  // system_admin, operations_controller, and admin_assistant can edit all records (bypass approval lock)
-  if (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant') {
+  // system_admin can edit all records
+  if (role === 'system_admin') {
     return true;
   }
 
   // manager can edit team records (bypass approval lock for team management)
   if (role === 'manager') {
-    return true;
+    if (!record) return false;
+    const recordTeam = record.team || record.Team || '';
+    return !recordTeam || recordTeam === user.team;
   }
 
-  // instructor can edit only their own records until end of record's month
-  // AND only if they haven't approved the month (or 24-hour lockout has passed)
+  // instructor can edit only their own records, unless month is approved
   if (role === 'instructor') {
     const recordEmpNum = record.empNum || record.employeeId;
     const userEmpNum = user.empNum || localStorage.getItem('employeeId');
@@ -3672,34 +3687,14 @@ function canEditRecord(record) {
       return false;
     }
 
-    // Check if still within the record's month
     const recordDateStr = record.date || record.attendanceDate;
     if (!recordDateStr) return false;
 
-    const recordDate = new Date(recordDateStr);
-    const now = new Date();
-
-    // Get the last day of the record's month (day 0 of next month = last day of this month)
-    const recordYear = recordDate.getFullYear();
-    const recordMonth = recordDate.getMonth();
-    const lastDayOfRecordMonth = new Date(recordYear, recordMonth + 1, 0);
-    lastDayOfRecordMonth.setHours(23, 59, 59, 999);
-
-    // First check: must be within the record's calendar month
-    if (now > lastDayOfRecordMonth) {
-      return false;
-    }
-
-    // Second check: if monthly approval exists and is locked (within 24 hours), block edit
     if (instructorApprovalInfo && instructorApprovalInfo.approvalDate) {
-      const recordMonthKey = `${recordYear}-${String(recordMonth + 1).padStart(2, '0')}`;
-      // Only apply approval lock if record is for the approved month
+      const recordDate = new Date(recordDateStr);
+      const recordMonthKey = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`;
       if (instructorApprovalInfo.monthKey === recordMonthKey) {
-        const hoursLeft = getHoursUntilUnlock(instructorApprovalInfo.approvalDate);
-        if (hoursLeft && hoursLeft > 0) {
-          // Monthly report is approved and locked - cannot edit
-          return false;
-        }
+        return false;
       }
     }
 
@@ -3718,7 +3713,7 @@ function getEditBlockReason(record) {
   const role = user.role;
 
   // Admins can always edit
-  if (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant' || role === 'manager') {
+  if (role === 'system_admin' || role === 'manager') {
     return null; // No block reason
   }
 
@@ -3738,24 +3733,11 @@ function getEditBlockReason(record) {
     if (!recordDateStr) return 'תאריך רשומה לא תקין';
 
     const recordDate = new Date(recordDateStr);
-    const now = new Date();
-    const recordYear = recordDate.getFullYear();
-    const recordMonth = recordDate.getMonth();
-    const lastDayOfRecordMonth = new Date(recordYear, recordMonth + 1, 0);
-    lastDayOfRecordMonth.setHours(23, 59, 59, 999);
+    const recordMonthKey = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`;
 
-    if (now > lastDayOfRecordMonth) {
-      return 'לא ניתן לערוך רשומות מחודשים קודמים';
-    }
-
-    // Check approval lock
     if (instructorApprovalInfo && instructorApprovalInfo.approvalDate) {
-      const recordMonthKey = `${recordYear}-${String(recordMonth + 1).padStart(2, '0')}`;
       if (instructorApprovalInfo.monthKey === recordMonthKey) {
-        const hoursLeft = getHoursUntilUnlock(instructorApprovalInfo.approvalDate);
-        if (hoursLeft && hoursLeft > 0) {
-          return `הדוח החודשי אושר ונעול לעוד ${hoursLeft} שעות`;
-        }
+        return 'הדוח החודשי אושר ואינו ניתן לעריכה';
       }
     }
 
@@ -3772,7 +3754,7 @@ function canDeleteRecord(record) {
   const role = user.role;
   
   // payroll_officer = view only, no delete
-  return role === 'system_admin' || role === 'operations_controller';
+  return role === 'system_admin';
 }
 
 function canAddRecord() {
@@ -3849,10 +3831,18 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
   }
   
   try {
+    const canUpdate = await ensureMonthEditable(
+      String(updatedRecord.empNum || localStorage.getItem("employeeId") || ''),
+      updatedRecord.date || updatedRecord.attendanceDate
+    );
+    if (!canUpdate) return false;
     const data = await apiRequest('updateRecord', {
       recordId: Number(updatedRecord.recordId),
       employeeId: String(updatedRecord.empNum),
       employeeName: String(updatedRecord.empName || localStorage.getItem("employeeName") || ''),
+      team: updatedRecord.team || localStorage.getItem("team") || '',
+      employmentType: updatedRecord.employmentType || localStorage.getItem("employmentType") || '',
+      role: localStorage.getItem("role") || '',
       attendanceDate: String(updatedRecord.date),
       startTime: String(updatedRecord.start),
       endTime: String(updatedRecord.end),
@@ -3889,7 +3879,9 @@ async function deleteRecordOnServer(record) {
     );
     if (!canDelete) return false;
     const data = await apiRequest('deleteRecord', {
-      recordId: Number(record.recordId)
+      recordId: Number(record.recordId),
+      role: localStorage.getItem("role") || '',
+      employeeId: String(record.empNum || localStorage.getItem("employeeId") || '')
     });
     
     return data.success;
@@ -4211,30 +4203,25 @@ function formatApprovalDate(dateValue) {
   return date.toLocaleDateString('he-IL');
 }
 
-function getHoursUntilUnlock(dateValue) {
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return null;
-  const diffMs = (date.getTime() + 24 * 60 * 60 * 1000) - Date.now();
-  if (diffMs <= 0) return 0;
-  return Math.ceil(diffMs / (60 * 60 * 1000));
-}
-
-async function fetchApprovalStatus(employeeId, monthKey) {
+async function fetchMonthStatus(employeeId, monthKey, team) {
   try {
     const data = await apiRequest('checkMonthApproval', {
       employeeId,
-      month: monthKey
+      month: monthKey,
+      team
     });
     if (data && data.success) {
       return {
         approved: !!data.approved,
-        approvalDate: data.approvalDate || null
+        approvalDate: data.approvalDate || null,
+        released: !!data.released,
+        releaseDate: data.releaseDate || null
       };
     }
   } catch (e) {
     console.warn('Error fetching approval status:', e);
   }
-  return { approved: false, approvalDate: null };
+  return { approved: false, approvalDate: null, released: false, releaseDate: null };
 }
 
 function getMonthKeyFromDate(dateString) {
@@ -4247,8 +4234,13 @@ function getMonthKeyFromDate(dateString) {
 async function ensureMonthEditable(employeeId, dateString) {
   const monthKey = getMonthKeyFromDate(dateString);
   if (!monthKey) return true;
-  const approvalStatus = await fetchApprovalStatus(employeeId, monthKey);
-  if (approvalStatus.approved) {
+  const user = getCurrentUserData();
+  const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user?.team || '');
+  if (approvalStatus.released) {
+    showAlert('החודש שוחרר ונעול לקריאה בלבד', 'error');
+    return false;
+  }
+  if (approvalStatus.approved && user?.role === 'instructor') {
     showAlert('החודש אושר ואינו ניתן לעריכה. ניתן לדווח לחודש הבא.', 'error');
     return false;
   }
@@ -4259,6 +4251,8 @@ function updateMonthlyApprovalVisibility() {
   const user = getCurrentUserData();
   const instructorCard = document.getElementById('monthlyApprovalCard');
   const approvalsCard = document.getElementById('monthlyApprovalsCard');
+  const resetButton = document.getElementById('resetMonthBtn');
+  const unlockButton = document.getElementById('unlockMonthBtn');
 
   if (!user) {
     if (instructorCard) instructorCard.style.display = 'none';
@@ -4271,7 +4265,15 @@ function updateMonthlyApprovalVisibility() {
   }
 
   if (approvalsCard) {
-    approvalsCard.style.display = (!isMobileView() && ['manager', 'system_admin', 'admin_assistant'].includes(user.role)) ? 'block' : 'none';
+    approvalsCard.style.display = (!isMobileView() && ['manager', 'system_admin', 'operations_controller'].includes(user.role)) ? 'block' : 'none';
+  }
+
+  if (resetButton) {
+    resetButton.style.display = ['manager', 'system_admin', 'operations_controller'].includes(user.role) ? 'inline-flex' : 'none';
+  }
+
+  if (unlockButton) {
+    unlockButton.style.display = user.role === 'system_admin' ? 'inline-flex' : 'none';
   }
 }
 
@@ -4295,20 +4297,19 @@ async function loadInstructorMonthlyApprovalStatus() {
 
   monthLabel.textContent = getApprovalMonthLabel(now.getMonth() + 1, now.getFullYear());
 
-  const approvalStatus = await fetchApprovalStatus(employeeId, monthKey);
+  const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user.team || '');
   const approvalDate = approvalStatus.approvalDate || null;
   instructorApprovalInfo = { monthKey, approvalDate };
 
+  if (approvalStatus.released) {
+    statusEl.textContent = `החודש שוחרר ב-${formatApprovalDate(approvalStatus.releaseDate)}`;
+    buttonEl.disabled = true;
+    return;
+  }
+
   if (approvalDate) {
-    const hoursLeft = getHoursUntilUnlock(approvalDate);
-    const approvedText = `אושר בתאריך ${formatApprovalDate(approvalDate)}`;
-    if (hoursLeft && hoursLeft > 0) {
-      statusEl.textContent = `${approvedText} · נעול לעוד ${hoursLeft} שעות`;
-      buttonEl.disabled = true;
-    } else {
-      statusEl.textContent = approvedText;
-      buttonEl.disabled = false;
-    }
+    statusEl.textContent = `אושר בתאריך ${formatApprovalDate(approvalDate)}`;
+    buttonEl.disabled = true;
   } else {
     statusEl.textContent = 'טרם אושר החודש';
     buttonEl.disabled = false;
@@ -4325,8 +4326,9 @@ async function approveMonthlyReport() {
   const now = new Date();
   const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
 
-  if (instructorApprovalInfo?.approvalDate && getHoursUntilUnlock(instructorApprovalInfo.approvalDate) > 0) {
-    showAlert('לא ניתן לאשר שוב בתוך 24 שעות', 'error');
+  const status = await fetchMonthStatus(String(user.empNum || localStorage.getItem('employeeId') || ''), monthKey, user.team || '');
+  if (status.released) {
+    showAlert('החודש שוחרר ונעול לקריאה בלבד', 'error');
     return;
   }
 
@@ -4366,7 +4368,7 @@ async function loadMonthlyApprovalsTable() {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">הסיכום המלא זמין בדסקטופ בלבד</p>';
     return;
   }
-  if (!user || !['manager', 'system_admin', 'admin_assistant'].includes(user.role)) {
+  if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין הרשאה לצפייה בסטטוס אישורים</p>';
     return;
   }
@@ -4376,7 +4378,7 @@ async function loadMonthlyApprovalsTable() {
   const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
   const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
   const monthKey = getApprovalMonthKey(month, year);
-  const team = user.team || '';
+  const team = user.role === 'manager' ? (user.team || '') : 'all';
 
   let approvalsData = [];
   try {
@@ -4427,7 +4429,7 @@ async function loadMonthlyApprovalsTable() {
 
 async function resetTeamMonth() {
   const user = getCurrentUserData();
-  if (!user || !['manager', 'system_admin', 'admin_assistant'].includes(user.role)) {
+  if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
     showAlert('אין הרשאה לשחרור חודש', 'error');
     return;
   }
@@ -4437,13 +4439,15 @@ async function resetTeamMonth() {
   const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
   const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
   const monthKey = getApprovalMonthKey(month, year);
-  const team = user.team || '';
+  const team = user.role === 'manager' ? (user.team || '') : 'all';
 
   try {
     const data = await apiRequest('resetTeamMonth', {
       team,
       month: monthKey,
-      year: String(year)
+      year: String(year),
+      mode: 'release',
+      employeeId: user.empNum || localStorage.getItem('employeeId')
     });
     if (data.success) {
       showAlert('החודש שוחרר בהצלחה', 'success');
@@ -4453,6 +4457,41 @@ async function resetTeamMonth() {
     }
   } catch (error) {
     showAlert(error.message || 'שגיאה בשחרור חודש', 'error');
+  }
+}
+
+async function unlockTeamMonth() {
+  const user = getCurrentUserData();
+  if (!user || user.role !== 'system_admin') {
+    showAlert('אין הרשאה לפתיחת חודש', 'error');
+    return;
+  }
+
+  if (!confirm('פתיחת חודש תאפשר עריכה מחדש לכל הרשומות. להמשיך?')) return;
+
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+  const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
+  const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
+  const monthKey = getApprovalMonthKey(month, year);
+  const team = 'all';
+
+  try {
+    const data = await apiRequest('resetTeamMonth', {
+      team,
+      month: monthKey,
+      year: String(year),
+      mode: 'unlock',
+      employeeId: user.empNum || localStorage.getItem('employeeId')
+    });
+    if (data.success) {
+      showAlert('החודש נפתח מחדש בהצלחה', 'success');
+      await loadMonthlyApprovalsTable();
+    } else {
+      showAlert(data.message || 'שגיאה בפתיחת חודש', 'error');
+    }
+  } catch (error) {
+    showAlert(error.message || 'שגיאה בפתיחת חודש', 'error');
   }
 }
 
@@ -4482,7 +4521,7 @@ async function loadTeamRecords() {
   const selectedYear = yearSelect ? parseInt(yearSelect.value) : now.getFullYear();
 
   const teamName = document.getElementById('teamName');
-  if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'admin_assistant' || user.role === 'payroll_officer') {
+  if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'payroll_officer') {
     teamName.textContent = '(כל הצוותים)';
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
@@ -4708,8 +4747,8 @@ async function toggleEmployeeDetails(empId) {
 function renderEmployeeDetails(empId, records) {
   const detailsContent = document.getElementById(`details-content-${empId}`);
   const user = getCurrentUserData();
-  const canEdit = user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'admin_assistant' || user.role === 'manager';
-  const canDelete = user.role === 'system_admin' || user.role === 'operations_controller';
+  const canEdit = user.role === 'system_admin' || user.role === 'manager';
+  const canDelete = user.role === 'system_admin';
 
   if (!records || records.length === 0) {
     detailsContent.innerHTML = '<p style="color: #94a3b8;">אין ימי עבודה</p>';
@@ -4824,7 +4863,9 @@ async function deleteTeamRecord(recordId) {
 
   try {
     const data = await apiRequest('deleteRecord', {
-      recordId: recordId
+      recordId: recordId,
+      role: localStorage.getItem("role") || '',
+      employeeId: String(localStorage.getItem("employeeId") || '')
     });
 
     if (data.success) {
@@ -4852,63 +4893,19 @@ function loadReports() {
 }
 
 function exportTeamToExcel() {
-  // Use all records (local records for now, team records when synced)
-  const dataToExport = records;
-  
-  if (dataToExport.length === 0) {
-    showAlert('⚠️ אין נתונים לייצוא', 'error');
-    return;
-  }
-  
-  // Export all records for the monthly report (approved status shown in column)
-  const approvedRecords = dataToExport;
-  
-  // Create workbook with SheetJS (xlsx library)
-  // Since we don't have xlsx library, create a multi-sheet CSV approach
-  // Sheet 1: Detailed records
-  let detailedCSV = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
-  
-  approvedRecords.forEach(rec => {
-    detailedCSV += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
+  const user = getCurrentUserData();
+  const dataToExport = teamRecordsCache.length ? teamRecordsCache : records;
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+  const month = monthSelect ? Number(monthSelect.value) : null;
+  const year = yearSelect ? Number(yearSelect.value) : null;
+  const monthKey = month && year ? getApprovalMonthKey(month, year) : null;
+
+  exportAttendanceWorkbook(dataToExport, {
+    includeSummary: user?.role !== 'instructor',
+    monthKey,
+    filePrefix: 'דוח_צוות'
   });
-  
-  // Sheet 2: Summary by activity type (hours only) + general totals
-  let summaryCSV = '\n\n--- גיליון מסכם ---\n\n';
-  summaryCSV += 'סיכום שעות לפי סוג פעילות\n';
-  summaryCSV += 'סוג פעילות,סה"כ שעות\n';
-  
-  // Group hours by activity type
-  const hoursByActivity = {};
-  approvedRecords.forEach(rec => {
-    const activity = rec.activity || 'לא מוגדר';
-    hoursByActivity[activity] = (hoursByActivity[activity] || 0) + (parseFloat(rec.hours) || 0);
-  });
-  
-  Object.entries(hoursByActivity).forEach(([activity, hours]) => {
-    summaryCSV += `${activity},${hours.toFixed(2)}\n`;
-  });
-  
-  // General totals
-  const totalKm = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
-  const totalExpenses = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
-  const totalHours = approvedRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
-  
-  summaryCSV += '\n\nסיכום כללי\n';
-  summaryCSV += `סה"כ שעות,${totalHours.toFixed(2)}\n`;
-  summaryCSV += `סה"כ קילומטר,${totalKm.toFixed(1)}\n`;
-  summaryCSV += `סה"כ הוצאות,${totalExpenses.toFixed(2)} ₪\n`;
-  
-  // Combine both sheets
-  const fullCSV = detailedCSV + summaryCSV;
-  
-  const blob = new Blob(['\ufeff' + fullCSV], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  const monthName = new Date().toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
-  link.download = `דוח_נוכחות_${monthName}.csv`;
-  link.click();
-  
-  showAlert('✅ הקובץ יוצא בהצלחה!', 'success');
 }
 
 function viewAllRecords() {
@@ -5028,10 +5025,13 @@ async function submitAll() {
       failed++;
       continue;
     }
-    const payload = {
+      const payload = {
         action: "submit",
         employeeId: localStorage.getItem("employeeId") || rec.empNum,
         employeeName: localStorage.getItem("employeeName") || rec.empName,
+        team: String(localStorage.getItem("team") || ''),
+        employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
+        role: String(localStorage.getItem("role") || ''),
         attendanceDate: rec.date,
         startTime: rec.start || '',
         endTime: rec.end || '',
@@ -5045,9 +5045,7 @@ async function submitAll() {
         totalExpenses: rec.totalExpenses || 0,
         expensesDetails: rec.expensesDetail || '',
         notes: rec.notes || '',
-        attachmentsNames: formatAttachments(rec.attachments || []),
-        employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
-        team: String(localStorage.getItem("team") || '')
+        attachmentsNames: formatAttachments(rec.attachments || [])
       };
       
       try {
@@ -5167,7 +5165,7 @@ function updateDashboard() {
   const role = localStorage.getItem("role") || '';
   if (role === 'payroll_officer') {
     updatePayrollSummaryTable();
-  } else if (!isMobileView() && (role === 'system_admin' || role === 'operations_controller' || role === 'admin_assistant')) {
+  } else if (!isMobileView() && (role === 'system_admin' || role === 'operations_controller')) {
     updateAdminDashboard();
   }
 }
@@ -5270,80 +5268,12 @@ function exportPayrollToExcel() {
     return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
   });
   
-  // Group records by instructor
-  const instructorData = {};
-  
-  currentMonthRecords.forEach(rec => {
-    const name = rec.empName || rec.empNum || 'לא ידוע';
-    if (!instructorData[name]) {
-      instructorData[name] = {
-        name: name,
-        team: rec.team || '',
-        workDays: new Set(),
-        hoursCourse: 0,
-        hoursTraining: 0,
-        hoursCancel: 0,
-        totalKm: 0,
-        totalExpenses: 0
-      };
-    }
-    
-    if (rec.date) instructorData[name].workDays.add(rec.date);
-    
-    const hours = parseFloat(rec.hours) || 0;
-    const activity = (rec.activity || '').toLowerCase();
-    if (activity.includes('קורס') || activity.includes('הפעלה')) {
-      instructorData[name].hoursCourse += hours;
-    } else if (activity.includes('הכשרה') || activity.includes('השתלמות')) {
-      instructorData[name].hoursTraining += hours;
-    } else if (activity.includes('ביטול')) {
-      instructorData[name].hoursCancel += hours;
-    } else {
-      instructorData[name].hoursCourse += hours;
-    }
-    
-    instructorData[name].totalKm += parseFloat(rec.km) || 0;
-    instructorData[name].totalExpenses += parseFloat(rec.totalExpenses) || 0;
-    if (!instructorData[name].team && rec.team) instructorData[name].team = rec.team;
+  const monthKey = getApprovalMonthKey(currentMonth + 1, currentYear);
+  exportAttendanceWorkbook(currentMonthRecords, {
+    includeSummary: true,
+    monthKey,
+    filePrefix: 'דוח_שכר'
   });
-  
-  const sortedInstructors = Object.values(instructorData).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-  
-  if (sortedInstructors.length === 0) {
-    showAlert('אין נתונים לייצוא', 'warning');
-    return;
-  }
-  
-  // Create CSV content
-  const headers = ['שם המדריך', 'צוות', 'ימי עבודה', 'סה"כ שעות קורס', 'סה"כ שעות הכשרה', 'סה"כ שעות ביטול', 'קילומטר-סה"כ', 'סה"כ הוצאות'];
-  
-  let csvContent = '\uFEFF'; // BOM for Hebrew
-  csvContent += headers.join(',') + '\n';
-  
-  sortedInstructors.forEach(inst => {
-    const row = [
-      `"${inst.name}"`,
-      `"${inst.team || ''}"`,
-      inst.workDays.size,
-      inst.hoursCourse.toFixed(1),
-      inst.hoursTraining.toFixed(1),
-      inst.hoursCancel.toFixed(1),
-      inst.totalKm,
-      inst.totalExpenses.toFixed(0)
-    ];
-    csvContent += row.join(',') + '\n';
-  });
-  
-  // Download file
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const filename = `סיכום_נוכחות_${currentYear}_${(currentMonth+1).toString().padStart(2,'0')}.csv`;
-  
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  
-  showAlert('הקובץ יורד...', 'success');
 }
 
 // =============== Time Picker Functions ===============
@@ -5812,12 +5742,20 @@ async function deleteRecord(index) {
 }
 
 // =============== Edit Record ===============
-function editRecord(index) {
+async function editRecord(index) {
   const rec = records[index];
 
   if (!canEditRecord(rec)) {
     const reason = getEditBlockReason(rec);
     showAlert('❌ ' + (reason || 'אין לך הרשאה לערוך ימי עבודה'), 'error');
+    return;
+  }
+
+  const canUpdate = await ensureMonthEditable(
+    String(rec.empNum || localStorage.getItem("employeeId") || ''),
+    rec.date || rec.attendanceDate
+  );
+  if (!canUpdate) {
     return;
   }
   
@@ -6038,29 +5976,300 @@ function updateMunicipalityFromSchool() {
 }
 
 // =============== Export & Clear ===============
-function exportToExcel() {
-  if (records.length === 0) {
+function normalizeExportRecord(rec) {
+  if (!rec) return null;
+  return {
+    employeeId: rec.employeeId || rec.empNum || rec.EmployeeId || '',
+    employeeName: rec.employeeName || rec.empName || rec.EmployeeName || '',
+    attendanceDate: rec.attendanceDate || rec.date || rec.AttendanceDate || '',
+    startTime: rec.startTime || rec.start || rec.StartTime || '',
+    endTime: rec.endTime || rec.end || rec.EndTime || '',
+    workHours: Number(rec.workHours || rec.hours || rec.WorkHours || 0),
+    activityType: rec.activityType || rec.activity || rec.ActivityType || '',
+    schoolName: rec.schoolName || rec.school || rec.SchoolName || '',
+    municipality: rec.municipality || rec.Municipality || '',
+    programName: rec.programName || rec.program || rec.ProgramName || '',
+    sessionNumber: rec.sessionNumber || rec.session || rec.SessionNumber || '',
+    kilometers: Number(rec.kilometers || rec.km || rec.Kilometers || 0),
+    totalExpenses: Number(rec.totalExpenses || rec.TotalExpenses || 0),
+    expensesDetails: rec.expensesDetails || rec.expensesDetail || rec.ExpensesDetails || '',
+    notes: rec.notes || rec.Notes || '',
+    attachmentsNames: rec.attachmentsNames || formatAttachments(rec.attachments || []),
+    team: rec.team || rec.Team || '',
+    employmentType: normalizeEmploymentType(rec, '')
+  };
+}
+
+function getMonthLabelFromKey(monthKey) {
+  if (!monthKey) return 'כל התקופה';
+  const [year, month] = monthKey.split('-');
+  const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  return `חודש ${monthNames[Number(month) - 1]} ${year}`;
+}
+
+function getMonthKeyFromRecords(recordsList) {
+  const monthKeys = new Set();
+  recordsList.forEach(rec => {
+    const dateValue = rec.attendanceDate || rec.date || rec.AttendanceDate;
+    if (!dateValue) return;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return;
+    monthKeys.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  });
+  return monthKeys.size === 1 ? Array.from(monthKeys)[0] : null;
+}
+
+function createDetailedSheet(recordsList) {
+  const headers = [
+    'מספר עובד',
+    'שם עובד',
+    'תאריך',
+    'שעת התחלה',
+    'שעת סיום',
+    'שעות עבודה',
+    'סוג פעילות',
+    'שם בית ספר',
+    'רשות',
+    'שם תכנית',
+    'מספר מפגש',
+    'קילומטרים',
+    'הוצאות',
+    'פירוט הוצאות',
+    'הערות',
+    'קבצים מצורפים',
+    'צוות',
+    'סוג העסקה'
+  ];
+
+  const data = [headers];
+  recordsList.forEach(rec => {
+    data.push([
+      rec.employeeId || '',
+      rec.employeeName || '',
+      rec.attendanceDate || '',
+      rec.startTime || '',
+      rec.endTime || '',
+      rec.workHours ? rec.workHours.toFixed(1) : '0.0',
+      rec.activityType || '',
+      rec.schoolName || '',
+      rec.municipality || '',
+      rec.programName || '',
+      rec.sessionNumber || '',
+      rec.kilometers || 0,
+      rec.totalExpenses || 0,
+      rec.expensesDetails || '',
+      rec.notes || '',
+      rec.attachmentsNames || '',
+      rec.team || '',
+      rec.employmentType || ''
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = headers.map(() => ({ wch: 16 }));
+  return ws;
+}
+
+function createMonthlySummarySheet(recordsList, monthKey) {
+  const monthLabel = getMonthLabelFromKey(monthKey);
+  const activityColumns = [...ACTIVITY_TYPES, 'אחר'];
+  const data = [[
+    'חודש',
+    'סוג העסקה',
+    'שם מדריך',
+    'מספר עובד',
+    ...activityColumns.map(type => `שעות ${type}`),
+    'סה"כ קילומטרים'
+  ]];
+
+  const summaries = {};
+  recordsList.forEach(rec => {
+    const key = rec.employeeId || rec.employeeName;
+    if (!summaries[key]) {
+      summaries[key] = {
+        employeeId: rec.employeeId || '',
+        employeeName: rec.employeeName || '',
+        employmentType: rec.employmentType || '',
+        activityHours: activityColumns.reduce((acc, type) => {
+          acc[type] = 0;
+          return acc;
+        }, {}),
+        kilometers: 0
+      };
+    }
+
+    const activity = rec.activityType || 'אחר';
+    const mappedActivity = activityColumns.includes(activity) ? activity : 'אחר';
+    summaries[key].activityHours[mappedActivity] += rec.workHours || 0;
+    summaries[key].kilometers += rec.kilometers || 0;
+  });
+
+  Object.values(summaries).forEach(summary => {
+    data.push([
+      monthLabel,
+      summary.employmentType,
+      summary.employeeName,
+      summary.employeeId,
+      ...activityColumns.map(type => summary.activityHours[type].toFixed(1)),
+      summary.kilometers.toFixed(1)
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = data[0].map(() => ({ wch: 16 }));
+  return ws;
+}
+
+function timeToMinutes(timeValue) {
+  if (!timeValue) return null;
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function createDailyConsolidatedSheet(recordsList) {
+  const data = [[
+    'תאריך',
+    'שם מדריך',
+    'מספר עובד',
+    'סוג פעילות',
+    'שעת התחלה',
+    'שעת סיום',
+    'שעות עבודה',
+    'קילומטרים',
+    'הוצאות'
+  ]];
+
+  const grouped = {};
+  recordsList.forEach(rec => {
+    const key = `${rec.attendanceDate || ''}|${rec.employeeId || ''}|${rec.activityType || ''}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(rec);
+  });
+
+  Object.values(grouped).forEach(group => {
+    const sorted = group.slice().sort((a, b) => {
+      const aMinutes = timeToMinutes(a.startTime) ?? 0;
+      const bMinutes = timeToMinutes(b.startTime) ?? 0;
+      return aMinutes - bMinutes;
+    });
+
+    let current = null;
+    sorted.forEach(rec => {
+      const startMinutes = timeToMinutes(rec.startTime);
+      const endMinutes = timeToMinutes(rec.endTime);
+
+      if (!current) {
+        current = {
+          ...rec,
+          startMinutes,
+          endMinutes,
+          totalKm: rec.kilometers || 0,
+          totalExpenses: rec.totalExpenses || 0
+        };
+        return;
+      }
+
+      if (startMinutes !== null && endMinutes !== null && current.endMinutes !== null && startMinutes <= current.endMinutes) {
+        current.endMinutes = Math.max(current.endMinutes, endMinutes);
+        current.totalKm += rec.kilometers || 0;
+        current.totalExpenses += rec.totalExpenses || 0;
+      } else {
+        const durationHours = current.startMinutes !== null && current.endMinutes !== null
+          ? (current.endMinutes - current.startMinutes) / 60
+          : current.workHours || 0;
+        data.push([
+          current.attendanceDate || '',
+          current.employeeName || '',
+          current.employeeId || '',
+          current.activityType || '',
+          current.startMinutes !== null ? minutesToTime(current.startMinutes) : (current.startTime || ''),
+          current.endMinutes !== null ? minutesToTime(current.endMinutes) : (current.endTime || ''),
+          durationHours.toFixed(1),
+          current.totalKm.toFixed(1),
+          current.totalExpenses.toFixed(1)
+        ]);
+        current = {
+          ...rec,
+          startMinutes,
+          endMinutes,
+          totalKm: rec.kilometers || 0,
+          totalExpenses: rec.totalExpenses || 0
+        };
+      }
+    });
+
+    if (current) {
+      const durationHours = current.startMinutes !== null && current.endMinutes !== null
+        ? (current.endMinutes - current.startMinutes) / 60
+        : current.workHours || 0;
+      data.push([
+        current.attendanceDate || '',
+        current.employeeName || '',
+        current.employeeId || '',
+        current.activityType || '',
+        current.startMinutes !== null ? minutesToTime(current.startMinutes) : (current.startTime || ''),
+        current.endMinutes !== null ? minutesToTime(current.endMinutes) : (current.endTime || ''),
+        durationHours.toFixed(1),
+        current.totalKm.toFixed(1),
+        current.totalExpenses.toFixed(1)
+      ]);
+    }
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = data[0].map(() => ({ wch: 16 }));
+  return ws;
+}
+
+function exportAttendanceWorkbook(recordsList, options = {}) {
+  if (!window.XLSX) {
+    showAlert('ספריית Excel לא נטענה', 'error');
+    return;
+  }
+
+  const normalizedRecords = recordsList.map(normalizeExportRecord).filter(Boolean);
+  if (normalizedRecords.length === 0) {
     showAlert('⚠️ אין נתונים לייצוא', 'error');
     return;
   }
-  
-  let csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
-  
-  records.forEach(rec => {
-    csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program},${rec.session},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
-  });
-  
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `נוכחות_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
-  
+
+  const wb = XLSX.utils.book_new();
+  const monthKey = options.monthKey || getMonthKeyFromRecords(normalizedRecords);
+
+  XLSX.utils.book_append_sheet(wb, createDetailedSheet(normalizedRecords), 'פירוט מלא');
+
+  if (options.includeSummary) {
+    XLSX.utils.book_append_sheet(wb, createMonthlySummarySheet(normalizedRecords, monthKey), 'סיכום חודשי');
+    XLSX.utils.book_append_sheet(wb, createDailyConsolidatedSheet(normalizedRecords), 'תצוגה יומית');
+  }
+
+  const filePrefix = options.filePrefix || 'דוח_נוכחות';
+  const fileDate = new Date().toISOString().slice(0, 10);
+  const filename = `${filePrefix}_${fileDate}.xlsx`;
+  XLSX.writeFile(wb, filename);
+
   showAlert('✅ הקובץ יוצא בהצלחה!', 'success');
+}
+
+function exportToExcel() {
+  const user = getCurrentUserData();
+  const includeSummary = user?.role !== 'instructor';
+  exportAttendanceWorkbook(records, {
+    includeSummary,
+    filePrefix: 'דוח_נוכחות'
+  });
 }
 
 // =============== Admin/Controller Dashboard Functions ===============
 let adminEmployeeRecordsCache = {}; // Cache for expanded employee records
+let adminDashboardRecordsCache = []; // Cache for export data
 
 async function updateAdminDashboard() {
   const tbody = document.getElementById('adminDashboardTableBody');
@@ -6204,6 +6413,7 @@ async function updateAdminDashboard() {
     filteredEmployees.forEach(emp => {
       adminEmployeeRecordsCache[emp.empId] = emp.records;
     });
+    adminDashboardRecordsCache = filteredEmployees.flatMap(emp => emp.records);
     
     // Render table
     if (filteredEmployees.length === 0) {
@@ -6315,40 +6525,14 @@ function clearAdminFilters() {
 }
 
 function exportAdminDashboardToExcel() {
-  // Similar to exportPayrollToExcel but with employee number column
-  const filterEmploymentType = document.getElementById('filterEmploymentType')?.value || 'all';
-  const filterTeam = document.getElementById('filterTeam')?.value || 'all';
-  
   const now = new Date();
-  const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-  
-  let csv = 'מספר עובד,שם עובד,צוות,סוג העסקה,ימי עבודה,סה"כ שעות,סה"כ ק"מ,סה"כ הוצאות\n';
-  
-  const tbody = document.querySelectorAll('#adminDashboardTableBody .employee-row');
-  tbody.forEach(row => {
-    const cells = row.querySelectorAll('td');
-    if (cells.length >= 9) {
-      const empNum = cells[1].textContent;
-      const empName = cells[2].textContent;
-      const team = cells[3].textContent;
-      const empType = cells[4].textContent;
-      const records = cells[5].textContent;
-      const hours = cells[6].textContent;
-      const km = cells[7].textContent;
-      const expenses = cells[8].textContent.replace(' ₪', '');
-      
-      csv += `${empNum},${empName},${team},${empType},${records},${hours},${km},${expenses}\n`;
-    }
+  const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+  const dataToExport = adminDashboardRecordsCache.length ? adminDashboardRecordsCache : records;
+  exportAttendanceWorkbook(dataToExport, {
+    includeSummary: true,
+    monthKey,
+    filePrefix: 'דוח_עובדים'
   });
-  
-  const filename = `דוח_עובדים_${monthNames[now.getMonth()]}_${now.getFullYear()}.csv`;
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  
-  showAlert('✅ הדוח יוצא בהצלחה!', 'success');
 }
 
 // =============== Reports Functions ===============
@@ -6575,54 +6759,16 @@ function exportReportToExcel(type = 'all') {
   
   const month = document.getElementById('reportMonth').value;
   const year = document.getElementById('reportYear').value;
-  const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-  
-  let csv = '';
-  let filename = '';
-  
-  if (type === 'all') {
-    csv = 'מספר עובד,שם עובד,תאריך,שעת התחלה,שעת סיום,שעות,סוג פעילות,בית ספר,רשות,תוכנית,מספר מפגש,קילומטר,הוצאות,פירוט הוצאות,הערות\n';
-    
-    reportRecords.forEach(rec => {
-      csv += `${rec.empNum},${rec.empName},${rec.date},${rec.start || ''},${rec.end || ''},${rec.hours},${rec.activity},${rec.school || ''},${rec.municipality},${rec.program || ''},${rec.session || ''},${rec.km || 0},${rec.totalExpenses || 0},"${(rec.expensesDetail || '').replace(/"/g, '""')}","${(rec.notes || '').replace(/"/g, '""')}"\n`;
-    });
-    
-    filename = `דוח_נוכחות_מלא_${monthNames[parseInt(month) - 1]}_${year}.csv`;
-  } else {
-    csv = 'שם עובד,מספר ימי עבודה,סה"כ שעות,סה"כ ק"מ,סה"כ הוצאות\n';
-    
-    const byEmployee = {};
-    reportRecords.forEach(rec => {
-      const key = rec.empName || 'לא ידוע';
-      if (!byEmployee[key]) {
-        byEmployee[key] = { hours: 0, km: 0, expenses: 0, count: 0 };
-      }
-      byEmployee[key].hours += parseFloat(rec.hours) || 0;
-      byEmployee[key].km += parseFloat(rec.km) || 0;
-      byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
-      byEmployee[key].count++;
-    });
-    
-    Object.entries(byEmployee).forEach(([name, data]) => {
-      csv += `${name},${data.count},${data.hours.toFixed(2)},${data.km.toFixed(1)},${data.expenses.toFixed(2)}\n`;
-    });
-    
-    const totalHours = reportRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
-    const totalKm = reportRecords.reduce((sum, r) => sum + (parseFloat(r.km) || 0), 0);
-    const totalExpenses = reportRecords.reduce((sum, r) => sum + (parseFloat(r.totalExpenses) || 0), 0);
-    csv += `סה"כ,${reportRecords.length},${totalHours.toFixed(2)},${totalKm.toFixed(1)},${totalExpenses.toFixed(2)}\n`;
-    
-    filename = `דוח_נוכחות_מקובץ_${monthNames[parseInt(month) - 1]}_${year}.csv`;
-  }
-  
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  
+  const monthKey = getApprovalMonthKey(month, year);
+  const prefix = type === 'grouped' ? 'דוח_נוכחות_מקובץ' : 'דוח_נוכחות_מלא';
+
+  exportAttendanceWorkbook(reportRecords, {
+    includeSummary: true,
+    monthKey,
+    filePrefix: prefix
+  });
+
   closeExportModal();
-  showAlert('✅ הדוח יוצא בהצלחה!', 'success');
 }
 
 // =============== File Upload Functions ===============

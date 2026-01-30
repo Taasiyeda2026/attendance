@@ -80,6 +80,9 @@
                             "year": {
                                 "type": "string"
                             },
+                            "mode": {
+                                "type": "string"
+                            },
                             "approvalDate": {
                                 "type": "string"
                             },
@@ -278,6 +281,27 @@
                                 "type": "Compose",
                                 "inputs": "@substring(triggerBody()?['attendanceDate'], 0, 7)"
                             },
+                            "Check_Submit_Month_Released": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "@{if(or(equals(triggerBody()?['team'], ''), equals(triggerBody()?['team'], 'all')), concat(\"MonthReleased eq true and startswith(attendanceDate, '\", outputs('Submit_Month_Key'), \"')\"), concat(\"team eq '\", triggerBody()?['team'], \"' and MonthReleased eq true and startswith(attendanceDate, '\", outputs('Submit_Month_Key'), \"')\"))}",
+                                        "$top": 1
+                                    }
+                                },
+                                "runAfter": {
+                                    "Submit_Month_Key": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
                             "Check_Submit_Month_Approved": {
                                 "type": "ApiConnection",
                                 "inputs": {
@@ -286,26 +310,17 @@
                                             "name": "@parameters('$connections')['sharepointonline']['connectionId']"
                                         }
                                     },
-                                    "method": "post",
-                                    "body": {
-                                        "employeeName": "@triggerBody()?['employeeName']",
-                                        "employeeId": "@triggerBody()?['employeeId']",
-                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                        "startTime": "@triggerBody()?['startTime']",
-                                        "endTime": "@triggerBody()?['endTime']",
-                                        "activityType": "@triggerBody()?['activityType']",
-                                        "schoolName": "@triggerBody()?['schoolName']",
-                                        "municipality": "@triggerBody()?['municipality']",
-                                        "programName": "@triggerBody()?['programName']",
-                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
-                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
-                                        "workHours": "@triggerBody()?['workHours']",
-                                        "kilometers": "@triggerBody()?['kilometers']",
-                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
-                                        "notes": "@triggerBody()?['notes']",
-                                        "attachmentsNames": "@triggerBody()?['attachmentsNames']"
-                                    },
-                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and MonthApproved eq true and startswith(attendanceDate, '@{outputs('Submit_Month_Key')}')",
+                                        "$top": 1
+                                    }
+                                },
+                                "runAfter": {
+                                    "Submit_Month_Key": [
+                                        "Succeeded"
+                                    ]
                                 }
                             },
                             "Response_Submit_Success": {
@@ -331,11 +346,51 @@
                                 "expression": {
                                     "and": [
                                         {
-                                            "greater": [
-                                                "@length(body('Check_Submit_Month_Approved')?['value'])",
-                                                0
+                                            "or": [
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "greater": [
+                                                                "@length(body('Check_Submit_Month_Released')?['value'])",
+                                                                0
+                                                            ]
+                                                        },
+                                                        {
+                                                            "not": {
+                                                                "equals": [
+                                                                    "@triggerBody()?['role']",
+                                                                    "system_admin"
+                                                                ]
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "greater": [
+                                                                "@length(body('Check_Submit_Month_Approved')?['value'])",
+                                                                0
+                                                            ]
+                                                        },
+                                                        {
+                                                            "equals": [
+                                                                "@triggerBody()?['role']",
+                                                                "instructor"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
                                             ]
                                         }
+                                    ]
+                                },
+                                "runAfter": {
+                                    "Check_Submit_Month_Approved": [
+                                        "Succeeded"
+                                    ],
+                                    "Check_Submit_Month_Released": [
+                                        "Succeeded"
                                     ]
                                 },
                                 "actions": {
@@ -347,7 +402,7 @@
                                             "headers": "@variables('corsHeaders')",
                                             "body": {
                                                 "success": false,
-                                                "message": "החודש אושר ואינו ניתן לעריכה"
+                                                "message": "@{if(greater(length(body('Check_Submit_Month_Released')?['value']), 0), 'החודש שוחרר ונעול לקריאה בלבד', 'החודש אושר ואינו ניתן לעריכה')}"
                                             }
                                         }
                                     }
@@ -363,12 +418,14 @@
                                                     }
                                                 },
                                                 "method": "post",
-                                                "body": {
-                                                    "employeeName": "@triggerBody()?['employeeName']",
-                                                    "employeeId": "@triggerBody()?['employeeId']",
-                                                    "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                                    "startTime": "@triggerBody()?['startTime']",
-                                                    "endTime": "@triggerBody()?['endTime']",
+                                            "body": {
+                                                "employeeName": "@triggerBody()?['employeeName']",
+                                                "employeeId": "@triggerBody()?['employeeId']",
+                                                "team": "@triggerBody()?['team']",
+                                                "employmentType": "@triggerBody()?['employmentType']",
+                                                "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                                "startTime": "@triggerBody()?['startTime']",
+                                                "endTime": "@triggerBody()?['endTime']",
                                                     "activityType": "@triggerBody()?['activityType']",
                                                     "schoolName": "@triggerBody()?['schoolName']",
                                                     "municipality": "@triggerBody()?['municipality']",
@@ -462,8 +519,9 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "MonthApproved": "@triggerBody()?['month']",
-                                                "ApprovalDate": "@triggerBody()?['approvalDate']"
+                                                "MonthApproved": true,
+                                                "ApprovalDate": "@utcNow()",
+                                                "ApprovedBy": "@triggerBody()?['employeeId']"
                                             },
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(item()?['ID'])}"
                                         }
@@ -527,7 +585,23 @@
                                     "method": "get",
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                                     "queries": {
-                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{triggerBody()?['month']}')",
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and MonthApproved eq true and startswith(attendanceDate, '@{triggerBody()?['month']}')",
+                                        "$top": 1
+                                    }
+                                }
+                            },
+                            "Check_If_Month_Released": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "@{if(or(equals(triggerBody()?['team'], ''), equals(triggerBody()?['team'], 'all')), concat(\"MonthReleased eq true and startswith(attendanceDate, '\", triggerBody()?['month'], \"')\"), concat(\"team eq '\", triggerBody()?['team'], \"' and MonthReleased eq true and startswith(attendanceDate, '\", triggerBody()?['month'], \"')\"))}",
                                         "$top": 1
                                     }
                                 }
@@ -554,7 +628,9 @@
                                             "body": {
                                                 "success": true,
                                                 "approved": true,
-                                                "approvalDate": "@{first(body('Check_If_Month_Approved')?['value'])?['ApprovalDate']}"
+                                                "approvalDate": "@{first(body('Check_If_Month_Approved')?['value'])?['ApprovalDate']}",
+                                                "released": "@greater(length(body('Check_If_Month_Released')?['value']), 0)",
+                                                "releaseDate": "@{if(greater(length(body('Check_If_Month_Released')?['value']), 0), first(body('Check_If_Month_Released')?['value'])?['ReleaseDate'], null)}"
                                             }
                                         }
                                     }
@@ -570,7 +646,9 @@
                                                 "body": {
                                                     "success": true,
                                                     "approved": false,
-                                                    "approvalDate": null
+                                                    "approvalDate": null,
+                                                    "released": "@greater(length(body('Check_If_Month_Released')?['value']), 0)",
+                                                    "releaseDate": "@{if(greater(length(body('Check_If_Month_Released')?['value']), 0), first(body('Check_If_Month_Released')?['value'])?['ReleaseDate'], null)}"
                                                 }
                                             }
                                         }
@@ -578,6 +656,9 @@
                                 },
                                 "runAfter": {
                                     "Check_If_Month_Approved": [
+                                        "Succeeded"
+                                    ],
+                                    "Check_If_Month_Released": [
                                         "Succeeded"
                                     ]
                                 }
@@ -598,7 +679,7 @@
                                     "method": "get",
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                                     "queries": {
-                                        "$filter": "team eq '@{triggerBody()?['team']}' and MonthApproved eq '@{triggerBody()?['month']}'"
+                                        "$filter": "@{if(or(equals(triggerBody()?['team'], ''), equals(triggerBody()?['team'], 'all')), concat(\"startswith(attendanceDate, '\", triggerBody()?['month'], \"')\"), concat(\"team eq '\", triggerBody()?['team'], \"' and startswith(attendanceDate, '\", triggerBody()?['month'], \"')\"))}"
                                     }
                                 }
                             },
@@ -616,8 +697,9 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "MonthApproved": "null",
-                                                "ApprovalDate": "null"
+                                                "MonthReleased": "@equals(triggerBody()?['mode'], 'release')",
+                                                "ReleaseDate": "@{if(equals(triggerBody()?['mode'], 'release'), utcNow(), null)}",
+                                                "ReleasedBy": "@{if(equals(triggerBody()?['mode'], 'release'), triggerBody()?['employeeId'], null)}"
                                             },
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(item()?['ID'])}"
                                         }
@@ -637,7 +719,7 @@
                                     "headers": "@variables('corsHeaders')",
                                     "body": {
                                         "success": true,
-                                        "message": "אישור הצוות בוטל בהצלחה",
+                                        "message": "@{if(equals(triggerBody()?['mode'], 'unlock'), 'החודש נפתח מחדש בהצלחה', 'החודש שוחרר בהצלחה')}",
                                         "affectedRecords": "@length(body('Get_Team_Approved_Month_Records')?['value'])"
                                     }
                                 },
@@ -663,7 +745,7 @@
                                     "method": "get",
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('697f3cf6-2ed9-49ba-8a05-605d760af517'))}/items",
                                     "queries": {
-                                        "$filter": "Team eq '@{triggerBody()?['team']}' or team eq '@{triggerBody()?['team']}'"
+                                        "$filter": "@{if(or(equals(triggerBody()?['team'], ''), equals(triggerBody()?['team'], 'all')), 'Team ne null', concat(\"Team eq '\", triggerBody()?['team'], \"' or team eq '\", triggerBody()?['team'], \"'\"))}"
                                     }
                                 }
                             },
@@ -682,7 +764,7 @@
                                             "method": "get",
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                                             "queries": {
-                                                "$filter": "employeeId eq '@{item()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{triggerBody()?['month']}')",
+                                                "$filter": "employeeId eq '@{item()?['employeeId']}' and MonthApproved eq true and startswith(attendanceDate, '@{triggerBody()?['month']}')",
                                                 "$top": 1
                                             }
                                         }
@@ -797,12 +879,6 @@
                                             "equals": [
                                                 "@triggerBody()?['role']",
                                                 "system_admin"
-                                            ]
-                                        },
-                                        {
-                                            "equals": [
-                                                "@triggerBody()?['role']",
-                                                "admin_assistant"
                                             ]
                                         },
                                         {
@@ -1026,7 +1102,28 @@
                                     "method": "get",
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                                     "queries": {
-                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{outputs('Update_Month_Key')}')",
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and MonthApproved eq true and startswith(attendanceDate, '@{outputs('Update_Month_Key')}')",
+                                        "$top": 1
+                                    }
+                                },
+                                "runAfter": {
+                                    "Update_Month_Key": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Check_Update_Month_Released": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "@{if(or(equals(triggerBody()?['team'], ''), equals(triggerBody()?['team'], 'all')), concat(\"MonthReleased eq true and startswith(attendanceDate, '\", outputs('Update_Month_Key'), \"')\"), concat(\"team eq '\", triggerBody()?['team'], \"' and MonthReleased eq true and startswith(attendanceDate, '\", outputs('Update_Month_Key'), \"')\"))}",
                                         "$top": 1
                                     }
                                 },
@@ -1041,11 +1138,51 @@
                                 "expression": {
                                     "and": [
                                         {
-                                            "greater": [
-                                                "@length(body('Check_Update_Month_Approved')?['value'])",
-                                                0
+                                            "or": [
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "greater": [
+                                                                "@length(body('Check_Update_Month_Released')?['value'])",
+                                                                0
+                                                            ]
+                                                        },
+                                                        {
+                                                            "not": {
+                                                                "equals": [
+                                                                    "@triggerBody()?['role']",
+                                                                    "system_admin"
+                                                                ]
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "greater": [
+                                                                "@length(body('Check_Update_Month_Approved')?['value'])",
+                                                                0
+                                                            ]
+                                                        },
+                                                        {
+                                                            "equals": [
+                                                                "@triggerBody()?['role']",
+                                                                "instructor"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
                                             ]
                                         }
+                                    ]
+                                },
+                                "runAfter": {
+                                    "Check_Update_Month_Approved": [
+                                        "Succeeded"
+                                    ],
+                                    "Check_Update_Month_Released": [
+                                        "Succeeded"
                                     ]
                                 },
                                 "actions": {
@@ -1057,7 +1194,7 @@
                                             "headers": "@variables('corsHeaders')",
                                             "body": {
                                                 "success": false,
-                                                "message": "החודש אושר ואינו ניתן לעריכה"
+                                                "message": "@{if(greater(length(body('Check_Update_Month_Released')?['value']), 0), 'החודש שוחרר ונעול לקריאה בלבד', 'החודש אושר ואינו ניתן לעריכה')}"
                                             }
                                         }
                                     }
@@ -1087,7 +1224,9 @@
                                                     "kilometers": "@triggerBody()?['kilometers']",
                                                     "expensesDetails": "@triggerBody()?['expensesDetails']",
                                                     "notes": "@triggerBody()?['notes']",
-                                                    "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                                    "attachmentsNames": "@triggerBody()?['attachmentsNames']",
+                                                    "team": "@triggerBody()?['team']",
+                                                    "employmentType": "@triggerBody()?['employmentType']"
                                                 },
                                                 "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
                                             }
@@ -1157,9 +1296,41 @@
                                 "expression": {
                                     "and": [
                                         {
-                                            "equals": [
-                                                "@body('Get_Record_For_Delete')?['status']",
-                                                "Submitted"
+                                            "or": [
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "equals": [
+                                                                "@body('Get_Record_For_Delete')?['MonthReleased']",
+                                                                true
+                                                            ]
+                                                        },
+                                                        {
+                                                            "not": {
+                                                                "equals": [
+                                                                    "@triggerBody()?['role']",
+                                                                    "system_admin"
+                                                                ]
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "equals": [
+                                                                "@body('Get_Record_For_Delete')?['MonthApproved']",
+                                                                true
+                                                            ]
+                                                        },
+                                                        {
+                                                            "equals": [
+                                                                "@triggerBody()?['role']",
+                                                                "instructor"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
                                             ]
                                         }
                                     ]
@@ -1173,7 +1344,7 @@
                                             "headers": "@variables('corsHeaders')",
                                             "body": {
                                                 "success": false,
-                                                "message": "החודש אושר ואינו ניתן לעריכה"
+                                                "message": "@{if(equals(body('Get_Record_For_Delete')?['MonthReleased'], true), 'החודש שוחרר ונעול לקריאה בלבד', 'החודש אושר ואינו ניתן לעריכה')}"
                                             }
                                         }
                                     }
