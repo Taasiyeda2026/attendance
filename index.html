@@ -2977,6 +2977,25 @@
       </div>
     </div>
 
+    <!-- Employee Details Modal -->
+    <div id="employeeDetailsModal" class="modal">
+      <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+          <h3 id="employeeDetailsTitle">פירוט שעות</h3>
+          <button class="close-btn" onclick="closeEmployeeDetailsModal()">×</button>
+        </div>
+
+        <div id="employeeDetailsContent" style="padding: 20px; max-height: 70vh; overflow-y: auto;"></div>
+
+        <div class="modal-footer">
+          <button class="btn" onclick="closeEmployeeDetailsModal()" style="background: #e2e8f0; color: #475569;">
+            <i class="fas fa-times"></i>
+            סגירה
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Export Modal -->
     <div id="exportModal" class="modal">
       <div class="modal-content" style="max-width: 400px;">
@@ -3226,6 +3245,8 @@ function normalizePayload(action, data) {
     case 'getRecords':
     case 'getHistory':
     case 'getEmployeeRecords':
+    case 'getsummary':
+    case 'getemployeerecords':
       return {
         action: data.action || action,
         employeeId: data.employeeId,
@@ -4497,8 +4518,6 @@ async function unlockTeamMonth() {
 
 // =============== Team Records Functions ===============
 let teamRecordsCache = [];
-let expandedEmployees = {};
-
 async function loadTeamRecords() {
   const user = getCurrentUserData();
   if (!user) return;
@@ -4541,7 +4560,7 @@ async function loadTeamRecords() {
 
   try {
     // Get team records from server - filtered by month/year
-    const data = await apiRequest('getHistory', {
+    const data = await apiRequest('getsummary', {
       employeeId: user.empNum,
       role: user.role,
       team: user.team,
@@ -4551,7 +4570,7 @@ async function loadTeamRecords() {
 
     if (data.success && Array.isArray(data.records)) {
       teamRecordsCache = data.records;
-      renderTeamSummary(data.records);
+      renderTeamTable(data.records);
     } else {
       const debugInfo = user.role === 'manager' 
         ? `<br><small style="font-size: 12px; color: #64748b;">מנהל: ${user.empName || ''} | צוות: ${user.team || 'לא משויך'}</small>`
@@ -4568,7 +4587,7 @@ async function loadTeamRecords() {
   } catch (error) {
     console.error('Error loading team records:', error);
     // Fallback to local records
-    renderTeamSummary(records);
+    renderTeamTable(records);
   } finally {
     if (!isMobileView()) {
       loadMonthlyApprovalsTable();
@@ -4576,7 +4595,7 @@ async function loadTeamRecords() {
   }
 }
 
-function renderTeamSummary(recordsList) {
+function renderTeamTable(recordsList) {
   if (!recordsList || recordsList.length === 0) {
     document.getElementById('teamRecordsTable').innerHTML = `
       <p style="text-align: center; color: #64748b; padding: 40px;">
@@ -4595,9 +4614,11 @@ function renderTeamSummary(recordsList) {
     const empName = rec.employeeName || rec.empName || rec.EmployeeName || 'לא ידוע';
     const team = rec.team || rec.Team || '-';
     const empType = normalizeEmploymentType(rec, 'תעשיידע');
-    const hours = parseFloat(rec.workHours || rec.hours || rec.WorkHours || 0);
-    const km = parseFloat(rec.kilometers || rec.km || rec.Kilometers || 0);
+    const hasSummaryTotals = rec.totalHours != null || rec.totalKm != null || rec.totalExpenses != null || rec.totalRecords != null;
+    const hours = parseFloat(rec.totalHours || rec.workHours || rec.hours || rec.WorkHours || 0);
+    const km = parseFloat(rec.totalKm || rec.kilometers || rec.km || rec.Kilometers || 0);
     const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
+    const recordCount = parseInt(rec.totalRecords || rec.totalDays || rec.workDays || (hasSummaryTotals ? 0 : 1), 10);
 
     if (!employeeSummary[empId]) {
       employeeSummary[empId] = {
@@ -4612,7 +4633,7 @@ function renderTeamSummary(recordsList) {
       };
     }
 
-    employeeSummary[empId].totalRecords++;
+    employeeSummary[empId].totalRecords += Number.isNaN(recordCount) ? 0 : recordCount;
     employeeSummary[empId].totalHours += hours;
     employeeSummary[empId].totalKm += km;
     employeeSummary[empId].totalExpenses += expenses;
@@ -4659,8 +4680,8 @@ function renderTeamSummary(recordsList) {
       </thead>
       <tbody>
         ${summaryList.map(emp => `
-          <tr class="employee-summary-row" onclick="toggleEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
-            <td><i class="fas fa-chevron-left" id="chevron-${emp.empId}" style="transition: transform 0.3s;"></i></td>
+          <tr class="employee-summary-row" onclick="showEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
+            <td><i class="fas fa-chevron-left"></i></td>
             <td><strong style="color: #3b82f6;">${emp.empName}</strong></td>
             <td>${emp.team || '-'}</td>
             <td>${emp.employmentType || '-'}</td>
@@ -4668,13 +4689,6 @@ function renderTeamSummary(recordsList) {
             <td><strong>${formatHoursDisplay(emp.totalHours)}</strong></td>
             <td>${emp.totalKm.toFixed(1)}</td>
             <td>${emp.totalExpenses.toFixed(2)} ₪</td>
-          </tr>
-          <tr id="details-${emp.empId}" class="employee-details-row" style="display: none;">
-            <td colspan="8" style="padding: 0; background: #f8fafc;">
-              <div id="details-content-${emp.empId}" style="padding: 15px;">
-                <i class="fas fa-spinner fa-spin"></i> טוען פרטים...
-              </div>
-            </td>
           </tr>
         `).join('')}
         <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
@@ -4691,67 +4705,55 @@ function renderTeamSummary(recordsList) {
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
 }
 
-async function toggleEmployeeDetails(empId) {
+async function showEmployeeDetails(employeeId) {
   if (isMobileView()) {
     return;
   }
 
-  const detailsRow = document.getElementById(`details-${empId}`);
-  const chevron = document.getElementById(`chevron-${empId}`);
-  const detailsContent = document.getElementById(`details-content-${empId}`);
+  const modal = document.getElementById('employeeDetailsModal');
+  const title = document.getElementById('employeeDetailsTitle');
+  const content = document.getElementById('employeeDetailsContent');
+  const employeeSummary = teamRecordsCache.find(rec =>
+    (rec.employeeId || rec.empNum || rec.EmployeeId) === employeeId
+  );
+  const employeeName = employeeSummary?.employeeName || employeeSummary?.empName || employeeSummary?.EmployeeName || '';
 
-  if (expandedEmployees[empId]) {
-    // Collapse
-    detailsRow.style.display = 'none';
-    chevron.style.transform = 'rotate(0deg)';
-    expandedEmployees[empId] = false;
-  } else {
-    // Expand
-    detailsRow.style.display = 'table-row';
-    chevron.style.transform = 'rotate(-90deg)';
-    expandedEmployees[empId] = true;
+  title.textContent = employeeName ? `פירוט שעות - ${employeeName}` : 'פירוט שעות';
+  content.innerHTML = `
+    <p style="text-align: center; color: #64748b; padding: 24px;">
+      <i class="fas fa-spinner fa-spin"></i> טוען נתונים...
+    </p>
+  `;
+  modal.style.display = 'flex';
 
-    // Load details if not already loaded
-    if (!detailsContent.dataset.loaded) {
-      try {
-        const user = getCurrentUserData();
-        const monthSelect = document.getElementById('teamMonthFilter');
-        const yearSelect = document.getElementById('teamYearFilter');
-        const selectedMonth = monthSelect ? parseInt(monthSelect.value) : new Date().getMonth() + 1;
-        const selectedYear = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
-
-        const data = await apiRequest('getEmployeeRecords', {
-          employeeId: empId,
-          month: selectedMonth,
-          year: selectedYear
-        });
-
-        if (data.success && Array.isArray(data.records)) {
-          renderEmployeeDetails(empId, data.records);
-          detailsContent.dataset.loaded = 'true';
-        } else {
-          detailsContent.innerHTML = '<p style="color: #94a3b8;">אין ימי עבודה</p>';
-        }
-      } catch (error) {
-        console.error('Error loading employee details:', error);
-        // Fallback: filter from cached records
-        const empRecords = teamRecordsCache.filter(r =>
-          (r.employeeId || r.empNum || r.EmployeeId) === empId
-        );
-        renderEmployeeDetails(empId, empRecords);
-      }
+  try {
+    const data = await apiRequest('getemployeerecords', { employeeId });
+    if (data.success && Array.isArray(data.records)) {
+      renderEmployeeDetailsModal(employeeId, employeeName, data.records);
+    } else {
+      content.innerHTML = '<p style="color: #94a3b8;">אין ימי עבודה</p>';
     }
+  } catch (error) {
+    console.error('Error loading employee details:', error);
+    content.innerHTML = '<p style="color: #ef4444;">שגיאה בטעינת נתונים</p>';
   }
 }
 
-function renderEmployeeDetails(empId, records) {
-  const detailsContent = document.getElementById(`details-content-${empId}`);
-  const user = getCurrentUserData();
-  const canEdit = user.role === 'system_admin' || user.role === 'manager';
-  const canDelete = user.role === 'system_admin';
+function closeEmployeeDetailsModal() {
+  const modal = document.getElementById('employeeDetailsModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
 
-  if (!records || records.length === 0) {
-    detailsContent.innerHTML = '<p style="color: #94a3b8;">אין ימי עבודה</p>';
+function renderEmployeeDetailsModal(employeeId, employeeName, detailedRecords) {
+  const content = document.getElementById('employeeDetailsContent');
+  const title = document.getElementById('employeeDetailsTitle');
+
+  title.textContent = employeeName ? `פירוט שעות - ${employeeName}` : 'פירוט שעות';
+
+  if (!detailedRecords || detailedRecords.length === 0) {
+    content.innerHTML = '<p style="color: #94a3b8;">אין ימי עבודה</p>';
     return;
   }
 
@@ -4762,28 +4764,18 @@ function renderEmployeeDetails(empId, records) {
           <th>תאריך</th>
           <th>התחלה</th>
           <th>סיום</th>
-          <th>שעות</th>
           <th>פעילות</th>
-          <th>בית ספר</th>
-          <th>רשות</th>
           <th>ק"מ</th>
-          <th>הוצאות</th>
           <th>הערות</th>
-          ${canEdit || canDelete ? '<th>פעולות</th>' : ''}
         </tr>
       </thead>
       <tbody>
-        ${records.map(rec => {
-          const recordId = rec.ID || rec.Id || rec.id || rec.recordId;
+        ${detailedRecords.map(rec => {
           const date = rec.attendanceDate || rec.date || rec.AttendanceDate || '';
           const start = rec.startTime || rec.start || rec.StartTime || '';
           const end = rec.endTime || rec.end || rec.EndTime || '';
-          const hours = rec.workHours || rec.hours || rec.WorkHours || 0;
           const activity = rec.activityType || rec.activity || rec.ActivityType || '';
-          const school = rec.schoolName || rec.school || rec.SchoolName || '';
-          const municipality = rec.municipality || rec.Municipality || '';
           const km = rec.kilometers || rec.km || rec.Kilometers || 0;
-          const expenses = rec.totalExpenses || rec.TotalExpenses || 0;
           const notes = rec.notes || rec.Notes || '';
 
           return `
@@ -4791,19 +4783,9 @@ function renderEmployeeDetails(empId, records) {
               <td>${date}</td>
               <td>${start}</td>
               <td>${end}</td>
-              <td><strong>${formatHoursDisplay(hours)}</strong></td>
-              <td>${activity}</td>
-              <td>${school || '-'}</td>
-              <td>${municipality || '-'}</td>
+              <td>${activity || '-'}</td>
               <td>${km}</td>
-              <td>${expenses} ₪</td>
               <td>${notes || '-'}</td>
-              ${canEdit || canDelete ? `
-                <td>
-                  ${canEdit ? `<button onclick="editTeamRecord(${recordId})" class="btn-icon" title="עריכה"><i class="fas fa-edit"></i></button>` : ''}
-                  ${canDelete ? `<button onclick="deleteTeamRecord(${recordId})" class="btn-icon" style="color: #dc2626;" title="מחיקה"><i class="fas fa-trash"></i></button>` : ''}
-                </td>
-              ` : ''}
             </tr>
           `;
         }).join('')}
@@ -4811,7 +4793,7 @@ function renderEmployeeDetails(empId, records) {
     </table>
   `;
 
-  detailsContent.innerHTML = detailsHTML;
+  content.innerHTML = detailsHTML;
 }
 function toggleMobileMenu() {
   const sidebar = document.getElementById('sidebar');
