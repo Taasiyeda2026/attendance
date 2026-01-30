@@ -299,8 +299,6 @@
                                         "kilometers": "@triggerBody()?['kilometers']",
                                         "expensesDetails": "@triggerBody()?['expensesDetails']",
                                         "notes": "@triggerBody()?['notes']",
-                                        "team": "@triggerBody()?['team']",
-                                        "employmentType": "@triggerBody()?['employmentType']",
                                         "attachmentsNames": "@triggerBody()?['attachmentsNames']"
                                     },
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
@@ -875,12 +873,13 @@
                                         "municipality": "@triggerBody()?['municipality']",
                                         "programName": "@triggerBody()?['programName']",
                                         "sessionNumber": "@triggerBody()?['sessionNumber']",
-                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
-                                        "workHours": "@triggerBody()?['workHours']",
-                                        "kilometers": "@triggerBody()?['kilometers']",
-                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
-                                        "notes": "@triggerBody()?['notes']"
-                                    },
+                                            "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                            "workHours": "@triggerBody()?['workHours']",
+                                            "kilometers": "@triggerBody()?['kilometers']",
+                                            "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                            "notes": "@triggerBody()?['notes']",
+                                            "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                        },
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
                                 }
                             },

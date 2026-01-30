@@ -3200,8 +3200,7 @@ function normalizePayload(action, data) {
         totalExpenses: Number(data.totalExpenses || 0),
         expensesDetails: data.expensesDetails || '',
         notes: data.notes || '',
-        team: data.team || '',
-        employmentType: data.employmentType || ''
+        attachmentsNames: data.attachmentsNames || ''
       };
       
     case 'getRecords':
@@ -3235,8 +3234,7 @@ function normalizePayload(action, data) {
         totalExpenses: Number(data.totalExpenses || 0),
         expensesDetails: data.expensesDetails || '',
         notes: data.notes || '',
-        team: data.team || '',
-        employmentType: data.employmentType || ''
+        attachmentsNames: data.attachmentsNames || ''
       };
       
     case 'deleteRecord':
@@ -3845,14 +3843,6 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
   }
   
   try {
-    const teamValue = extractLookupValue(
-      updatedRecord.team || localStorage.getItem("team") || '',
-      ''
-    );
-    const employmentTypeValue = normalizeEmploymentType(
-      updatedRecord.employmentType || localStorage.getItem("employmentType") || '',
-      ''
-    );
     const data = await apiRequest('updateRecord', {
       recordId: Number(updatedRecord.recordId),
       employeeId: String(updatedRecord.empNum),
@@ -3870,8 +3860,7 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
       totalExpenses: Number(updatedRecord.totalExpenses) || 0,
       expensesDetails: String(updatedRecord.expensesDetail || ''),
       notes: String(updatedRecord.notes || ''),
-      employmentType: String(employmentTypeValue),
-      team: String(teamValue)
+      attachmentsNames: formatAttachments(updatedRecord.attachments || [])
     });
     
     return data.success;
@@ -5549,13 +5538,6 @@ async function addRecord() {
     return;
   }
 
-  const currentUserData = getCurrentUserData();
-  const rawEmploymentType = currentUserData?.employmentType || localStorage.getItem("employmentType") || 'תעשיידע';
-  const employmentType = normalizeEmploymentType(rawEmploymentType, 'תעשיידע');
-  
-  const rawTeam = localStorage.getItem("team") || '';
-  const team = extractLookupValue(rawTeam, '');
-  
   const payload = {
     action: "submit",
     employeeId: String(localStorage.getItem("employeeId") || empNum),
@@ -5573,8 +5555,7 @@ async function addRecord() {
     totalExpenses: Number(totalExpenses) || 0,
     expensesDetails: String(expensesDetail || ''),
     notes: String(notes || ''),
-    employmentType: String(employmentType),
-    team: String(team)
+    attachmentsNames: formatAttachments(attachments)
   };
   
   // Send to SharePoint using apiRequest with retry
