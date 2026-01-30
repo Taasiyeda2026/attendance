@@ -1,4 +1,4 @@
-// =============== Excel Export Functions ===============
+// =============== Excel Export Functions - FIXED VERSION ===============
 
 /**
  * Export team approval status to Excel
@@ -15,26 +15,11 @@ async function exportTeamApprovalToExcel() {
     const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
     const monthName = getHebrewMonthName(currentMonth);
 
-    let approvalEmployees = [];
-    try {
-      const approvalData = await apiRequest('getTeamApprovalStatus', {
-        team,
-        month: currentMonth
-      });
-      const employees = Array.isArray(approvalData.employees) ? approvalData.employees : [];
-      approvalEmployees = employees.map(emp => ({
-        employeeName: emp.name || emp.employeeName,
-        employeeId: emp.employeeId,
-        approvalDate: emp.approvalDate,
-        totalHours: 0,
-        recordCount: 0
-      }));
-    } catch (error) {
-      console.error('Failed to load approval status:', error);
-    }
-
     // Get records from cache (teamRecordsCache is populated by loadTeamRecords)
     const records = typeof teamRecordsCache !== 'undefined' ? teamRecordsCache : [];
+
+    // Calculate approval data FROM records
+    const approvalEmployees = calculateApprovalDataFromRecords(records);
 
     // Create workbook
     const wb = XLSX.utils.book_new();
@@ -51,7 +36,7 @@ async function exportTeamApprovalToExcel() {
       XLSX.utils.book_append_sheet(wb, recordsSheet, 'רשומות מפורטות');
 
       // Sheet 3: Hours Summary
-      const summarySheet = createSummarySheet(approvalEmployees, records);
+      const summarySheet = createSummarySheet(records);
       XLSX.utils.book_append_sheet(wb, summarySheet, 'סיכום שעות');
     }
 
@@ -72,6 +57,39 @@ async function exportTeamApprovalToExcel() {
     console.error('Excel export error:', error);
     showAlert('שגיאה ביצירת קובץ Excel', 'error');
   }
+}
+
+/**
+ * Calculate approval data from records (since it doesn't come from API)
+ */
+function calculateApprovalDataFromRecords(records) {
+  const employeeMap = {};
+  
+  records.forEach(rec => {
+    const empId = rec.employeeId;
+    if (!employeeMap[empId]) {
+      employeeMap[empId] = {
+        employeeName: rec.employeeName,
+        employeeId: rec.employeeId,
+        approvalDate: rec.ApprovalDate || rec.approvalDate || null,
+        totalHours: 0,
+        recordCount: 0
+      };
+    }
+    
+    employeeMap[empId].totalHours += Number(rec.workHours) || 0;
+    employeeMap[empId].recordCount += 1;
+    
+    // Take the latest approval date if exists
+    if (rec.ApprovalDate || rec.approvalDate) {
+      const currentDate = rec.ApprovalDate || rec.approvalDate;
+      if (!employeeMap[empId].approvalDate || new Date(currentDate) > new Date(employeeMap[empId].approvalDate)) {
+        employeeMap[empId].approvalDate = currentDate;
+      }
+    }
+  });
+  
+  return Object.values(employeeMap);
 }
 
 /**
@@ -108,9 +126,9 @@ function createApprovalSheet(employees, monthName) {
     totalRecords += emp.recordCount || 0;
     
     data.push([
-      emp.EmployeeName || emp.employeeName,
+      emp.employeeName || '',
       emp.employeeId || '',
-      emp.approvalDate ? formatDate(emp.approvalDate) : '─',
+      emp.approvalDate ? formatDate(emp.approvalDate) : '—',
       approved,
       emp.totalHours ? emp.totalHours.toFixed(1) : '0.0',
       emp.recordCount || 0
@@ -140,18 +158,6 @@ function createApprovalSheet(employees, monthName) {
     { wch: 12 }, // שעות
     { wch: 12 }  // רשומות
   ];
-  
-  // Style header row
-  const headerRow = 5; // Row 5 (0-indexed: 4)
-  for (let col = 0; col < 6; col++) {
-    const cellRef = XLSX.utils.encode_cell({ r: headerRow - 1, c: col });
-    if (!ws[cellRef]) continue;
-    ws[cellRef].s = {
-      font: { bold: true },
-      fill: { fgColor: { rgb: "1e40af" } },
-      alignment: { horizontal: "center" }
-    };
-  }
   
   return ws;
 }
@@ -225,7 +231,7 @@ function createRecordsSheet(records) {
 /**
  * Create hours summary sheet
  */
-function createSummarySheet(employees, records) {
+function createSummarySheet(records) {
   const data = [];
   
   // Header
@@ -341,23 +347,8 @@ async function exportApprovalStatusOnly() {
     const currentMonth = new Date().toISOString().slice(0, 7);
     const monthName = getHebrewMonthName(currentMonth);
 
-    let approvalEmployees = [];
-    try {
-      const approvalData = await apiRequest('getTeamApprovalStatus', {
-        team,
-        month: currentMonth
-      });
-      const employees = Array.isArray(approvalData.employees) ? approvalData.employees : [];
-      approvalEmployees = employees.map(emp => ({
-        employeeName: emp.name || emp.employeeName,
-        employeeId: emp.employeeId,
-        approvalDate: emp.approvalDate,
-        totalHours: 0,
-        recordCount: 0
-      }));
-    } catch (error) {
-      console.error('Failed to load approval status:', error);
-    }
+    const records = typeof teamRecordsCache !== 'undefined' ? teamRecordsCache : [];
+    const approvalEmployees = calculateApprovalDataFromRecords(records);
 
     if (approvalEmployees.length === 0) {
       showAlert('אין נתוני אישורים לייצוא', 'error');
