@@ -3239,7 +3239,13 @@ function normalizePayload(action, data) {
         totalExpenses: Number(data.totalExpenses || 0),
         expensesDetails: data.expensesDetails || '',
         notes: data.notes || '',
-        attachmentsNames: data.attachmentsNames || ''
+        attachmentsNames: data.attachmentsNames || '',
+        status: data.status,
+        approvedBy: data.approvedBy,
+        approvedDate: data.approvedDate,
+        rejectReason: data.rejectReason,
+        MonthApproved: data.MonthApproved,
+        ApprovalDate: data.ApprovalDate
       });
       
     case 'getRecords':
@@ -3278,7 +3284,13 @@ function normalizePayload(action, data) {
         totalExpenses: Number(data.totalExpenses || 0),
         expensesDetails: data.expensesDetails || '',
         notes: data.notes || '',
-        attachmentsNames: data.attachmentsNames || ''
+        attachmentsNames: data.attachmentsNames || '',
+        status: data.status,
+        approvedBy: data.approvedBy,
+        approvedDate: data.approvedDate,
+        rejectReason: data.rejectReason,
+        MonthApproved: data.MonthApproved,
+        ApprovalDate: data.ApprovalDate
       });
       
     case 'deleteRecord':
@@ -3334,7 +3346,14 @@ function normalizeRecordFromServer(rec) {
     expensesDetail: rec.expensesDetails || rec.ExpensesDetails || '',
     notes: rec.notes || rec.Notes || '',
     team: rec.team || rec.Team || '',
-    employmentType: normalizeEmploymentType(rec, '')
+    employmentType: normalizeEmploymentType(rec, ''),
+    attachmentsNames: rec.attachmentsNames || rec.AttachmentsNames || '',
+    status: rec.status || rec.Status || '',
+    approvedBy: rec.approvedBy || rec.ApprovedBy || '',
+    approvedDate: rec.approvedDate || rec.ApprovedDate || '',
+    rejectReason: rec.rejectReason || rec.RejectReason || '',
+    MonthApproved: rec.MonthApproved || '',
+    ApprovalDate: rec.ApprovalDate || ''
   };
 }
 
