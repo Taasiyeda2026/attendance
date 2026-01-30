@@ -68,22 +68,6 @@ const PERMISSIONS = {
     exportExcel: true  // ✅ כל הצוותים
   },
   
-  // ✨ עוזרת אדמין - כמו מנהל צוות אבל לכל הצוותים
-  admin_assistant: {
-    viewOwn: true,
-    viewTeam: false,
-    viewAll: true,   // ✅ רואה הכל
-    editOwn: true,
-    editTeam: false,
-    editAll: true,   // ✅ יכולה לערוך הכל (כמו מנהל)
-    approveOwn: true,
-    approveTeam: false,
-    resetMonth: true,  // ✅ יכולה לאפס כל צוות
-    reports: true,     // ✅ כל הדוחות
-    manageEmployees: false,  // ❌ לא מנהלת עובדים
-    exportExcel: true  // ✅ כל הצוותים
-  },
-  
   // אדמין מערכת - הכל
   system_admin: {
     viewOwn: true,
@@ -132,7 +116,7 @@ function getCurrentUser() {
 function canViewTeam(targetTeam) {
   const user = getCurrentUser();
   
-  // אדמין, עוזרת אדמין, אחראית שכר, מבקרת - רואים הכל
+  // אדמין, אחראית שכר, מבקרת - רואים הכל
   if (hasPermission('viewAll')) {
     return true;
   }
@@ -156,7 +140,7 @@ function canEditEmployee(targetEmployeeId, targetTeam) {
     return true;
   }
   
-  // עוזרת אדמין / אדמין - יכולים לערוך הכל
+  // אדמין - יכולים לערוך הכל
   if (hasPermission('editAll')) {
     return true;
   }
@@ -179,8 +163,8 @@ function canResetMonth(targetTeam) {
     return false;
   }
   
-  // עוזרת אדמין / אדמין - כל צוות
-  if (user.role === 'admin_assistant' || user.role === 'system_admin') {
+  // אדמין - כל צוות
+  if (user.role === 'system_admin') {
     return true;
   }
   
@@ -266,7 +250,6 @@ function updateRoleIndicator() {
     manager: 'מנהל צוות',
     payroll_officer: 'אחראית שכר',
     operations_controller: 'מבקרת תפעול',
-    admin_assistant: 'עוזרת אדמין',
     system_admin: 'אדמין מערכת'
   };
   
@@ -280,7 +263,6 @@ function updateRoleIndicator() {
       manager: '#8b5cf6',           // סגול
       payroll_officer: '#10b981',   // ירוק
       operations_controller: '#f59e0b', // כתום
-      admin_assistant: '#ec4899',   // ורוד
       system_admin: '#ef4444'       // אדום
     };
     
@@ -297,7 +279,6 @@ function getRoleDisplayName(role) {
     manager: 'מנהל צוות',
     payroll_officer: 'אחראית שכר',
     operations_controller: 'מבקרת תפעול',
-    admin_assistant: 'עוזרת אדמין',
     system_admin: 'אדמין מערכת'
   };
   return names[role] || 'משתמש';
@@ -308,7 +289,7 @@ function getRoleDisplayName(role) {
  */
 function isManagerLevel() {
   const user = getCurrentUser();
-  return ['manager', 'admin_assistant', 'system_admin'].includes(user.role);
+  return ['manager', 'system_admin'].includes(user.role);
 }
 
 /**
