@@ -3074,6 +3074,29 @@ const CONFIG = {
 // For backwards compatibility
 const LOGIC_APP_URL = CONFIG.LOGIC_APP_URL;
 
+const API_FEATURES = {
+  approvals: false,
+  recordUpdates: false,
+  recordDeletes: false,
+  exports: false
+};
+
+function isApprovalsSupported() {
+  return API_FEATURES.approvals;
+}
+
+function isRecordUpdateSupported() {
+  return API_FEATURES.recordUpdates;
+}
+
+function isRecordDeleteSupported() {
+  return API_FEATURES.recordDeletes;
+}
+
+function isExportSupported() {
+  return API_FEATURES.exports;
+}
+
 // =============== Fixed Lists (Constant Values) ===============
 const TEAMS_LIST = [
   'גיל',
@@ -3644,9 +3667,12 @@ function hasPermission(action, targetTeam = null) {
 }
 
 function canEditRecord(record) {
+  if (!isRecordUpdateSupported()) {
+    return false;
+  }
   const user = getCurrentUserData();
   if (!user) return false;
-
+  
   const role = user.role;
 
   // system_admin can edit all records
@@ -3694,6 +3720,10 @@ function getEditBlockReason(record) {
   const user = getCurrentUserData();
   if (!user) return 'משתמש לא מחובר';
 
+  if (!isRecordUpdateSupported()) {
+    return 'עדכון רשומות אינו נתמך ב-API הנוכחי';
+  }
+
   const role = user.role;
 
   // Admins can always edit
@@ -3732,6 +3762,9 @@ function getEditBlockReason(record) {
 }
 
 function canDeleteRecord(record) {
+  if (!isRecordDeleteSupported()) {
+    return false;
+  }
   const user = getCurrentUserData();
   if (!user) return false;
   
@@ -4159,6 +4192,9 @@ function formatApprovalDate(dateValue) {
 }
 
 async function fetchMonthStatus(employeeId, monthKey, team) {
+  if (!isApprovalsSupported()) {
+    return { approved: false, approvalDate: null, released: false, releaseDate: null };
+  }
   try {
     const data = await apiRequest('checkMonthApproval', {
       employeeId,
@@ -4240,6 +4276,12 @@ async function loadInstructorMonthlyApprovalStatus() {
 
   if (!statusEl || !buttonEl || !monthLabel) return;
 
+  if (!isApprovalsSupported()) {
+    statusEl.textContent = 'אישורים חודשיים אינם נתמכים כרגע';
+    buttonEl.disabled = true;
+    return;
+  }
+
   if (!user || user.role !== 'instructor') {
     statusEl.textContent = 'סטטוס אישור לא זמין';
     buttonEl.disabled = true;
@@ -4273,6 +4315,10 @@ async function loadInstructorMonthlyApprovalStatus() {
 
 async function approveMonthlyReport() {
   const user = getCurrentUserData();
+  if (!isApprovalsSupported()) {
+    showAlert('⚠️ אישורים חודשיים אינם נתמכים ב-API הנוכחי', 'error');
+    return;
+  }
   if (!user || user.role !== 'instructor') {
     showAlert('אין הרשאה לבצע אישור חודשי', 'error');
     return;
@@ -4321,6 +4367,10 @@ async function loadMonthlyApprovalsTable() {
   if (!container) return;
   if (isMobileView()) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">הסיכום המלא זמין בדסקטופ בלבד</p>';
+    return;
+  }
+  if (!isApprovalsSupported()) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אישורים חודשיים אינם נתמכים כרגע</p>';
     return;
   }
   if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
@@ -4384,6 +4434,10 @@ async function loadMonthlyApprovalsTable() {
 
 async function resetTeamMonth() {
   const user = getCurrentUserData();
+  if (!isApprovalsSupported()) {
+    showAlert('⚠️ שחרור חודש אינו נתמך ב-API הנוכחי', 'error');
+    return;
+  }
   if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
     showAlert('אין הרשאה לשחרור חודש', 'error');
     return;
@@ -4417,6 +4471,10 @@ async function resetTeamMonth() {
 
 async function unlockTeamMonth() {
   const user = getCurrentUserData();
+  if (!isApprovalsSupported()) {
+    showAlert('⚠️ פתיחת חודש אינה נתמכת ב-API הנוכחי', 'error');
+    return;
+  }
   if (!user || user.role !== 'system_admin') {
     showAlert('אין הרשאה לפתיחת חודש', 'error');
     return;
@@ -5621,6 +5679,11 @@ async function deleteRecord(index) {
   const rec = records[index];
   if (!rec) return;
 
+  if (!isRecordDeleteSupported()) {
+    showAlert('⚠️ מחיקת רשומות אינה נתמכת ב-API הנוכחי', 'error');
+    return;
+  }
+
   if (!canDeleteRecord(rec)) {
     showAlert('❌ אין לך הרשאה למחוק ימי עבודה', 'error');
     return;
@@ -6134,6 +6197,10 @@ function createDailyConsolidatedSheet(recordsList) {
 }
 
 function exportAttendanceWorkbook(recordsList, options = {}) {
+  if (!isExportSupported()) {
+    showAlert('⚠️ ייצוא נתונים אינו נתמך ב-API הנוכחי', 'error');
+    return;
+  }
   if (!window.XLSX) {
     showAlert('ספריית Excel לא נטענה', 'error');
     return;
