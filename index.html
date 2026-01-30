@@ -3245,13 +3245,34 @@ function normalizePayload(action, data) {
     case 'submit':
       return cleanPayload({
         action: 'submit',
+        // Identity fields
         employeeId: data.employeeId,
-        employeeName: data.employeeName,  // camelCase for Attendance table
-        team: data.team,
+        employeeName: data.employeeName,
         role: data.role,
+        team: String(data.team || ''),
+        employmentType: String(data.employmentType || ''),
+        
+        // Attendance Data
         attendanceDate: data.attendanceDate,
+        ...(data.startTime ? { startTime: data.startTime } : {}),
+        ...(data.endTime ? { endTime: data.endTime } : {}),
         workHours: Number(data.workHours || 0),
-        kilometers: Number(data.kilometers || 0)
+        
+        // Categorization & Location (Choice/Lookup as Strings)
+        activityType: String(data.activityType || ''),
+        schoolName: String(data.schoolName || ''),
+        municipality: String(data.municipality || ''),
+        programName: String(data.programName || ''),
+        
+        // Metrics & Expenses
+        sessionNumber: Number(data.sessionNumber || 0),
+        kilometers: Number(data.kilometers || 0),
+        totalExpenses: Number(data.totalExpenses || 0),
+        expensesDetails: String(data.expensesDetails || ''),
+        
+        // Notes & Attachments
+        notes: String(data.notes || ''),
+        ...(data.attachmentsNames ? { attachmentsNames: data.attachmentsNames } : {})
       });
       
     case 'getsummary':
