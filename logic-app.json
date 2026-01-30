@@ -82,6 +82,9 @@
                             },
                             "approvalDate": {
                                 "type": "string"
+                            },
+                            "attachmentsNames": {
+                                "type": "string"
                             }
                         },
                         "required": [
@@ -110,9 +113,18 @@
                 },
                 "runAfter": {}
             },
+            "Normalize_Action": {
+                "type": "Compose",
+                "inputs": "@if(equals(triggerBody()?['action'], 'updateRecord'), 'update', if(equals(triggerBody()?['action'], 'deleteRecord'), 'delete', triggerBody()?['action']))",
+                "runAfter": {
+                    "Set_CORS_Headers": [
+                        "Succeeded"
+                    ]
+                }
+            },
             "Switch_Action": {
                 "type": "Switch",
-                "expression": "@triggerBody()?['action']",
+                "expression": "@outputs('Normalize_Action')",
                 "default": {
                     "actions": {
                         "Response_Unknown_Action": {
@@ -364,17 +376,6 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "employeeName": "",
-                                                "employeeId": "",
-                                                "attendanceDate": "",
-                                                "startTime": "",
-                                                "endTime": "",
-                                                "activityType": "",
-                                                "schoolName": "",
-                                                "municipality": "",
-                                                "programName": "",
-                                                "sessionNumber": "",
-                                                "totalExpenses": "",
                                                 "MonthApproved": "@triggerBody()?['month']",
                                                 "ApprovalDate": "@triggerBody()?['approvalDate']"
                                             },
@@ -529,17 +530,6 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "employeeName": "",
-                                                "employeeId": "",
-                                                "attendanceDate": "",
-                                                "startTime": "",
-                                                "endTime": "",
-                                                "activityType": "",
-                                                "schoolName": "",
-                                                "municipality": "",
-                                                "programName": "",
-                                                "sessionNumber": "",
-                                                "totalExpenses": "",
                                                 "MonthApproved": "null",
                                                 "ApprovalDate": "null"
                                             },
@@ -814,6 +804,57 @@
                         },
                         "case": "getHistory"
                     },
+                    "getEmployees": {
+                        "actions": {
+                            "Response_Get_Employees": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "employees": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getEmployees"
+                    },
+                    "getEmployeeRecords": {
+                        "actions": {
+                            "Response_Get_Employee_Records": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "records": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getEmployeeRecords"
+                    },
+                    "getAllTeams": {
+                        "actions": {
+                            "Response_Get_All_Teams": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "teams": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getAllTeams"
+                    },
                     "update": {
                         "actions": {
                             "Update_Attendance_Record": {
@@ -824,13 +865,11 @@
                                             "name": "@parameters('$connections')['sharepointonline']['connectionId']"
                                         }
                                     },
-                                    "method": "patch",
-                                    "body": {
-                                        "employeeName": "",
-                                        "employeeId": "",
-                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                        "startTime": "@triggerBody()?['startTime']",
-                                        "endTime": "@triggerBody()?['endTime']",
+                                            "method": "patch",
+                                            "body": {
+                                                "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                                "startTime": "@triggerBody()?['startTime']",
+                                                "endTime": "@triggerBody()?['endTime']",
                                         "activityType": "@triggerBody()?['activityType']",
                                         "schoolName": "@triggerBody()?['schoolName']",
                                         "municipality": "@triggerBody()?['municipality']",
@@ -937,7 +976,7 @@
                     }
                 },
                 "runAfter": {
-                    "Set_CORS_Headers": [
+                    "Normalize_Action": [
                         "Succeeded"
                     ]
                 }
