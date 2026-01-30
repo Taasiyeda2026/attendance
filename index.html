@@ -3066,13 +3066,83 @@
 // =============== Configuration ===============
 
 const CONFIG = {
-  LOGIC_APP_URL: "https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=JSq3DkhLej1JC18oCJ3CtV7hjUdX_vu1E2j94LLsw_g",
+  LOGIC_APP_URL: "https://prod-23.israelcentral.logic.azure.com:443/workflows/39fabd0c7a1b418286fe5ec53a720f61/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4t2YDRG6hrQ4U9Qn_c7chFOZEJgeasKOB8nA7-1qYHU",
   MAX_RETRY: 3,
   RETRY_DELAY: 1000
 };
 
 // For backwards compatibility
 const LOGIC_APP_URL = CONFIG.LOGIC_APP_URL;
+
+const API_FEATURES = {
+  approvals: false,
+  recordUpdates: false,
+  recordDeletes: false,
+  exports: false
+};
+
+const CHOICE_FIELDS = new Set([
+  'role',
+  'activityType',
+  'programName',
+  'employmentType',
+  'team'
+]);
+
+function isApprovalsSupported() {
+  return API_FEATURES.approvals;
+}
+
+function isRecordUpdateSupported() {
+  return API_FEATURES.recordUpdates;
+}
+
+function isRecordDeleteSupported() {
+  return API_FEATURES.recordDeletes;
+}
+
+function isExportSupported() {
+  return API_FEATURES.exports;
+}
+
+function normalizeChoiceValue(value) {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (typeof value === 'object' && value.Value) return value;
+  if (typeof value === 'object' && value.value) return { Value: value.value };
+  return { Value: String(value) };
+}
+
+function normalizeFieldValue(fieldName, value) {
+  if (CHOICE_FIELDS.has(fieldName)) {
+    return normalizeChoiceValue(value);
+  }
+  return value;
+}
+
+function buildSubmitPayload(data) {
+  return {
+    action: 'submit',
+    employeeId: data.employeeId,
+    employeeName: data.employeeName,
+    team: normalizeFieldValue('team', data.team),
+    employmentType: normalizeFieldValue('employmentType', data.employmentType),
+    role: normalizeFieldValue('role', data.role),
+    attendanceDate: data.attendanceDate,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    workHours: Number(data.workHours || 0),
+    activityType: normalizeFieldValue('activityType', data.activityType),
+    schoolName: data.schoolName,
+    municipality: data.municipality,
+    programName: normalizeFieldValue('programName', data.programName),
+    sessionNumber: Number(data.sessionNumber || 0),
+    kilometers: Number(data.kilometers || 0),
+    totalExpenses: Number(data.totalExpenses || 0),
+    expensesDetails: data.expensesDetails || '',
+    notes: data.notes || '',
+    attachmentsNames: data.attachmentsNames || ''
+  };
+}
 
 // =============== Fixed Lists (Constant Values) ===============
 const TEAMS_LIST = [
@@ -3209,7 +3279,9 @@ function normalizePayload(action, data) {
     );
   };
 
-  switch (action) {
+  const normalizedAction = String(action || '').toLowerCase();
+
+  switch (normalizedAction) {
     case 'auth':
       return {
         action: 'auth',
@@ -3218,82 +3290,21 @@ function normalizePayload(action, data) {
       };
       
     case 'submit':
-    case 'submitRecord':
-      return cleanPayload({
-        action: 'submit',
-        employeeId: data.employeeId,
-        employeeName: data.employeeName,  // camelCase for Attendance table
-        team: data.team,
-        employmentType: data.employmentType,
-        role: data.role,
-        attendanceDate: data.attendanceDate,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        workHours: Number(data.workHours || 0),
-        activityType: data.activityType,
-        schoolName: data.schoolName || '',
-        municipality: data.municipality,
-        programName: data.programName || '',
-        sessionNumber: Number(data.sessionNumber || 0),
-        kilometers: Number(data.kilometers || 0),
-        totalExpenses: Number(data.totalExpenses || 0),
-        expensesDetails: data.expensesDetails || '',
-        notes: data.notes || '',
-        attachmentsNames: data.attachmentsNames || ''
-      });
+      return cleanPayload(buildSubmitPayload(data));
       
-    case 'getRecords':
-    case 'getHistory':
-    case 'getEmployeeRecords':
     case 'getsummary':
-    case 'getemployeerecords':
       return {
-        action: data.action || action,
-        employeeId: data.employeeId,
-        role: data.role,
-        team: data.team,
-        month: data.month != null ? String(data.month) : data.month,
-        year: data.year != null ? String(data.year) : data.year
+        action: 'getsummary'
       };
       
-    case 'updateRecord':
-      return cleanPayload({
-        action: 'updateRecord',
-        recordId: data.recordId,
-        employeeId: data.employeeId,
-        employeeName: data.employeeName,
-        team: data.team,
-        employmentType: data.employmentType,
-        role: data.role,
-        attendanceDate: data.attendanceDate,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        workHours: Number(data.workHours || 0),
-        activityType: data.activityType,
-        schoolName: data.schoolName || '',
-        municipality: data.municipality,
-        programName: data.programName || '',
-        sessionNumber: Number(data.sessionNumber || 0),
-        kilometers: Number(data.kilometers || 0),
-        totalExpenses: Number(data.totalExpenses || 0),
-        expensesDetails: data.expensesDetails || '',
-        notes: data.notes || '',
-        attachmentsNames: data.attachmentsNames || ''
-      });
-      
-    case 'deleteRecord':
-      return cleanPayload({
-        action: 'deleteRecord',
-        recordId: data.recordId,
-        role: data.role,
+    case 'getemployeerecords':
+      return {
+        action: 'getemployeerecords',
         employeeId: data.employeeId
-      });
-      
-    case 'getEmployees':
-      return { action: 'getEmployees' };
+      };
       
     default:
-      return { action, ...data };
+      throw new Error(`Unsupported action: ${normalizedAction}`);
   }
 }
 
@@ -3334,7 +3345,14 @@ function normalizeRecordFromServer(rec) {
     expensesDetail: rec.expensesDetails || rec.ExpensesDetails || '',
     notes: rec.notes || rec.Notes || '',
     team: rec.team || rec.Team || '',
-    employmentType: normalizeEmploymentType(rec, '')
+    employmentType: normalizeEmploymentType(rec, ''),
+    attachmentsNames: rec.attachmentsNames || rec.AttachmentsNames || '',
+    status: rec.status || rec.Status || '',
+    approvedBy: rec.approvedBy || rec.ApprovedBy || '',
+    approvedDate: rec.approvedDate || rec.ApprovedDate || '',
+    rejectReason: rec.rejectReason || rec.RejectReason || '',
+    MonthApproved: rec.MonthApproved || '',
+    ApprovalDate: rec.ApprovalDate || ''
   };
 }
 
@@ -3342,7 +3360,13 @@ function normalizeRecordFromServer(rec) {
  * API Request with retry logic
  */
 async function apiRequest(action, data, retryCount = 0) {
-  const payload = normalizePayload(action, data);
+  let payload;
+  try {
+    payload = normalizePayload(action, data);
+  } catch (error) {
+    console.error('Unsupported action:', action, error);
+    throw error;
+  }
   // Sanitize payload for logging (remove sensitive data like personalCode)
   const sanitizedPayload = { ...payload };
   if (sanitizedPayload.personalCode) sanitizedPayload.personalCode = '***';
@@ -3681,9 +3705,12 @@ function hasPermission(action, targetTeam = null) {
 }
 
 function canEditRecord(record) {
+  if (!isRecordUpdateSupported()) {
+    return false;
+  }
   const user = getCurrentUserData();
   if (!user) return false;
-
+  
   const role = user.role;
 
   // system_admin can edit all records
@@ -3731,6 +3758,10 @@ function getEditBlockReason(record) {
   const user = getCurrentUserData();
   if (!user) return 'משתמש לא מחובר';
 
+  if (!isRecordUpdateSupported()) {
+    return 'עדכון רשומות אינו נתמך ב-API הנוכחי';
+  }
+
   const role = user.role;
 
   // Admins can always edit
@@ -3769,6 +3800,9 @@ function getEditBlockReason(record) {
 }
 
 function canDeleteRecord(record) {
+  if (!isRecordDeleteSupported()) {
+    return false;
+  }
   const user = getCurrentUserData();
   if (!user) return false;
   
@@ -3812,10 +3846,8 @@ async function loadMyRecordsFromServer() {
     const role = localStorage.getItem("role") || '';
     const team = localStorage.getItem("team") || '';
     
-    const data = await apiRequest('getHistory', {
-      employeeId: employeeId,
-      role: role,
-      team: team
+    const data = await apiRequest('getemployeerecords', {
+      employeeId: employeeId
     });
 
     if (!data.success || !Array.isArray(data.records)) {
@@ -3857,30 +3889,8 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
       updatedRecord.date || updatedRecord.attendanceDate
     );
     if (!canUpdate) return false;
-    const data = await apiRequest('updateRecord', {
-      recordId: Number(updatedRecord.recordId),
-      employeeId: String(updatedRecord.empNum),
-      employeeName: String(updatedRecord.empName || localStorage.getItem("employeeName") || ''),
-      team: updatedRecord.team || localStorage.getItem("team") || '',
-      employmentType: updatedRecord.employmentType || localStorage.getItem("employmentType") || '',
-      role: localStorage.getItem("role") || '',
-      attendanceDate: String(updatedRecord.date),
-      startTime: String(updatedRecord.start),
-      endTime: String(updatedRecord.end),
-      workHours: Number(updatedRecord.hours) || 0,
-      activityType: String(updatedRecord.activity),
-      schoolName: String(updatedRecord.school),
-      municipality: String(updatedRecord.municipality),
-      programName: String(updatedRecord.program),
-      sessionNumber: Number(updatedRecord.session) || 0,
-      kilometers: Number(updatedRecord.km) || 0,
-      totalExpenses: Number(updatedRecord.totalExpenses) || 0,
-      expensesDetails: String(updatedRecord.expensesDetail || ''),
-      notes: String(updatedRecord.notes || ''),
-      attachmentsNames: formatAttachments(updatedRecord.attachments || [])
-    });
-    
-    return data.success;
+    showAlert('⚠️ עדכון רשומות אינו נתמך ב-API הנוכחי', 'error');
+    return false;
   } catch (error) {
     console.error('Update record error:', error);
     return false;
@@ -3899,13 +3909,8 @@ async function deleteRecordOnServer(record) {
       record.date || record.attendanceDate
     );
     if (!canDelete) return false;
-    const data = await apiRequest('deleteRecord', {
-      recordId: Number(record.recordId),
-      role: localStorage.getItem("role") || '',
-      employeeId: String(record.empNum || localStorage.getItem("employeeId") || '')
-    });
-    
-    return data.success;
+    showAlert('⚠️ מחיקת רשומות אינה נתמכת ב-API הנוכחי', 'error');
+    return false;
   } catch (error) {
     console.error('Delete record error:', error);
     return false;
@@ -4225,6 +4230,9 @@ function formatApprovalDate(dateValue) {
 }
 
 async function fetchMonthStatus(employeeId, monthKey, team) {
+  if (!isApprovalsSupported()) {
+    return { approved: false, approvalDate: null, released: false, releaseDate: null };
+  }
   try {
     const data = await apiRequest('checkMonthApproval', {
       employeeId,
@@ -4306,6 +4314,12 @@ async function loadInstructorMonthlyApprovalStatus() {
 
   if (!statusEl || !buttonEl || !monthLabel) return;
 
+  if (!isApprovalsSupported()) {
+    statusEl.textContent = 'אישורים חודשיים אינם נתמכים כרגע';
+    buttonEl.disabled = true;
+    return;
+  }
+
   if (!user || user.role !== 'instructor') {
     statusEl.textContent = 'סטטוס אישור לא זמין';
     buttonEl.disabled = true;
@@ -4339,6 +4353,10 @@ async function loadInstructorMonthlyApprovalStatus() {
 
 async function approveMonthlyReport() {
   const user = getCurrentUserData();
+  if (!isApprovalsSupported()) {
+    showAlert('⚠️ אישורים חודשיים אינם נתמכים ב-API הנוכחי', 'error');
+    return;
+  }
   if (!user || user.role !== 'instructor') {
     showAlert('אין הרשאה לבצע אישור חודשי', 'error');
     return;
@@ -4387,6 +4405,10 @@ async function loadMonthlyApprovalsTable() {
   if (!container) return;
   if (isMobileView()) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">הסיכום המלא זמין בדסקטופ בלבד</p>';
+    return;
+  }
+  if (!isApprovalsSupported()) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אישורים חודשיים אינם נתמכים כרגע</p>';
     return;
   }
   if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
@@ -4450,6 +4472,10 @@ async function loadMonthlyApprovalsTable() {
 
 async function resetTeamMonth() {
   const user = getCurrentUserData();
+  if (!isApprovalsSupported()) {
+    showAlert('⚠️ שחרור חודש אינו נתמך ב-API הנוכחי', 'error');
+    return;
+  }
   if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
     showAlert('אין הרשאה לשחרור חודש', 'error');
     return;
@@ -4483,6 +4509,10 @@ async function resetTeamMonth() {
 
 async function unlockTeamMonth() {
   const user = getCurrentUserData();
+  if (!isApprovalsSupported()) {
+    showAlert('⚠️ פתיחת חודש אינה נתמכת ב-API הנוכחי', 'error');
+    return;
+  }
   if (!user || user.role !== 'system_admin') {
     showAlert('אין הרשאה לפתיחת חודש', 'error');
     return;
@@ -4844,18 +4874,7 @@ async function deleteTeamRecord(recordId) {
   if (!confirm('האם אתה בטוח שברצונך למחוק רשומה זו?')) return;
 
   try {
-    const data = await apiRequest('deleteRecord', {
-      recordId: recordId,
-      role: localStorage.getItem("role") || '',
-      employeeId: String(localStorage.getItem("employeeId") || '')
-    });
-
-    if (data.success) {
-      showAlert('הרשומה נמחקה בהצלחה', 'success');
-      loadTeamRecords(); // Reload
-    } else {
-      showAlert('שגיאה במחיקה', 'error');
-    }
+    showAlert('⚠️ מחיקת רשומות אינה נתמכת ב-API הנוכחי', 'error');
   } catch (error) {
     showAlert('שגיאה במחיקה', 'error');
   }
@@ -5500,6 +5519,9 @@ async function addRecord() {
     action: "submit",
     employeeId: String(localStorage.getItem("employeeId") || empNum),
     employeeName: String(localStorage.getItem("employeeName") || empName),
+    team: String(localStorage.getItem("team") || ''),
+    employmentType: String(localStorage.getItem("employmentType") || ''),
+    role: String(localStorage.getItem("role") || ''),
     attendanceDate: String(date),
     startTime: String(startTime),
     endTime: String(endTime),
@@ -5697,6 +5719,11 @@ function renderRecordsTable() {
 async function deleteRecord(index) {
   const rec = records[index];
   if (!rec) return;
+
+  if (!isRecordDeleteSupported()) {
+    showAlert('⚠️ מחיקת רשומות אינה נתמכת ב-API הנוכחי', 'error');
+    return;
+  }
 
   if (!canDeleteRecord(rec)) {
     showAlert('❌ אין לך הרשאה למחוק ימי עבודה', 'error');
@@ -6211,6 +6238,10 @@ function createDailyConsolidatedSheet(recordsList) {
 }
 
 function exportAttendanceWorkbook(recordsList, options = {}) {
+  if (!isExportSupported()) {
+    showAlert('⚠️ ייצוא נתונים אינו נתמך ב-API הנוכחי', 'error');
+    return;
+  }
   if (!window.XLSX) {
     showAlert('ספריית Excel לא נטענה', 'error');
     return;
@@ -6642,45 +6673,11 @@ async function updateAdminDashboard() {
   // Get user role to check permissions
   const userRole = localStorage.getItem('role') || '';
   
-  // First, try to get employee data (employmentType) from employees list
   let employeesMap = {};
-  try {
-    const employeesData = await apiRequest('getEmployees', {
-      role: userRole
-    });
-    
-    if (employeesData.success && Array.isArray(employeesData.employees)) {
-      employeesData.employees.forEach(emp => {
-        const extractValue = (field) => {
-          if (!field) return '';
-          if (typeof field === 'string') return field;
-          if (typeof field === 'object' && field.Value) return field.Value;
-          if (typeof field === 'object' && field.value) return field.value;
-          return '';
-        };
-        
-        employeesMap[emp.employeeId || emp.EmployeeId || emp.ID] = {
-          employmentType: normalizeEmploymentType(emp, 'תעשיידע'),
-          team: extractValue(emp.team) || extractValue(emp.Team) || '-',
-          name: extractValue(emp.employeeName) || extractValue(emp.EmployeeName) || ''
-        };
-      });
-      console.log('Loaded employees data:', Object.keys(employeesMap).length, 'employees');
-    }
-  } catch (err) {
-    console.log('Could not load employees list (getEmployees action may not exist):', err.message);
-  }
   
   // Fetch all records from server
   try {
-    const employeeId = localStorage.getItem('employeeId');
-    const team = localStorage.getItem('team') || '';
-    
-    const data = await apiRequest('getHistory', {
-      employeeId: employeeId,
-      role: userRole,
-      team: team
-    });
+    const data = await apiRequest('getsummary', {});
     
     if (!data.success || !Array.isArray(data.records)) {
       tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
@@ -6946,11 +6943,7 @@ async function loadReportData() {
     if (isMobileView()) {
       reportRecords = getFilteredRecordsByMonth(records, month, year);
     } else {
-      const data = await apiRequest('getHistory', {
-        employeeId: user.empNum,
-        role: user.role,
-        team: user.team
-      });
+      const data = await apiRequest('getsummary', {});
       
       if (!data.success || !Array.isArray(data.records)) {
         reportRecords = getFilteredRecordsByMonth(records, month, year);

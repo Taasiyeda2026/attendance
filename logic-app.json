@@ -1,9 +1,27 @@
 {
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-    "contentVersion": "2.0.0.0",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "siteUrl": {
+        "type": "String",
+        "defaultValue": ""
+      },
+      "employeesListId": {
+        "type": "String",
+        "defaultValue": ""
+      },
+      "attendanceListId": {
+        "type": "String",
+        "defaultValue": ""
+      },
+      "$connections": {
+        "type": "Object",
+        "defaultValue": {}
+      }
+    },
     "triggers": {
-      "When_an_HTTP_request_is_received": {
+      "manual": {
         "type": "Request",
         "kind": "Http",
         "inputs": {
@@ -11,7 +29,15 @@
           "schema": {
             "type": "object",
             "properties": {
-              "action": { "type": "string" }
+              "action": { "type": "string" },
+              "employeeId": { "type": "string" },
+              "personalCode": { "type": "string" },
+              "employeeName": { "type": "string" },
+              "team": { "type": "string" },
+              "role": { "type": "string" },
+              "attendanceDate": { "type": "string" },
+              "workHours": { "type": "number" },
+              "kilometers": { "type": "number" }
             },
             "required": ["action"]
           }
@@ -19,7 +45,7 @@
       }
     },
     "actions": {
-      "Set_CORS_Headers": {
+      "Initialize_CORS_Headers": {
         "type": "InitializeVariable",
         "inputs": {
           "variables": [
@@ -29,7 +55,7 @@
               "value": {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Accept",
+                "Access-Control-Allow-Headers": "Content-Type",
                 "Content-Type": "application/json"
               }
             }
@@ -38,54 +64,173 @@
       },
       "Normalize_Action": {
         "type": "Compose",
-        "inputs": "@if(equals(triggerBody()?['action'], 'updateRecord'), 'update', if(equals(triggerBody()?['action'], 'deleteRecord'), 'delete', triggerBody()?['action']))",
-        "runAfter": { "Set_CORS_Headers": ["Succeeded"] }
+        "inputs": "@toLower(triggerBody()?['action'])",
+        "runAfter": {
+          "Initialize_CORS_Headers": ["Succeeded"]
+        }
       },
-      "Switch_Action": {
+      "Switch_By_Action": {
         "type": "Switch",
         "expression": "@outputs('Normalize_Action')",
+        "runAfter": {
+          "Normalize_Action": ["Succeeded"]
+        },
         "cases": {
-          "Submit_Case": {
+          "getsummary": {
+            "case": "getsummary",
+            "actions": {
+              "Fetch_Summary_Data": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "get",
+                  "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('attendanceListId'))}/items",
+                  "queries": {
+                    "$filter": "attendanceDate ge '@{startOfMonth(utcNow())}'",
+                    "$select": "ID,employeeId,employeeName,workHours,kilometers,team,attendanceDate,status"
+                  }
+                }
+              },
+              "Response_Summary": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": true,
+                    "records": "@body('Fetch_Summary_Data')?['value']"
+                  }
+                },
+                "runAfter": {
+                  "Fetch_Summary_Data": ["Succeeded"]
+                }
+              }
+            }
+          },
+          "getemployeerecords": {
+            "case": "getemployeerecords",
+            "actions": {
+              "Fetch_Detailed_Records": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "get",
+                  "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('attendanceListId'))}/items",
+                  "queries": {
+                    "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and attendanceDate ge '@{startOfMonth(utcNow())}'"
+                  }
+                }
+              },
+              "Response_Detailed": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": true,
+                    "records": "@body('Fetch_Detailed_Records')?['value']"
+                  }
+                },
+                "runAfter": {
+                  "Fetch_Detailed_Records": ["Succeeded"]
+                }
+              }
+            }
+          },
+          "auth": {
+            "case": "auth",
+            "actions": {
+              "Find_Employee": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                    }
+                  },
+                  "method": "get",
+                  "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('employeesListId'))}/items",
+                  "queries": {
+                    "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and personalCode eq '@{triggerBody()?['personalCode']}'"
+                  }
+                }
+              },
+              "Response_Auth": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": "@greater(length(body('Find_Employee')?['value']), 0)",
+                    "employee": "@first(body('Find_Employee')?['value'])"
+                  }
+                },
+                "runAfter": {
+                  "Find_Employee": ["Succeeded"]
+                }
+              }
+            }
+          },
+          "submit": {
             "case": "submit",
             "actions": {
-              "Submit_Month_Key": {
-                "type": "Compose",
-                "inputs": "@substring(triggerBody()?['attendanceDate'], 0, 7)"
-              },
-              "Check_Submit_Allowed": {
-                "type": "If",
-                "expression": { "equals": [true, true] },
-                "actions": {},
-                "else": {
-                  "actions": {
-                    "Create_Attendance_Record": {
-                      "type": "ApiConnection",
-                      "inputs": {
-                        "host": {
-                          "connection": {
-                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                          }
-                        },
-                        "method": "post",
-                        "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
-                        "body": {}
-                      }
-                    },
-                    "Response_Submit_Success_Create": {
-                      "type": "Response",
-                      "kind": "Http",
-                      "inputs": {
-                        "statusCode": 200,
-                        "headers": "@variables('corsHeaders')",
-                        "body": {
-                          "success": true,
-                          "message": "הרשומה נשמרה בהצלחה",
-                          "recordId": "@body('Create_Attendance_Record')?['ID']"
-                        }
-                      },
-                      "runAfter": { "Create_Attendance_Record": ["Succeeded"] }
+              "Create_Item": {
+                "type": "ApiConnection",
+                "inputs": {
+                  "host": {
+                    "connection": {
+                      "name": "@parameters('$connections')['sharepointonline']['connectionId']"
                     }
+                  },
+                  "method": "post",
+                  "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('attendanceListId'))}/items",
+                  "body": {
+                    "employeeId": "@{triggerBody()?['employeeId']}",
+                    "employeeName": "@{triggerBody()?['employeeName']}",
+                    "team": "@{triggerBody()?['team']}",
+                    "employmentType": "@{triggerBody()?['employmentType']}",
+                    "role": "@{triggerBody()?['role']}",
+                    "attendanceDate": "@{triggerBody()?['attendanceDate']}",
+                    "startTime": "@{triggerBody()?['startTime']}",
+                    "endTime": "@{triggerBody()?['endTime']}",
+                    "workHours": "@{triggerBody()?['workHours']}",
+                    "activityType": "@{triggerBody()?['activityType']}",
+                    "schoolName": "@{triggerBody()?['schoolName']}",
+                    "municipality": "@{triggerBody()?['municipality']}",
+                    "programName": "@{triggerBody()?['programName']}",
+                    "sessionNumber": "@{triggerBody()?['sessionNumber']}",
+                    "kilometers": "@{triggerBody()?['kilometers']}",
+                    "totalExpenses": "@{triggerBody()?['totalExpenses']}",
+                    "expensesDetails": "@{triggerBody()?['expensesDetails']}",
+                    "notes": "@{triggerBody()?['notes']}",
+                    "attachmentsNames": "@{triggerBody()?['attachmentsNames']}"
                   }
+                }
+              },
+              "Response_Submit": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": {
+                  "statusCode": 200,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": true,
+                    "id": "@body('Create_Item')?['ID']"
+                  }
+                },
+                "runAfter": {
+                  "Create_Item": ["Succeeded"]
                 }
               }
             }
@@ -93,34 +238,26 @@
         },
         "default": {
           "actions": {
-            "Response_Unknown_Action": {
+            "Response_Unknown": {
               "type": "Response",
               "kind": "Http",
               "inputs": {
                 "statusCode": 400,
                 "headers": "@variables('corsHeaders')",
-                "body": { "success": false, "message": "פעולה לא ידועה" }
+                "body": {
+                  "success": false,
+                  "message": "@concat('Action not supported: ', outputs('Normalize_Action'))"
+                }
               }
             }
           }
-        },
-        "runAfter": { "Normalize_Action": ["Succeeded"] }
+        }
       }
-    },
-    "parameters": {
-      "$connections": { "type": "Object", "defaultValue": {} }
     }
   },
   "parameters": {
     "$connections": {
-      "type": "Object",
-      "value": {
-        "sharepointonline": {
-          "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/providers/Microsoft.Web/locations/israelcentral/managedApis/sharepointonline",
-          "connectionId": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline",
-          "connectionName": "sharepointonline"
-        }
-      }
+      "value": {}
     }
   }
 }
