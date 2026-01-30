@@ -128,6 +128,9 @@
                   "queries": {
                     "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and attendanceDate ge '@{startOfMonth(utcNow())}'"
                   }
+                },
+                "runAfter": {
+                  "Create_Item": ["Succeeded"]
                 }
               },
               "Response_Detailed": {
