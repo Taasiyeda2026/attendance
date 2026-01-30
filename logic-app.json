@@ -5,15 +5,15 @@
     "parameters": {
       "siteUrl": {
         "type": "String",
-        "defaultValue": ""
+        "defaultValue": "https://think365orgil.sharepoint.com/sites/taasiyeda2026"
       },
       "employeesListId": {
         "type": "String",
-        "defaultValue": ""
+        "defaultValue": "697f3cf6-2ed9-49ba-8a05-605d760af517"
       },
       "attendanceListId": {
         "type": "String",
-        "defaultValue": ""
+        "defaultValue": "3c3d634f-5972-4e2e-87cd-0f51ebd8fe27"
       },
       "$connections": {
         "type": "Object",
@@ -237,7 +237,13 @@
   },
   "parameters": {
     "$connections": {
-      "value": {}
+      "value": {
+        "sharepointonline": {
+          "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/providers/Microsoft.Web/locations/israelcentral/managedApis/sharepointonline",
+          "connectionId": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline",
+          "connectionName": "sharepointonline"
+        }
+      }
     }
   }
 }
