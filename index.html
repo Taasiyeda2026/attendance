@@ -6741,7 +6741,7 @@ window.addEventListener('DOMContentLoaded', function() {
       }
 
       // Validate role is a known value
-      const validRoles = ['instructor', 'manager', 'payroll_officer', 'operations_controller', 'admin_assistant', 'system_admin'];
+      const validRoles = ['instructor', 'manager', 'payroll_officer', 'operations_controller', 'system_admin'];
       if (empData.role && !validRoles.includes(empData.role)) {
         console.warn('Invalid role in localStorage:', empData.role, '- defaulting to instructor');
         empData.role = 'instructor';
