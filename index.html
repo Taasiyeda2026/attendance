@@ -2605,10 +2605,16 @@
       <div class="content-card" id="monthlyApprovalsCard" style="margin-bottom: 20px; display: none;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <h2 class="card-title"><i class="fas fa-user-check" style="margin-left: 8px; color: #3b82f6;"></i>סטטוס אישורי חודש</h2>
-          <button class="btn" onclick="loadMonthlyApprovalsTable()" style="background: #3b82f6; color: white;">
-            <i class="fas fa-sync-alt"></i>
-            רענן סטטוס
-          </button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn" onclick="loadMonthlyApprovalsTable()" style="background: #3b82f6; color: white;">
+              <i class="fas fa-sync-alt"></i>
+              רענן סטטוס
+            </button>
+            <button class="btn" id="resetMonthBtn" onclick="resetTeamMonth()" style="background: #f97316; color: white; display: none;">
+              <i class="fas fa-unlock"></i>
+              שחרור חודש
+            </button>
+          </div>
         </div>
         <div class="card-body">
           <div id="monthlyApprovalsTable">
@@ -3877,6 +3883,11 @@ async function deleteRecordOnServer(record) {
   }
   
   try {
+    const canDelete = await ensureMonthEditable(
+      String(record.empNum || localStorage.getItem("employeeId") || ''),
+      record.date || record.attendanceDate
+    );
+    if (!canDelete) return false;
     const data = await apiRequest('deleteRecord', {
       recordId: Number(record.recordId)
     });
@@ -4208,56 +4219,40 @@ function getHoursUntilUnlock(dateValue) {
   return Math.ceil(diffMs / (60 * 60 * 1000));
 }
 
-// =============== Local Storage Approval Functions ===============
-// These functions provide a local fallback when backend doesn't support approval actions
-
-const APPROVALS_STORAGE_KEY = 'monthlyApprovals';
-
-function getLocalApprovals() {
+async function fetchApprovalStatus(employeeId, monthKey) {
   try {
-    const stored = localStorage.getItem(APPROVALS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch (e) {
-    console.warn('Error reading local approvals:', e);
-    return {};
-  }
-}
-
-function saveLocalApproval(employeeId, employeeName, team, monthKey) {
-  try {
-    const approvals = getLocalApprovals();
-    const key = `${employeeId}_${monthKey}`;
-    approvals[key] = {
+    const data = await apiRequest('checkMonthApproval', {
       employeeId,
-      employeeName,
-      team,
-      month: monthKey,
-      approvalDate: new Date().toISOString()
-    };
-    localStorage.setItem(APPROVALS_STORAGE_KEY, JSON.stringify(approvals));
-    return approvals[key];
-  } catch (e) {
-    console.warn('Error saving local approval:', e);
-    return null;
-  }
-}
-
-function getLocalApprovalForEmployee(employeeId, monthKey) {
-  const approvals = getLocalApprovals();
-  const key = `${employeeId}_${monthKey}`;
-  return approvals[key] || null;
-}
-
-function getLocalApprovalsForTeam(team, monthKey) {
-  const approvals = getLocalApprovals();
-  const results = [];
-  for (const key in approvals) {
-    const approval = approvals[key];
-    if (approval.month === monthKey && (team === 'הכל' || !team || approval.team === team)) {
-      results.push(approval);
+      month: monthKey
+    });
+    if (data && data.success) {
+      return {
+        approved: !!data.approved,
+        approvalDate: data.approvalDate || null
+      };
     }
+  } catch (e) {
+    console.warn('Error fetching approval status:', e);
   }
-  return results;
+  return { approved: false, approvalDate: null };
+}
+
+function getMonthKeyFromDate(dateString) {
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return null;
+  return getApprovalMonthKey(date.getMonth() + 1, date.getFullYear());
+}
+
+async function ensureMonthEditable(employeeId, dateString) {
+  const monthKey = getMonthKeyFromDate(dateString);
+  if (!monthKey) return true;
+  const approvalStatus = await fetchApprovalStatus(employeeId, monthKey);
+  if (approvalStatus.approved) {
+    showAlert('החודש אושר ואינו ניתן לעריכה. ניתן לדווח לחודש הבא.', 'error');
+    return false;
+  }
+  return true;
 }
 
 function updateMonthlyApprovalVisibility() {
@@ -4300,9 +4295,8 @@ async function loadInstructorMonthlyApprovalStatus() {
 
   monthLabel.textContent = getApprovalMonthLabel(now.getMonth() + 1, now.getFullYear());
 
-  // Use localStorage-based approval status (works offline and when backend doesn't support approval actions)
-  const localApproval = getLocalApprovalForEmployee(employeeId, monthKey);
-  const approvalDate = localApproval?.approvalDate || null;
+  const approvalStatus = await fetchApprovalStatus(employeeId, monthKey);
+  const approvalDate = approvalStatus.approvalDate || null;
   instructorApprovalInfo = { monthKey, approvalDate };
 
   if (approvalDate) {
@@ -4342,21 +4336,20 @@ async function approveMonthlyReport() {
   }
 
   const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
-  const employeeName = String(user.empName || localStorage.getItem('employeeName') || '');
-  const team = user.team || '';
-
-  // Save approval locally (works offline and when backend doesn't support approval actions)
-  const savedApproval = saveLocalApproval(employeeId, employeeName, team, monthKey);
-
-  if (savedApproval) {
-    showAlert('האישור החודשי נשמר בהצלחה', 'success');
-    instructorApprovalInfo = {
-      monthKey,
-      approvalDate: savedApproval.approvalDate
-    };
-    await loadInstructorMonthlyApprovalStatus();
-  } else {
-    showAlert('שגיאה בשמירת אישור חודשי', 'error');
+  try {
+    const data = await apiRequest('approveMonthRecords', {
+      employeeId,
+      month: monthKey,
+      year: String(now.getFullYear())
+    });
+    if (data.success) {
+      showAlert('האישור החודשי נשמר בהצלחה', 'success');
+      await loadInstructorMonthlyApprovalStatus();
+    } else {
+      showAlert(data.message || 'שגיאה בשמירת אישור חודשי', 'error');
+    }
+  } catch (error) {
+    showAlert(error.message || 'שגיאה בשמירת אישור חודשי', 'error');
   }
 
   if (buttonEl) {
@@ -4383,21 +4376,29 @@ async function loadMonthlyApprovalsTable() {
   const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
   const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
   const monthKey = getApprovalMonthKey(month, year);
-  const team = (user.role === 'system_admin' || user.role === 'admin_assistant') ? 'הכל' : (user.team || '');
+  const team = user.team || '';
 
-  // Use localStorage-based approval data
-  const localApprovals = getLocalApprovalsForTeam(team, monthKey);
+  let approvalsData = [];
+  try {
+    const data = await apiRequest('getTeamApprovalStatus', {
+      team,
+      month: monthKey
+    });
+    approvalsData = Array.isArray(data.employees) ? data.employees : [];
+  } catch (error) {
+    console.error('Error loading approval status:', error);
+  }
 
-  if (localApprovals.length === 0) {
+  if (approvalsData.length === 0) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין נתוני אישורים להצגה</p>';
     return;
   }
 
-  const rows = localApprovals.map(emp => {
+  const rows = approvalsData.map(emp => {
     const approvalDate = emp.approvalDate || null;
     return `
       <tr>
-        <td>${emp.employeeName || '—'}</td>
+        <td>${emp.name || emp.employeeName || '—'}</td>
         <td>${emp.employeeId || '—'}</td>
         <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
         <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
@@ -4422,6 +4423,37 @@ async function loadMonthlyApprovalsTable() {
       </table>
     </div>
   `;
+}
+
+async function resetTeamMonth() {
+  const user = getCurrentUserData();
+  if (!user || !['manager', 'system_admin', 'admin_assistant'].includes(user.role)) {
+    showAlert('אין הרשאה לשחרור חודש', 'error');
+    return;
+  }
+
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+  const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
+  const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
+  const monthKey = getApprovalMonthKey(month, year);
+  const team = user.team || '';
+
+  try {
+    const data = await apiRequest('resetTeamMonth', {
+      team,
+      month: monthKey,
+      year: String(year)
+    });
+    if (data.success) {
+      showAlert('החודש שוחרר בהצלחה', 'success');
+      await loadMonthlyApprovalsTable();
+    } else {
+      showAlert(data.message || 'שגיאה בשחרור חודש', 'error');
+    }
+  } catch (error) {
+    showAlert(error.message || 'שגיאה בשחרור חודש', 'error');
+  }
 }
 
 // =============== Team Records Functions ===============
@@ -4988,6 +5020,14 @@ async function submitAll() {
   let failed = 0;
   
   for (const rec of pending) {
+    const canSubmit = await ensureMonthEditable(
+      String(localStorage.getItem("employeeId") || rec.empNum),
+      rec.date
+    );
+    if (!canSubmit) {
+      failed++;
+      continue;
+    }
     const payload = {
         action: "submit",
         employeeId: localStorage.getItem("employeeId") || rec.empNum,
@@ -5517,6 +5557,12 @@ async function addRecord() {
     showAlert('⚠️ אנא מלא את כל השדות החובה: ' + missing.join(', '), 'error');
     return;
   }
+
+  const canSubmit = await ensureMonthEditable(
+    String(localStorage.getItem("employeeId") || empNum),
+    date
+  );
+  if (!canSubmit) return;
 
   // Validate activity type against allowed values
   if (!isValidActivityType(activity)) {
