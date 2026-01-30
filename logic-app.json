@@ -1,8 +1,7 @@
 {
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-    "contentVersion": "4.0.0.0",
-
+    "contentVersion": "6.0.0.0",
     "parameters": {
       "siteUrl": {
         "type": "String",
@@ -21,7 +20,6 @@
         "defaultValue": {}
       }
     },
-
     "triggers": {
       "manual": {
         "type": "Request",
@@ -32,10 +30,8 @@
             "type": "object",
             "properties": {
               "action": { "type": "string" },
-
               "employeeId": { "type": "string" },
               "personalCode": { "type": "string" },
-
               "employeeName": { "type": "string" },
               "attendanceDate": { "type": "string" },
               "startTime": { "type": "string" },
@@ -51,14 +47,14 @@
               "expensesDetails": { "type": "string" },
               "notes": { "type": "string" },
               "team": { "type": "string" },
-              "employmentType": { "type": "string" }
+              "employmentType": { "type": "string" },
+              "role": { "type": "string" }
             },
             "required": ["action"]
           }
         }
       }
     },
-
     "actions": {
       "Init_CORS": {
         "type": "InitializeVariable",
@@ -77,7 +73,6 @@
           ]
         }
       },
-
       "Normalize_Action": {
         "type": "Compose",
         "inputs": "@toLower(coalesce(triggerBody()?['action'], ''))",
@@ -85,14 +80,12 @@
           "Init_CORS": ["Succeeded"]
         }
       },
-
       "Switch_By_Action": {
         "type": "Switch",
         "expression": "@outputs('Normalize_Action')",
         "runAfter": {
           "Normalize_Action": ["Succeeded"]
         },
-
         "cases": {
           "auth": {
             "case": "auth",
@@ -112,7 +105,7 @@
                   }
                 }
               },
-              "Response_Auth": {
+              "Response_Auth_Success": {
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
@@ -125,10 +118,23 @@
                 "runAfter": {
                   "Find_Employee": ["Succeeded"]
                 }
+              },
+              "Response_Auth_Failed": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 500,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": false,
+                    "message": "Authentication service unavailable"
+                  }
+                },
+                "runAfter": {
+                  "Find_Employee": ["Failed", "TimedOut"]
+                }
               }
             }
           },
-
           "submit": {
             "case": "submit",
             "actions": {
@@ -159,24 +165,41 @@
                     "expensesDetails": "@triggerBody()?['expensesDetails']",
                     "notes": "@triggerBody()?['notes']",
                     "team": "@triggerBody()?['team']",
-                    "employmentType": "@triggerBody()?['employmentType']"
+                    "employmentType": "@triggerBody()?['employmentType']",
+                    "role": "@triggerBody()?['role']"
                   }
                 }
               },
-              "Response_Submit": {
+              "Response_Submit_Success": {
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
                   "headers": "@variables('corsHeaders')",
-                  "body": { "success": true }
+                  "body": {
+                    "success": true,
+                    "id": "@body('Create_Attendance')?['ID']"
+                  }
                 },
                 "runAfter": {
                   "Create_Attendance": ["Succeeded"]
                 }
+              },
+              "Response_Submit_Failed": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 500,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": false,
+                    "message": "Failed to save attendance record"
+                  }
+                },
+                "runAfter": {
+                  "Create_Attendance": ["Failed", "TimedOut"]
+                }
               }
             }
           },
-
           "getsummary": {
             "case": "getsummary",
             "actions": {
@@ -189,25 +212,43 @@
                     }
                   },
                   "method": "get",
-                  "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('Attendance'))}/items"
+                  "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('Attendance'))}/items",
+                  "queries": {
+                    "$filter": "attendanceDate ge '@{startOfMonth(utcNow())}'",
+                    "$select": "ID,employeeId,employeeName,workHours,kilometers,team,attendanceDate"
+                  }
                 }
               },
-              "Response_Summary": {
+              "Response_Summary_Success": {
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
                   "headers": "@variables('corsHeaders')",
                   "body": {
+                    "success": true,
                     "records": "@body('Fetch_Summary')?['value']"
                   }
                 },
                 "runAfter": {
                   "Fetch_Summary": ["Succeeded"]
                 }
+              },
+              "Response_Summary_Failed": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 500,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": false,
+                    "message": "Failed to fetch summary"
+                  }
+                },
+                "runAfter": {
+                  "Fetch_Summary": ["Failed", "TimedOut"]
+                }
               }
             }
           },
-
           "getemployeerecords": {
             "case": "getemployeerecords",
             "actions": {
@@ -222,27 +263,42 @@
                   "method": "get",
                   "path": "/datasets/@{encodeURIComponent(parameters('siteUrl'))}/tables/@{encodeURIComponent(parameters('Attendance'))}/items",
                   "queries": {
-                    "$filter": "employeeId eq '@{triggerBody()?['employeeId']}'"
+                    "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and attendanceDate ge '@{startOfMonth(utcNow())}'",
+                    "$orderby": "attendanceDate desc"
                   }
                 }
               },
-              "Response_Employee": {
+              "Response_Employee_Success": {
                 "type": "Response",
                 "inputs": {
                   "statusCode": 200,
                   "headers": "@variables('corsHeaders')",
                   "body": {
+                    "success": true,
                     "records": "@body('Fetch_By_Employee')?['value']"
                   }
                 },
                 "runAfter": {
                   "Fetch_By_Employee": ["Succeeded"]
                 }
+              },
+              "Response_Employee_Failed": {
+                "type": "Response",
+                "inputs": {
+                  "statusCode": 500,
+                  "headers": "@variables('corsHeaders')",
+                  "body": {
+                    "success": false,
+                    "message": "Failed to fetch records"
+                  }
+                },
+                "runAfter": {
+                  "Fetch_By_Employee": ["Failed", "TimedOut"]
+                }
               }
             }
           }
         },
-
         "default": {
           "actions": {
             "Response_Unknown": {
@@ -252,7 +308,7 @@
                 "headers": "@variables('corsHeaders')",
                 "body": {
                   "success": false,
-                  "message": "Unsupported action"
+                  "message": "@concat('Unsupported action: ', outputs('Normalize_Action'))"
                 }
               }
             }
@@ -261,7 +317,6 @@
       }
     }
   },
-
   "parameters": {
     "$connections": {
       "value": {
