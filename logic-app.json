@@ -1,0 +1,966 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "2.0.0.0",
+        "triggers": {
+            "When_an_HTTP_request_is_received": {
+                "type": "Request",
+                "kind": "Http",
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "action": {
+                                "type": "string"
+                            },
+                            "employeeId": {
+                                "type": "string"
+                            },
+                            "personalCode": {
+                                "type": "string"
+                            },
+                            "employeeName": {
+                                "type": "string"
+                            },
+                            "attendanceDate": {
+                                "type": "string"
+                            },
+                            "startTime": {
+                                "type": "string"
+                            },
+                            "endTime": {
+                                "type": "string"
+                            },
+                            "workHours": {
+                                "type": "number"
+                            },
+                            "activityType": {
+                                "type": "string"
+                            },
+                            "schoolName": {
+                                "type": "string"
+                            },
+                            "municipality": {
+                                "type": "string"
+                            },
+                            "programName": {
+                                "type": "string"
+                            },
+                            "sessionNumber": {
+                                "type": "number"
+                            },
+                            "kilometers": {
+                                "type": "number"
+                            },
+                            "totalExpenses": {
+                                "type": "number"
+                            },
+                            "expensesDetails": {
+                                "type": "string"
+                            },
+                            "notes": {
+                                "type": "string"
+                            },
+                            "recordId": {
+                                "type": "integer"
+                            },
+                            "employmentType": {
+                                "type": "string"
+                            },
+                            "team": {
+                                "type": "string"
+                            },
+                            "role": {
+                                "type": "string"
+                            },
+                            "month": {
+                                "type": "string"
+                            },
+                            "year": {
+                                "type": "string"
+                            },
+                            "approvalDate": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "action"
+                        ]
+                    }
+                }
+            }
+        },
+        "actions": {
+            "Set_CORS_Headers": {
+                "type": "InitializeVariable",
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "corsHeaders",
+                            "type": "object",
+                            "value": {
+                                "Access-Control-Allow-Origin": "*",
+                                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                                "Access-Control-Allow-Headers": "Content-Type, Accept",
+                                "Content-Type": "application/json"
+                            }
+                        }
+                    ]
+                },
+                "runAfter": {}
+            },
+            "Switch_Action": {
+                "type": "Switch",
+                "expression": "@triggerBody()?['action']",
+                "default": {
+                    "actions": {
+                        "Response_Unknown_Action": {
+                            "type": "Response",
+                            "kind": "Http",
+                            "inputs": {
+                                "statusCode": 400,
+                                "headers": "@variables('corsHeaders')",
+                                "body": {
+                                    "success": false,
+                                    "message": "פעולה לא ידועה",
+                                    "action": "@triggerBody()?['action']"
+                                }
+                            }
+                        }
+                    }
+                },
+                "cases": {
+                    "auth": {
+                        "actions": {
+                            "Get_Employee_By_Credentials": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('697f3cf6-2ed9-49ba-8a05-605d760af517'))}/items",
+                                    "queries": {
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and personalCode eq '@{triggerBody()?['personalCode']}'"
+                                    }
+                                }
+                            },
+                            "Check_If_Employee_Found": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "greater": [
+                                                "@length(body('Get_Employee_By_Credentials')?['value'])",
+                                                0
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Get_Employee_Name_With_Fallback": {
+                                        "type": "Compose",
+                                        "inputs": "@coalesce(first(body('Get_Employee_By_Credentials')?['value'])?['EmployeeName'], first(body('Get_Employee_By_Credentials')?['value'])?['employeeName'], '')"
+                                    },
+                                    "Get_Employee_Role_With_Fallback": {
+                                        "type": "Compose",
+                                        "inputs": "@coalesce(first(body('Get_Employee_By_Credentials')?['value'])?['role'], first(body('Get_Employee_By_Credentials')?['value'])?['Role'], 'instructor')",
+                                        "runAfter": {
+                                            "Get_Employee_Name_With_Fallback": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    },
+                                    "Get_Employee_Team_With_Fallback": {
+                                        "type": "Compose",
+                                        "inputs": "@coalesce(first(body('Get_Employee_By_Credentials')?['value'])?['Team'], first(body('Get_Employee_By_Credentials')?['value'])?['team'], '')",
+                                        "runAfter": {
+                                            "Get_Employee_Role_With_Fallback": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    },
+                                    "Get_Employee_Type_With_Fallback": {
+                                        "type": "Compose",
+                                        "inputs": "@coalesce(first(body('Get_Employee_By_Credentials')?['value'])?['EmploymentType'], first(body('Get_Employee_By_Credentials')?['value'])?['employmentType'], '')",
+                                        "runAfter": {
+                                            "Get_Employee_Team_With_Fallback": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    },
+                                    "Response_Auth_Success": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 200,
+                                            "headers": "@variables('corsHeaders')",
+                                            "body": {
+                                                "success": true,
+                                                "employee": {
+                                                    "employeeId": "@{first(body('Get_Employee_By_Credentials')?['value'])?['employeeId']}",
+                                                    "EmployeeName": "@{outputs('Get_Employee_Name_With_Fallback')}",
+                                                    "role": "@{outputs('Get_Employee_Role_With_Fallback')}",
+                                                    "Team": "@{outputs('Get_Employee_Team_With_Fallback')}",
+                                                    "EmploymentType": "@{outputs('Get_Employee_Type_With_Fallback')}"
+                                                }
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Get_Employee_Type_With_Fallback": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Response_Auth_Failed": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 401,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": false,
+                                                    "message": "מספר עובד או קוד אישי שגויים"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_Employee_By_Credentials": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Handle_Auth_Error": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 500,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": false,
+                                        "message": "שגיאה בחיפוש עובד",
+                                        "error": "@{body('Get_Employee_By_Credentials')}"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_Employee_By_Credentials": [
+                                        "Failed",
+                                        "TimedOut"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "auth"
+                    },
+                    "submit": {
+                        "actions": {
+                            "Create_Attendance_Record": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "body": {
+                                        "employeeName": "@triggerBody()?['employeeName']",
+                                        "employeeId": "@triggerBody()?['employeeId']",
+                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                        "startTime": "@triggerBody()?['startTime']",
+                                        "endTime": "@triggerBody()?['endTime']",
+                                        "activityType": "@triggerBody()?['activityType']",
+                                        "schoolName": "@triggerBody()?['schoolName']",
+                                        "municipality": "@triggerBody()?['municipality']",
+                                        "programName": "@triggerBody()?['programName']",
+                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
+                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                        "workHours": "@triggerBody()?['workHours']",
+                                        "kilometers": "@triggerBody()?['kilometers']",
+                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                        "notes": "@triggerBody()?['notes']",
+                                        "team": "@triggerBody()?['team']",
+                                        "employmentType": "@triggerBody()?['employmentType']",
+                                        "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                    },
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                }
+                            },
+                            "Response_Submit_Success": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "message": "הרשומה נשמרה בהצלחה",
+                                        "recordId": "@body('Create_Attendance_Record')?['ID']"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Create_Attendance_Record": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Handle_Submit_Error": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 500,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": false,
+                                        "message": "שגיאה בשמירת הרשומה"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Create_Attendance_Record": [
+                                        "Failed",
+                                        "TimedOut"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "submit"
+                    },
+                    "approveMonthRecords": {
+                        "actions": {
+                            "Get_Employee_Month_Records": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and startswith(attendanceDate, '@{triggerBody()?['month']}')"
+                                    }
+                                }
+                            },
+                            "Loop_Through_Records_To_Approve": {
+                                "type": "Foreach",
+                                "foreach": "@body('Get_Employee_Month_Records')?['value']",
+                                "actions": {
+                                    "Update_Record_With_Approval": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                }
+                                            },
+                                            "method": "patch",
+                                            "body": {
+                                                "employeeName": "",
+                                                "employeeId": "",
+                                                "attendanceDate": "",
+                                                "startTime": "",
+                                                "endTime": "",
+                                                "activityType": "",
+                                                "schoolName": "",
+                                                "municipality": "",
+                                                "programName": "",
+                                                "sessionNumber": "",
+                                                "totalExpenses": "",
+                                                "MonthApproved": "@triggerBody()?['month']",
+                                                "ApprovalDate": "@triggerBody()?['approvalDate']"
+                                            },
+                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(item()?['ID'])}"
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_Employee_Month_Records": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Response_Approve_Success": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "message": "החודש אושר בהצלחה",
+                                        "recordsUpdated": "@length(body('Get_Employee_Month_Records')?['value'])"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Loop_Through_Records_To_Approve": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Handle_Approve_Error": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 500,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": false,
+                                        "message": "שגיאה באישור החודש"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_Employee_Month_Records": [
+                                        "Failed",
+                                        "TimedOut"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "approveMonthRecords"
+                    },
+                    "checkMonthApproval": {
+                        "actions": {
+                            "Check_If_Month_Approved": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and MonthApproved eq '@{triggerBody()?['month']}'",
+                                        "$top": 1
+                                    }
+                                }
+                            },
+                            "Check_Approval_Status": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "greater": [
+                                                "@length(body('Check_If_Month_Approved')?['value'])",
+                                                0
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Response_Month_Is_Approved": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 200,
+                                            "headers": "@variables('corsHeaders')",
+                                            "body": {
+                                                "success": true,
+                                                "approved": true,
+                                                "approvalDate": "@{first(body('Check_If_Month_Approved')?['value'])?['ApprovalDate']}"
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Response_Month_Not_Approved": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 200,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": true,
+                                                    "approved": false,
+                                                    "approvalDate": null
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Check_If_Month_Approved": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "checkMonthApproval"
+                    },
+                    "resetTeamMonth": {
+                        "actions": {
+                            "Get_Team_Approved_Month_Records": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "team eq '@{triggerBody()?['team']}' and MonthApproved eq '@{triggerBody()?['month']}'"
+                                    }
+                                }
+                            },
+                            "Loop_Team_Records_Clear_Approval": {
+                                "type": "Foreach",
+                                "foreach": "@body('Get_Team_Approved_Month_Records')?['value']",
+                                "actions": {
+                                    "Clear_Approval_For_Record": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                }
+                                            },
+                                            "method": "patch",
+                                            "body": {
+                                                "employeeName": "",
+                                                "employeeId": "",
+                                                "attendanceDate": "",
+                                                "startTime": "",
+                                                "endTime": "",
+                                                "activityType": "",
+                                                "schoolName": "",
+                                                "municipality": "",
+                                                "programName": "",
+                                                "sessionNumber": "",
+                                                "totalExpenses": "",
+                                                "MonthApproved": "null",
+                                                "ApprovalDate": "null"
+                                            },
+                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(item()?['ID'])}"
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_Team_Approved_Month_Records": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Response_Reset_Team_Success": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "message": "אישור הצוות בוטל בהצלחה",
+                                        "affectedRecords": "@length(body('Get_Team_Approved_Month_Records')?['value'])"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Loop_Team_Records_Clear_Approval": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "resetTeamMonth"
+                    },
+                    "getTeamApprovalStatus": {
+                        "actions": {
+                            "Get_All_Team_Employees": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('697f3cf6-2ed9-49ba-8a05-605d760af517'))}/items",
+                                    "queries": {
+                                        "$filter": "Team eq '@{triggerBody()?['team']}' or team eq '@{triggerBody()?['team']}'"
+                                    }
+                                }
+                            },
+                            "Loop_Employees_Get_Status": {
+                                "type": "Foreach",
+                                "foreach": "@body('Get_All_Team_Employees')?['value']",
+                                "actions": {
+                                    "Check_Employee_Month_Approval": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                }
+                                            },
+                                            "method": "get",
+                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                            "queries": {
+                                                "$filter": "employeeId eq '@{item()?['employeeId']}' and MonthApproved eq '@{triggerBody()?['month']}'",
+                                                "$top": 1
+                                            }
+                                        }
+                                    },
+                                    "Get_Employee_All_Month_Records": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                }
+                                            },
+                                            "method": "get",
+                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                            "queries": {
+                                                "$filter": "employeeId eq '@{item()?['employeeId']}' and startswith(attendanceDate, '@{triggerBody()?['month']}')"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Check_Employee_Month_Approval": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    },
+                                    "Compose_Employee_Status_Data": {
+                                        "type": "Compose",
+                                        "inputs": {
+                                            "employeeId": "@{item()?['employeeId']}",
+                                            "name": "@{coalesce(item()?['EmployeeName'], item()?['employeeName'])}",
+                                            "approved": "@greater(length(body('Check_Employee_Month_Approval')?['value']), 0)",
+                                            "approvalDate": "@{if(greater(length(body('Check_Employee_Month_Approval')?['value']), 0), first(body('Check_Employee_Month_Approval')?['value'])?['ApprovalDate'], null)}",
+                                            "totalHours": 0,
+                                            "recordCount": "@{length(body('Get_Employee_All_Month_Records')?['value'])}"
+                                        },
+                                        "runAfter": {
+                                            "Get_Employee_All_Month_Records": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_All_Team_Employees": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Response_Team_Approval_Status": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "employees": "@body('Loop_Employees_Get_Status')"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Loop_Employees_Get_Status": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "getTeamApprovalStatus"
+                    },
+                    "getTeamRecords": {
+                        "actions": {
+                            "Get_All_Team_Month_Records": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "team eq '@{triggerBody()?['team']}' and startswith(attendanceDate, '@{triggerBody()?['month']}')"
+                                    }
+                                }
+                            },
+                            "Response_Team_Records_Data": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "records": "@body('Get_All_Team_Month_Records')?['value']"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_All_Team_Month_Records": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "getTeamRecords"
+                    },
+                    "getHistory": {
+                        "actions": {
+                            "Check_User_Role_For_Access": {
+                                "type": "If",
+                                "expression": {
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@triggerBody()?['role']",
+                                                "system_admin"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@triggerBody()?['role']",
+                                                "admin_assistant"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@triggerBody()?['role']",
+                                                "operations_controller"
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@triggerBody()?['role']",
+                                                "payroll_officer"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Get_All_Records_For_Admin": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                }
+                                            },
+                                            "method": "get",
+                                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                        }
+                                    },
+                                    "Response_All_Records": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 200,
+                                            "headers": "@variables('corsHeaders')",
+                                            "body": {
+                                                "success": true,
+                                                "records": "@body('Get_All_Records_For_Admin')?['value']"
+                                            }
+                                        },
+                                        "runAfter": {
+                                            "Get_All_Records_For_Admin": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Get_Employee_Records_Only": {
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "get",
+                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                                "queries": {
+                                                    "$filter": "employeeId eq '@{triggerBody()?['employeeId']}'"
+                                                }
+                                            }
+                                        },
+                                        "Response_Employee_Records": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 200,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": true,
+                                                    "records": "@body('Get_Employee_Records_Only')?['value']"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Get_Employee_Records_Only": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getHistory"
+                    },
+                    "update": {
+                        "actions": {
+                            "Update_Attendance_Record": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "patch",
+                                    "body": {
+                                        "employeeName": "",
+                                        "employeeId": "",
+                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                        "startTime": "@triggerBody()?['startTime']",
+                                        "endTime": "@triggerBody()?['endTime']",
+                                        "activityType": "@triggerBody()?['activityType']",
+                                        "schoolName": "@triggerBody()?['schoolName']",
+                                        "municipality": "@triggerBody()?['municipality']",
+                                        "programName": "@triggerBody()?['programName']",
+                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
+                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                        "workHours": "@triggerBody()?['workHours']",
+                                        "kilometers": "@triggerBody()?['kilometers']",
+                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                        "notes": "@triggerBody()?['notes']"
+                                    },
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
+                                }
+                            },
+                            "Response_Update_Success": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "message": "הרשומה עודכנה בהצלחה"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Update_Attendance_Record": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Handle_Update_Error": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 500,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": false,
+                                        "message": "שגיאה בעדכון הרשומה"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Update_Attendance_Record": [
+                                        "Failed",
+                                        "TimedOut"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "update"
+                    },
+                    "delete": {
+                        "actions": {
+                            "Delete_Attendance_Record": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "delete",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
+                                }
+                            },
+                            "Response_Delete_Success": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "message": "הרשומה נמחקה בהצלחה"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Delete_Attendance_Record": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            },
+                            "Handle_Delete_Error": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 500,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": false,
+                                        "message": "שגיאה במחיקת הרשומה"
+                                    }
+                                },
+                                "runAfter": {
+                                    "Delete_Attendance_Record": [
+                                        "Failed",
+                                        "TimedOut"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "delete"
+                    }
+                },
+                "runAfter": {
+                    "Set_CORS_Headers": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "sharepointonline": {
+                    "id": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/providers/Microsoft.Web/locations/israelcentral/managedApis/sharepointonline",
+                    "connectionId": "/subscriptions/7b35da34-f8af-4193-b59f-03d769307e89/resourceGroups/attendance-rg/providers/Microsoft.Web/connections/sharepointonline",
+                    "connectionName": "sharepointonline",
+                    "connectionProperties": {}
+                }
+            }
+        }
+    }
+}
