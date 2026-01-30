@@ -15,15 +15,23 @@ async function exportTeamApprovalToExcel() {
     const currentMonth = new Date().toISOString().slice(0, 7); // "2026-01"
     const monthName = getHebrewMonthName(currentMonth);
 
-    // Get approval data from localStorage (since backend doesn't support getTeamApprovals)
-    const localApprovals = getLocalApprovalsForTeam(team, currentMonth);
-    const approvalEmployees = localApprovals.map(a => ({
-      employeeName: a.employeeName,
-      employeeId: a.employeeId,
-      approvalDate: a.approvalDate,
-      totalHours: 0,
-      recordCount: 0
-    }));
+    let approvalEmployees = [];
+    try {
+      const approvalData = await apiRequest('getTeamApprovalStatus', {
+        team,
+        month: currentMonth
+      });
+      const employees = Array.isArray(approvalData.employees) ? approvalData.employees : [];
+      approvalEmployees = employees.map(emp => ({
+        employeeName: emp.name || emp.employeeName,
+        employeeId: emp.employeeId,
+        approvalDate: emp.approvalDate,
+        totalHours: 0,
+        recordCount: 0
+      }));
+    } catch (error) {
+      console.error('Failed to load approval status:', error);
+    }
 
     // Get records from cache (teamRecordsCache is populated by loadTeamRecords)
     const records = typeof teamRecordsCache !== 'undefined' ? teamRecordsCache : [];
@@ -333,21 +341,28 @@ async function exportApprovalStatusOnly() {
     const currentMonth = new Date().toISOString().slice(0, 7);
     const monthName = getHebrewMonthName(currentMonth);
 
-    // Get approval data from localStorage (since backend doesn't support getTeamApprovals)
-    const localApprovals = getLocalApprovalsForTeam(team, currentMonth);
+    let approvalEmployees = [];
+    try {
+      const approvalData = await apiRequest('getTeamApprovalStatus', {
+        team,
+        month: currentMonth
+      });
+      const employees = Array.isArray(approvalData.employees) ? approvalData.employees : [];
+      approvalEmployees = employees.map(emp => ({
+        employeeName: emp.name || emp.employeeName,
+        employeeId: emp.employeeId,
+        approvalDate: emp.approvalDate,
+        totalHours: 0,
+        recordCount: 0
+      }));
+    } catch (error) {
+      console.error('Failed to load approval status:', error);
+    }
 
-    if (localApprovals.length === 0) {
+    if (approvalEmployees.length === 0) {
       showAlert('אין נתוני אישורים לייצוא', 'error');
       return;
     }
-
-    const approvalEmployees = localApprovals.map(a => ({
-      employeeName: a.employeeName,
-      employeeId: a.employeeId,
-      approvalDate: a.approvalDate,
-      totalHours: 0,
-      recordCount: 0
-    }));
 
     const wb = XLSX.utils.book_new();
     const ws = createApprovalSheet(approvalEmployees, monthName);

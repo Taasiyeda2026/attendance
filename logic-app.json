@@ -82,6 +82,9 @@
                             },
                             "approvalDate": {
                                 "type": "string"
+                            },
+                            "attachmentsNames": {
+                                "type": "string"
                             }
                         },
                         "required": [
@@ -110,9 +113,18 @@
                 },
                 "runAfter": {}
             },
+            "Normalize_Action": {
+                "type": "Compose",
+                "inputs": "@if(equals(triggerBody()?['action'], 'updateRecord'), 'update', if(equals(triggerBody()?['action'], 'deleteRecord'), 'delete', triggerBody()?['action']))",
+                "runAfter": {
+                    "Set_CORS_Headers": [
+                        "Succeeded"
+                    ]
+                }
+            },
             "Switch_Action": {
                 "type": "Switch",
-                "expression": "@triggerBody()?['action']",
+                "expression": "@outputs('Normalize_Action')",
                 "default": {
                     "actions": {
                         "Response_Unknown_Action": {
@@ -262,7 +274,11 @@
                     },
                     "submit": {
                         "actions": {
-                            "Create_Attendance_Record": {
+                            "Submit_Month_Key": {
+                                "type": "Compose",
+                                "inputs": "@substring(triggerBody()?['attendanceDate'], 0, 7)"
+                            },
+                            "Check_Submit_Month_Approved": {
                                 "type": "ApiConnection",
                                 "inputs": {
                                     "host": {
@@ -270,63 +286,118 @@
                                             "name": "@parameters('$connections')['sharepointonline']['connectionId']"
                                         }
                                     },
-                                    "method": "post",
-                                    "body": {
-                                        "employeeName": "@triggerBody()?['employeeName']",
-                                        "employeeId": "@triggerBody()?['employeeId']",
-                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                        "startTime": "@triggerBody()?['startTime']",
-                                        "endTime": "@triggerBody()?['endTime']",
-                                        "activityType": "@triggerBody()?['activityType']",
-                                        "schoolName": "@triggerBody()?['schoolName']",
-                                        "municipality": "@triggerBody()?['municipality']",
-                                        "programName": "@triggerBody()?['programName']",
-                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
-                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
-                                        "workHours": "@triggerBody()?['workHours']",
-                                        "kilometers": "@triggerBody()?['kilometers']",
-                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
-                                        "notes": "@triggerBody()?['notes']",
-                                        "team": "@triggerBody()?['team']",
-                                        "employmentType": "@triggerBody()?['employmentType']",
-                                        "attachmentsNames": "@triggerBody()?['attachmentsNames']"
-                                    },
-                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
-                                }
-                            },
-                            "Response_Submit_Success": {
-                                "type": "Response",
-                                "kind": "Http",
-                                "inputs": {
-                                    "statusCode": 200,
-                                    "headers": "@variables('corsHeaders')",
-                                    "body": {
-                                        "success": true,
-                                        "message": "הרשומה נשמרה בהצלחה",
-                                        "recordId": "@body('Create_Attendance_Record')?['ID']"
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{outputs('Submit_Month_Key')}')",
+                                        "$top": 1
                                     }
                                 },
                                 "runAfter": {
-                                    "Create_Attendance_Record": [
+                                    "Submit_Month_Key": [
                                         "Succeeded"
                                     ]
                                 }
                             },
-                            "Handle_Submit_Error": {
-                                "type": "Response",
-                                "kind": "Http",
-                                "inputs": {
-                                    "statusCode": 500,
-                                    "headers": "@variables('corsHeaders')",
-                                    "body": {
-                                        "success": false,
-                                        "message": "שגיאה בשמירת הרשומה"
+                            "Check_Submit_Allowed": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "greater": [
+                                                "@length(body('Check_Submit_Month_Approved')?['value'])",
+                                                0
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Response_Submit_Locked": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 403,
+                                            "headers": "@variables('corsHeaders')",
+                                            "body": {
+                                                "success": false,
+                                                "message": "החודש אושר ואינו ניתן לעריכה"
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Create_Attendance_Record": {
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "body": {
+                                                    "employeeName": "@triggerBody()?['employeeName']",
+                                                    "employeeId": "@triggerBody()?['employeeId']",
+                                                    "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                                    "startTime": "@triggerBody()?['startTime']",
+                                                    "endTime": "@triggerBody()?['endTime']",
+                                                    "activityType": "@triggerBody()?['activityType']",
+                                                    "schoolName": "@triggerBody()?['schoolName']",
+                                                    "municipality": "@triggerBody()?['municipality']",
+                                                    "programName": "@triggerBody()?['programName']",
+                                                    "sessionNumber": "@triggerBody()?['sessionNumber']",
+                                                    "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                                    "workHours": "@triggerBody()?['workHours']",
+                                                    "kilometers": "@triggerBody()?['kilometers']",
+                                                    "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                                    "notes": "@triggerBody()?['notes']",
+                                                    "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                                },
+                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items"
+                                            }
+                                        },
+                                        "Response_Submit_Success": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 200,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": true,
+                                                    "message": "הרשומה נשמרה בהצלחה",
+                                                    "recordId": "@body('Create_Attendance_Record')?['ID']"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Create_Attendance_Record": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        },
+                                        "Handle_Submit_Error": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 500,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": false,
+                                                    "message": "שגיאה בשמירת הרשומה"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Create_Attendance_Record": [
+                                                    "Failed",
+                                                    "TimedOut"
+                                                ]
+                                            }
+                                        }
                                     }
                                 },
                                 "runAfter": {
-                                    "Create_Attendance_Record": [
-                                        "Failed",
-                                        "TimedOut"
+                                    "Check_Submit_Month_Approved": [
+                                        "Succeeded"
                                     ]
                                 }
                             }
@@ -364,19 +435,10 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "employeeName": "",
-                                                "employeeId": "",
-                                                "attendanceDate": "",
-                                                "startTime": "",
-                                                "endTime": "",
-                                                "activityType": "",
-                                                "schoolName": "",
-                                                "municipality": "",
-                                                "programName": "",
-                                                "sessionNumber": "",
-                                                "totalExpenses": "",
-                                                "MonthApproved": "@triggerBody()?['month']",
-                                                "ApprovalDate": "@triggerBody()?['approvalDate']"
+                                                "status": "Submitted",
+                                                "approvedBy": "@triggerBody()?['employeeId']",
+                                                "ApprovalDate": "@utcNow()",
+                                                "MonthApproved": "@triggerBody()?['month']"
                                             },
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(item()?['ID'])}"
                                         }
@@ -440,7 +502,7 @@
                                     "method": "get",
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                                     "queries": {
-                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and MonthApproved eq '@{triggerBody()?['month']}'",
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{triggerBody()?['month']}')",
                                         "$top": 1
                                     }
                                 }
@@ -529,17 +591,6 @@
                                             },
                                             "method": "patch",
                                             "body": {
-                                                "employeeName": "",
-                                                "employeeId": "",
-                                                "attendanceDate": "",
-                                                "startTime": "",
-                                                "endTime": "",
-                                                "activityType": "",
-                                                "schoolName": "",
-                                                "municipality": "",
-                                                "programName": "",
-                                                "sessionNumber": "",
-                                                "totalExpenses": "",
                                                 "MonthApproved": "null",
                                                 "ApprovalDate": "null"
                                             },
@@ -606,7 +657,7 @@
                                             "method": "get",
                                             "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
                                             "queries": {
-                                                "$filter": "employeeId eq '@{item()?['employeeId']}' and MonthApproved eq '@{triggerBody()?['month']}'",
+                                                "$filter": "employeeId eq '@{item()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{triggerBody()?['month']}')",
                                                 "$top": 1
                                             }
                                         }
@@ -814,38 +865,9 @@
                         },
                         "case": "getHistory"
                     },
-                    "update": {
+                    "getEmployees": {
                         "actions": {
-                            "Update_Attendance_Record": {
-                                "type": "ApiConnection",
-                                "inputs": {
-                                    "host": {
-                                        "connection": {
-                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
-                                        }
-                                    },
-                                    "method": "patch",
-                                    "body": {
-                                        "employeeName": "",
-                                        "employeeId": "",
-                                        "attendanceDate": "@triggerBody()?['attendanceDate']",
-                                        "startTime": "@triggerBody()?['startTime']",
-                                        "endTime": "@triggerBody()?['endTime']",
-                                        "activityType": "@triggerBody()?['activityType']",
-                                        "schoolName": "@triggerBody()?['schoolName']",
-                                        "municipality": "@triggerBody()?['municipality']",
-                                        "programName": "@triggerBody()?['programName']",
-                                        "sessionNumber": "@triggerBody()?['sessionNumber']",
-                                        "totalExpenses": "@triggerBody()?['totalExpenses']",
-                                        "workHours": "@triggerBody()?['workHours']",
-                                        "kilometers": "@triggerBody()?['kilometers']",
-                                        "expensesDetails": "@triggerBody()?['expensesDetails']",
-                                        "notes": "@triggerBody()?['notes']"
-                                    },
-                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
-                                }
-                            },
-                            "Response_Update_Success": {
+                            "Response_Get_Employees": {
                                 "type": "Response",
                                 "kind": "Http",
                                 "inputs": {
@@ -853,30 +875,170 @@
                                     "headers": "@variables('corsHeaders')",
                                     "body": {
                                         "success": true,
-                                        "message": "הרשומה עודכנה בהצלחה"
+                                        "employees": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getEmployees"
+                    },
+                    "getEmployeeRecords": {
+                        "actions": {
+                            "Response_Get_Employee_Records": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "records": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getEmployeeRecords"
+                    },
+                    "getAllTeams": {
+                        "actions": {
+                            "Response_Get_All_Teams": {
+                                "type": "Response",
+                                "kind": "Http",
+                                "inputs": {
+                                    "statusCode": 200,
+                                    "headers": "@variables('corsHeaders')",
+                                    "body": {
+                                        "success": true,
+                                        "teams": []
+                                    }
+                                }
+                            }
+                        },
+                        "case": "getAllTeams"
+                    },
+                    "update": {
+                        "actions": {
+                            "Update_Month_Key": {
+                                "type": "Compose",
+                                "inputs": "@substring(triggerBody()?['attendanceDate'], 0, 7)"
+                            },
+                            "Check_Update_Month_Approved": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items",
+                                    "queries": {
+                                        "$filter": "employeeId eq '@{triggerBody()?['employeeId']}' and status eq 'Submitted' and startswith(attendanceDate, '@{outputs('Update_Month_Key')}')",
+                                        "$top": 1
                                     }
                                 },
                                 "runAfter": {
-                                    "Update_Attendance_Record": [
+                                    "Update_Month_Key": [
                                         "Succeeded"
                                     ]
                                 }
                             },
-                            "Handle_Update_Error": {
-                                "type": "Response",
-                                "kind": "Http",
-                                "inputs": {
-                                    "statusCode": 500,
-                                    "headers": "@variables('corsHeaders')",
-                                    "body": {
-                                        "success": false,
-                                        "message": "שגיאה בעדכון הרשומה"
+                            "Check_Update_Allowed": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "greater": [
+                                                "@length(body('Check_Update_Month_Approved')?['value'])",
+                                                0
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Response_Update_Locked": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 403,
+                                            "headers": "@variables('corsHeaders')",
+                                            "body": {
+                                                "success": false,
+                                                "message": "החודש אושר ואינו ניתן לעריכה"
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Update_Attendance_Record": {
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "patch",
+                                                "body": {
+                                                    "attendanceDate": "@triggerBody()?['attendanceDate']",
+                                                    "startTime": "@triggerBody()?['startTime']",
+                                                    "endTime": "@triggerBody()?['endTime']",
+                                                    "activityType": "@triggerBody()?['activityType']",
+                                                    "schoolName": "@triggerBody()?['schoolName']",
+                                                    "municipality": "@triggerBody()?['municipality']",
+                                                    "programName": "@triggerBody()?['programName']",
+                                                    "sessionNumber": "@triggerBody()?['sessionNumber']",
+                                                    "totalExpenses": "@triggerBody()?['totalExpenses']",
+                                                    "workHours": "@triggerBody()?['workHours']",
+                                                    "kilometers": "@triggerBody()?['kilometers']",
+                                                    "expensesDetails": "@triggerBody()?['expensesDetails']",
+                                                    "notes": "@triggerBody()?['notes']",
+                                                    "attachmentsNames": "@triggerBody()?['attachmentsNames']"
+                                                },
+                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
+                                            }
+                                        },
+                                        "Response_Update_Success": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 200,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": true,
+                                                    "message": "הרשומה עודכנה בהצלחה"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Update_Attendance_Record": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        },
+                                        "Handle_Update_Error": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 500,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": false,
+                                                    "message": "שגיאה בעדכון הרשומה"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Update_Attendance_Record": [
+                                                    "Failed",
+                                                    "TimedOut"
+                                                ]
+                                            }
+                                        }
                                     }
                                 },
                                 "runAfter": {
-                                    "Update_Attendance_Record": [
-                                        "Failed",
-                                        "TimedOut"
+                                    "Check_Update_Month_Approved": [
+                                        "Succeeded"
                                     ]
                                 }
                             }
@@ -885,7 +1047,7 @@
                     },
                     "delete": {
                         "actions": {
-                            "Delete_Attendance_Record": {
+                            "Get_Record_For_Delete": {
                                 "type": "ApiConnection",
                                 "inputs": {
                                     "host": {
@@ -893,42 +1055,90 @@
                                             "name": "@parameters('$connections')['sharepointonline']['connectionId']"
                                         }
                                     },
-                                    "method": "delete",
+                                    "method": "get",
                                     "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
                                 }
                             },
-                            "Response_Delete_Success": {
-                                "type": "Response",
-                                "kind": "Http",
-                                "inputs": {
-                                    "statusCode": 200,
-                                    "headers": "@variables('corsHeaders')",
-                                    "body": {
-                                        "success": true,
-                                        "message": "הרשומה נמחקה בהצלחה"
-                                    }
-                                },
-                                "runAfter": {
-                                    "Delete_Attendance_Record": [
-                                        "Succeeded"
+                            "Check_Delete_Allowed": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "equals": [
+                                                "@body('Get_Record_For_Delete')?['status']",
+                                                "Submitted"
+                                            ]
+                                        }
                                     ]
-                                }
-                            },
-                            "Handle_Delete_Error": {
-                                "type": "Response",
-                                "kind": "Http",
-                                "inputs": {
-                                    "statusCode": 500,
-                                    "headers": "@variables('corsHeaders')",
-                                    "body": {
-                                        "success": false,
-                                        "message": "שגיאה במחיקת הרשומה"
+                                },
+                                "actions": {
+                                    "Response_Delete_Locked": {
+                                        "type": "Response",
+                                        "kind": "Http",
+                                        "inputs": {
+                                            "statusCode": 403,
+                                            "headers": "@variables('corsHeaders')",
+                                            "body": {
+                                                "success": false,
+                                                "message": "החודש אושר ואינו ניתן לעריכה"
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Delete_Attendance_Record": {
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['sharepointonline']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "delete",
+                                                "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://think365orgil.sharepoint.com/sites/taasiyeda2026'))}/tables/@{encodeURIComponent(encodeURIComponent('3c3d634f-5972-4e2e-87cd-0f51ebd8fe27'))}/items/@{encodeURIComponent(triggerBody()?['recordId'])}"
+                                            }
+                                        },
+                                        "Response_Delete_Success": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 200,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": true,
+                                                    "message": "הרשומה נמחקה בהצלחה"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Delete_Attendance_Record": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        },
+                                        "Handle_Delete_Error": {
+                                            "type": "Response",
+                                            "kind": "Http",
+                                            "inputs": {
+                                                "statusCode": 500,
+                                                "headers": "@variables('corsHeaders')",
+                                                "body": {
+                                                    "success": false,
+                                                    "message": "שגיאה במחיקת הרשומה"
+                                                }
+                                            },
+                                            "runAfter": {
+                                                "Delete_Attendance_Record": [
+                                                    "Failed",
+                                                    "TimedOut"
+                                                ]
+                                            }
+                                        }
                                     }
                                 },
                                 "runAfter": {
-                                    "Delete_Attendance_Record": [
-                                        "Failed",
-                                        "TimedOut"
+                                    "Get_Record_For_Delete": [
+                                        "Succeeded"
                                     ]
                                 }
                             }
@@ -937,7 +1147,7 @@
                     }
                 },
                 "runAfter": {
-                    "Set_CORS_Headers": [
+                    "Normalize_Action": [
                         "Succeeded"
                     ]
                 }
