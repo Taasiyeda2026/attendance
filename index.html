@@ -5005,7 +5005,9 @@ async function submitAll() {
         totalExpenses: rec.totalExpenses || 0,
         expensesDetails: rec.expensesDetail || '',
         notes: rec.notes || '',
-        attachmentsNames: formatAttachments(rec.attachments || [])
+        attachmentsNames: formatAttachments(rec.attachments || []),
+        employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
+        team: String(localStorage.getItem("team") || '')
       };
       
       try {
