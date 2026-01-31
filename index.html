@@ -512,61 +512,114 @@
       background: #f8fafc;
     }
 
-    /* Buttons */
+    /* Buttons - Uniform Size */
     .btn {
-      padding: 12px 16px;
+      padding: 12px 24px;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
+      border-radius: 10px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
       font-family: 'Heebo', sans-serif;
       transition: all 0.2s;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      min-height: 44px; /* Apple HIG minimum touch target */
+      box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+      min-height: 48px;
+      min-width: 140px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
     }
 
     .btn:active {
       transform: translateY(0);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
+    /* כחול - ראשי */
     .btn-primary {
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-
     .btn-primary:hover {
       background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
     }
 
+    /* ירוק - הצלחה/אישור */
     .btn-success {
-      background: #10b981;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: white;
     }
-
     .btn-success:hover {
-      background: #059669;
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
     }
 
+    /* כחול כהה - אישור */
     .btn-approve {
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
-
     .btn-approve:hover {
       background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    /* סגול - פעולה מיוחדת */
+    .btn-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white;
+    }
+    .btn-purple:hover {
+      background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    }
+
+    /* כתום - אזהרה */
+    .btn-warning {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+    }
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    }
+
+    /* אדום - מחיקה/סכנה */
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    }
+
+    /* תכלת - מידע */
+    .btn-info {
+      background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+      color: white;
+    }
+    .btn-info:hover {
+      background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+    }
+
+    /* אפור - משני */
+    .btn-secondary {
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    }
+
+    /* כפתור אייקון בלבד */
+    .btn-icon {
+      min-width: 48px;
+      width: 48px;
+      padding: 0;
     }
 
     /* Alert */
@@ -2168,7 +2221,7 @@
         <div class="content-card">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="card-title"><i class="fas fa-users" style="margin-left: 8px; color: #3b82f6;"></i>סיכום לפי מדריך - חודש נוכחי</h2>
-            <button class="btn" onclick="exportPayrollToExcel()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 10px 20px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+            <button class="btn btn-success" onclick="exportPayrollToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2200,7 +2253,7 @@
         <div class="content-card">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <h2 class="card-title"><i class="fas fa-users-cog" style="margin-left: 8px; color: #3b82f6;"></i>סיכום כל העובדים - חודש נוכחי</h2>
-            <button class="btn" onclick="exportAdminDashboardToExcel()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 10px 20px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+            <button class="btn btn-success" onclick="exportAdminDashboardToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2264,15 +2317,15 @@
             <h2 class="card-title"><i class="fas fa-check-double" style="margin-left: 8px; color: #10b981;"></i>אישור חודשי לצוות</h2>
           </div>
           <div class="card-body" style="display: flex; flex-wrap: wrap; gap: 12px; padding: 20px;">
-            <button class="btn btn-approve" onclick="approveTeamMonth('גיל')" style="flex: 1; min-width: 140px; padding: 12px 20px;">
+            <button class="btn btn-approve" onclick="approveTeamMonth('גיל')">
               <i class="fas fa-check"></i>
               אשר צוות גיל
             </button>
-            <button class="btn btn-approve" onclick="approveTeamMonth('לינוי')" style="flex: 1; min-width: 140px; padding: 12px 20px;">
+            <button class="btn btn-info" onclick="approveTeamMonth('לינוי')">
               <i class="fas fa-check"></i>
               אשר צוות לינוי
             </button>
-            <button class="btn" onclick="approveTeamMonth('all')" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white;">
+            <button class="btn btn-purple" onclick="approveTeamMonth('all')">
               <i class="fas fa-check-double"></i>
               אשר את כולם
             </button>
@@ -2340,7 +2393,7 @@
         </div>
         <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
           <div id="monthlyApprovalStatus" style="color: #475569; font-size: 14px;">טוען סטטוס...</div>
-          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport()" style="min-width: 160px; height: 40px;">
+          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport()">
             <i class="fas fa-check-circle"></i>
             סיום דיווח חודשי
           </button>
@@ -2349,11 +2402,11 @@
       
       <!-- כפתורי פעולות -->
       <div style="text-align: center; margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <button id="dashboardAddRecordBtn" class="btn btn-primary" onclick="showPage(event, 'add-record')" style="font-size: 15px; width: 220px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+        <button id="dashboardAddRecordBtn" class="btn btn-primary" onclick="showPage(event, 'add-record')">
           <i class="fas fa-plus"></i>
           הוסף רשומה חדשה
         </button>
-        <button class="btn" onclick="exportToExcel()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-size: 15px; width: 220px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); border: 1px solid rgba(255, 255, 255, 0.1);">
+        <button class="btn btn-success" onclick="exportToExcel()">
           <i class="fas fa-file-excel"></i>
           ייצוא ל-Excel
         </button>
@@ -2393,10 +2446,10 @@
           </div>
         </div>
         <div style="display: flex; gap: 10px;">
-          <button class="btn btn-success" onclick="addRecord()" title="הוסף רשומה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+          <button class="btn btn-success btn-icon" onclick="addRecord()" title="הוסף רשומה">
             <i class="fas fa-check" style="font-size: 18px;"></i>
           </button>
-          <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+          <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
             <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
           </button>
         </div>
@@ -2594,7 +2647,7 @@
       
       <!-- Mobile Floating Submit Button -->
       <div class="mobile-floating-submit">
-        <button class="btn btn-success" onclick="addRecord()" style="width: auto; min-width: 180px; height: 50px; font-size: 16px; font-weight: 600; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <button class="btn btn-success" onclick="addRecord()">
           <i class="fas fa-check"></i>
           שלח רשומה
         </button>
@@ -2608,7 +2661,7 @@
           <h1>הרשומות שלי</h1>
           <p>צפייה ברשומות לפי שבוע</p>
         </div>
-        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+        <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
       </div>
@@ -2617,7 +2670,7 @@
         <div class="card-header">
           <h2 class="card-title">סה"כ <span id="totalRecordsCount">0</span> ימי עבודה</h2>
           <div style="display: flex; gap: 10px;">
-            <button class="btn" onclick="exportToExcel()" style="background: #10b981; color: white;">
+            <button class="btn btn-success" onclick="exportToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2642,7 +2695,7 @@
           <h1>סיכום נוכחות</h1>
           <p id="teamRecordsSubtitle">סיכום לפי עובד - לחץ על שם לפירוט</p>
         </div>
-        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+        <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
       </div>
@@ -2652,19 +2705,19 @@
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <h2 class="card-title"><i class="fas fa-user-check" style="margin-left: 8px; color: #3b82f6;"></i>סטטוס אישורי חודש</h2>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn" onclick="loadMonthlyApprovalsTable()" style="background: #3b82f6; color: white;">
+            <button class="btn btn-primary" onclick="loadMonthlyApprovalsTable()">
               <i class="fas fa-sync-alt"></i>
               רענן סטטוס
             </button>
-            <button class="btn" id="approveToPayrollBtn" onclick="approveMonthToPayroll()" style="background: #10b981; color: white; display: none;">
+            <button class="btn btn-success" id="approveToPayrollBtn" onclick="approveMonthToPayroll()" style="display: none;">
               <i class="fas fa-check-double"></i>
               אישור דיווח לשכר
             </button>
-            <button class="btn" id="resetMonthBtn" onclick="resetTeamMonth()" style="background: #f97316; color: white; display: none;">
+            <button class="btn btn-warning" id="resetMonthBtn" onclick="resetTeamMonth()" style="display: none;">
               <i class="fas fa-unlock"></i>
               שחרור חודש
             </button>
-            <button class="btn" id="unlockMonthBtn" onclick="unlockTeamMonth()" style="background: #ef4444; color: white; display: none;">
+            <button class="btn btn-danger" id="unlockMonthBtn" onclick="unlockTeamMonth()" style="display: none;">
               <i class="fas fa-lock-open"></i>
               פתיחת חודש
             </button>
@@ -2681,7 +2734,7 @@
         <div class="card-header" style="flex-direction: column; gap: 15px;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
             <h2 class="card-title">סיכום צוות <span id="teamName"></span></h2>
-            <button class="btn" onclick="exportTeamToExcel()" style="background: #10b981; color: white;">
+            <button class="btn btn-success" onclick="exportTeamToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2708,7 +2761,7 @@
               <option value="2025">2025</option>
               <option value="2026">2026</option>
             </select>
-            <button class="btn" onclick="loadTeamRecords()" style="background: #3b82f6; color: white; padding: 8px 16px;">
+            <button class="btn btn-primary" onclick="loadTeamRecords()">
               <i class="fas fa-sync-alt"></i>
               רענן
             </button>
@@ -2730,11 +2783,11 @@
           <p>סיכומים וסטטיסטיקות</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn" onclick="openExportModal()" style="background: #10b981; color: white;">
+          <button class="btn btn-success" onclick="openExportModal()">
             <i class="fas fa-file-excel"></i>
             ייצוא ל-Excel
           </button>
-          <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+          <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
             <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
           </button>
         </div>
@@ -2797,7 +2850,7 @@
                 <option value="תפעול">תפעול</option>
               </select>
             </div>
-            <button class="btn btn-primary" onclick="loadReportData()" style="height: 38px; margin-top: 18px;">
+            <button class="btn btn-primary" onclick="loadReportData()" style="margin-top: 18px;">
               <i class="fas fa-sync-alt"></i>
               רענן
             </button>
@@ -2855,7 +2908,7 @@
           <h1>הגדרות מערכת</h1>
           <p>ניהול משתמשים והגדרות</p>
         </div>
-        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+        <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
       </div>
@@ -2866,16 +2919,16 @@
         </div>
         <div class="card-body">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-            <button class="btn btn-primary" onclick="viewAllRecords()" style="padding: 20px;">
-              <i class="fas fa-database"></i><br>
+            <button class="btn btn-primary" onclick="viewAllRecords()">
+              <i class="fas fa-database"></i>
               צפייה בכל ימי העבודה
             </button>
-            <button class="btn" onclick="exportAllToExcel()" style="background: #10b981; color: white; padding: 20px;">
-              <i class="fas fa-file-excel"></i><br>
+            <button class="btn btn-success" onclick="exportAllToExcel()">
+              <i class="fas fa-file-excel"></i>
               ייצוא כל הנתונים
             </button>
-            <button class="btn" onclick="syncFromSharePoint()" style="background: #3b82f6; color: white; padding: 20px;">
-              <i class="fas fa-sync-alt"></i><br>
+            <button class="btn btn-info" onclick="syncFromSharePoint()">
+              <i class="fas fa-sync-alt"></i>
               סנכרון מ-SharePoint
             </button>
           </div>
@@ -2890,7 +2943,7 @@
           <h1>סטטוס אישורים</h1>
           <p>מעקב אחר אישורי מדריכים ומנהלים</p>
         </div>
-        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+        <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
         </button>
       </div>
@@ -2918,7 +2971,7 @@
               <option value="2026" selected>2026</option>
               <option value="2027">2027</option>
             </select>
-            <button class="btn" onclick="loadApprovalsStatusPage()" style="background: #3b82f6; color: white;">
+            <button class="btn btn-primary" onclick="loadApprovalsStatusPage()">
               <i class="fas fa-sync-alt"></i> רענן
             </button>
           </div>
@@ -3807,12 +3860,20 @@ function updateMenuByRole(role) {
     } else if (filters) {
       filters.style.display = 'none';
     }
+    // Show approval buttons only for system_admin
+    const adminApprovalCard = document.getElementById('adminApprovalCard');
+    if (adminApprovalCard) {
+      adminApprovalCard.style.display = role === 'system_admin' ? 'block' : 'none';
+    }
   } else if (role === 'manager') {
     // Manager sees adminControllerDashboard filtered to their team
     if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
     // Hide filters for manager - they only see their team
     const filters = document.getElementById('adminDashboardFilters');
     if (filters) filters.style.display = 'none';
+    // Hide approval buttons for managers - only system_admin can approve teams from dashboard
+    const adminApprovalCard = document.getElementById('adminApprovalCard');
+    if (adminApprovalCard) adminApprovalCard.style.display = 'none';
     // Update the title to show manager's team
     const title = adminControllerDashboard.querySelector('.card-title');
     if (title) {
@@ -6070,21 +6131,34 @@ function renderRecordsTable() {
 
   // Group records by week
   function getWeekNumber(dateStr) {
-    const date = new Date(dateStr.split('/').reverse().join('-'));
-    const startOfYear = new Date(date.getFullYear(), 0, 1);
-    const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
-    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    if (!dateStr) return 0;
+    try {
+      const date = new Date(dateStr.split('/').reverse().join('-'));
+      if (isNaN(date.getTime())) return 0;
+      const startOfYear = new Date(date.getFullYear(), 0, 1);
+      const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+      return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    } catch (e) {
+      return 0;
+    }
   }
 
   function getWeekRange(dateStr) {
-    const parts = dateStr.split('/');
-    const date = new Date(parts[2], parts[1] - 1, parts[0]);
-    const dayOfWeek = date.getDay();
-    const startOfWeek = new Date(date);
-    startOfWeek.setDate(date.getDate() - dayOfWeek);
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    return `${startOfWeek.getDate()}/${startOfWeek.getMonth()+1} - ${endOfWeek.getDate()}/${endOfWeek.getMonth()+1}`;
+    if (!dateStr) return '';
+    try {
+      const parts = dateStr.split('/');
+      if (parts.length < 3) return '';
+      const date = new Date(parts[2], parts[1] - 1, parts[0]);
+      if (isNaN(date.getTime())) return '';
+      const dayOfWeek = date.getDay();
+      const startOfWeek = new Date(date);
+      startOfWeek.setDate(date.getDate() - dayOfWeek);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      return `${startOfWeek.getDate()}/${startOfWeek.getMonth()+1} - ${endOfWeek.getDate()}/${endOfWeek.getMonth()+1}`;
+    } catch (e) {
+      return '';
+    }
   }
 
   // Group records by week
