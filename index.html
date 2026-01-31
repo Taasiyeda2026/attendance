@@ -5643,6 +5643,10 @@ function calculateEditHours() {
 
 // =============== Add Record ===============
 async function addRecord() {
+  // Check if we're editing an existing record
+  const editingId = document.getElementById('addRecordPage')?.dataset?.editingId;
+  const isEditing = editingId && editingId !== '';
+  
   const userData = JSON.parse(localStorage.getItem('currentUser') || '{}');
   const empNum = userData.empNum || '';
   const empName = userData.empName || '';
@@ -5720,21 +5724,24 @@ async function addRecord() {
     return;
   }
 
-  // Duplicate submission check - prevent same date + start time + activity
-  const potentialKey = `${empNum}_${date}_${startTime}_${activity}`;
-  const existingDuplicate = records.find(rec => {
-    const recKey = generateRecordKey(rec);
-    return recKey === potentialKey;
-  });
+  // Duplicate submission check - only for new records, not edits
+  if (!isEditing) {
+    const potentialKey = `${empNum}_${date}_${startTime}_${activity}`;
+    const existingDuplicate = records.find(rec => {
+      const recKey = generateRecordKey(rec);
+      return recKey === potentialKey;
+    });
 
-  if (existingDuplicate) {
-    showAlert('⚠️ כבר קיים דיווח עם אותו תאריך, שעת התחלה וסוג פעילות', 'error');
-    console.warn('Duplicate submission blocked:', { date, startTime, activity, existingRecord: existingDuplicate });
-    return;
+    if (existingDuplicate) {
+      showAlert('⚠️ כבר קיים דיווח עם אותו תאריך, שעת התחלה וסוג פעילות', 'error');
+      console.warn('Duplicate submission blocked:', { date, startTime, activity, existingRecord: existingDuplicate });
+      return;
+    }
   }
 
   const payload = {
-    action: "submit",
+    action: isEditing ? "updaterecord" : "submit",
+    id: isEditing ? editingId : undefined,
     employeeId: String(localStorage.getItem("employeeId") || empNum),
     employeeName: String(localStorage.getItem("employeeName") || empName),
     team: String(localStorage.getItem("team") || ''),
@@ -5757,22 +5764,33 @@ async function addRecord() {
   };
   
   // Send to SharePoint using apiRequest with retry
-  showAlert('🚀 שולח דיווח ל-SharePoint...', 'info');
+  showAlert(isEditing ? '🔄 מעדכן רשומה...' : '🚀 שולח דיווח ל-SharePoint...', 'info');
   
   try {
-    const data = await apiRequest('submit', payload);
+    const actionType = isEditing ? 'updaterecord' : 'submit';
+    const data = await apiRequest(actionType, payload);
     
     if (data.success) {
       clearAddForm();
+      // Clear editing state
+      if (document.getElementById('addRecordPage')) {
+        document.getElementById('addRecordPage').dataset.editingId = '';
+      }
+      // Reset page header
+      const pageHeader = document.querySelector('#addRecordPage .page-header h1');
+      if (pageHeader) {
+        pageHeader.textContent = 'הוספת דיווח';
+      }
+      
       await syncFromSharePoint(empNum);
-      showAlert('✅ הדיווח נשלח בהצלחה!', 'success');
+      showAlert(isEditing ? '✅ הרשומה עודכנה בהצלחה!' : '✅ הדיווח נשלח בהצלחה!', 'success');
       showPage(null, 'dashboard');
     } else {
       showAlert('❌ ' + (data.message || 'שגיאה בשליחה'), 'error');
     }
   } catch (error) {
     console.error('=== SUBMISSION ERROR ===');
-    console.error('Endpoint: submit');
+    console.error('Endpoint:', isEditing ? 'updaterecord' : 'submit');
     console.error('Payload:', JSON.stringify(payload, null, 2));
     console.error('Error:', error.message || error);
     showAlert('❌ ' + (error.message || 'שגיאה בשליחה לשרת'), 'error');
@@ -7130,16 +7148,158 @@ function toggleMobileAdminDetails(empId) {
     if (records.length === 0) {
       detailsDiv.innerHTML = '<p style="color: #64748b; text-align: center;">אין רשומות</p>';
     } else {
-      detailsDiv.innerHTML = records.slice(0, 5).map(rec => {
+      detailsDiv.innerHTML = records.slice(0, 10).map(rec => {
         const date = rec.attendanceDate ? new Date(rec.attendanceDate).toLocaleDateString('he-IL') : '-';
-        return `<div style="padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 12px;">
-          <strong>${date}</strong> - ${rec.activityType || '-'} | ${rec.workHours || 0} שעות
+        const recId = rec.ID || rec.id || '';
+        const status = rec.status || 'ממתין';
+        const statusColor = status === 'מאושר' ? '#22c55e' : (status === 'נדחה' ? '#ef4444' : '#f59e0b');
+        return `<div style="padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="font-size: 13px;">${date}</strong>
+            <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px;">${status}</span>
+          </div>
+          <div style="font-size: 12px; color: #475569; margin-bottom: 8px;">
+            ${rec.activityType || '-'} | ${rec.workHours || 0} שעות | ${rec.kilometers || 0} ק"מ
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="flex: 1; background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-edit"></i> עריכה</button>
+            <button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="flex: 1; background: #22c55e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check"></i> אישור</button>
+          </div>
         </div>`;
-      }).join('') + (records.length > 5 ? `<p style="color: #64748b; font-size: 11px; margin-top: 8px;">ועוד ${records.length - 5} רשומות...</p>` : '');
+      }).join('') + (records.length > 10 ? `<p style="color: #64748b; font-size: 11px; margin-top: 8px; text-align: center;">ועוד ${records.length - 10} רשומות...</p>` : '');
     }
     detailsDiv.style.display = 'block';
   } else {
     detailsDiv.style.display = 'none';
+  }
+}
+
+// Edit record from admin dashboard
+async function editRecordFromAdmin(recordId) {
+  if (!recordId) {
+    showAlert('לא נמצא מזהה רשומה', 'error');
+    return;
+  }
+  
+  // Find the record in cache
+  let recordToEdit = null;
+  for (const empId in adminEmployeeRecordsCache) {
+    const found = adminEmployeeRecordsCache[empId].find(r => (r.ID || r.id) == recordId);
+    if (found) {
+      recordToEdit = found;
+      break;
+    }
+  }
+  
+  if (!recordToEdit) {
+    showAlert('לא נמצאה רשומה לעריכה', 'error');
+    return;
+  }
+  
+  // Store the record for editing
+  currentEditRecord = recordToEdit;
+  
+  // Navigate to add record page and populate fields
+  showPage('addRecordPage');
+  
+  // Wait for page to render then populate
+  setTimeout(() => {
+    populateEditForm(recordToEdit);
+  }, 100);
+}
+
+// Populate edit form with record data
+function populateEditForm(record) {
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  };
+  
+  // Main fields - use correct form field IDs
+  setVal('recDate', record.attendanceDate || '');
+  setVal('startTime', record.startTime || '');
+  setVal('endTime', record.endTime || '');
+  setVal('hoursField', record.workHours || record.hours || '');
+  setVal('activityType', record.activityType || '');
+  setVal('municipality', record.municipality || '');
+  setVal('programField', record.programName || '');
+  setVal('sessionNum', record.sessionNumber || '');
+  setVal('kmField', record.kilometers || record.km || '');
+  setVal('totalExpenses', record.totalExpenses || '');
+  setVal('expensesDetail', record.expensesDetails || '');
+  setVal('notesField', record.notes || '');
+  
+  // Set start/end time dropdowns
+  if (record.startTime) {
+    const [sh, sm] = record.startTime.split(':');
+    setVal('startHour', sh);
+    setVal('startMinute', sm);
+  }
+  if (record.endTime) {
+    const [eh, em] = record.endTime.split(':');
+    setVal('endHour', eh);
+    setVal('endMinute', em);
+  }
+  
+  // Mark as editing
+  const pageHeader = document.querySelector('#addRecordPage .page-header h1');
+  if (pageHeader) {
+    pageHeader.textContent = 'עריכת רשומה';
+  }
+  
+  // Store record ID for update
+  document.getElementById('addRecordPage').dataset.editingId = record.ID || record.id || '';
+  
+  showAlert('נטען לעריכה - בצע שינויים ולחץ שמור', 'info');
+}
+
+// Approve single record from admin dashboard
+async function approveRecordFromAdmin(recordId) {
+  if (!recordId) {
+    showAlert('לא נמצא מזהה רשומה', 'error');
+    return;
+  }
+  
+  const user = getCurrentUserData();
+  if (!user) {
+    showAlert('יש להתחבר למערכת', 'error');
+    return;
+  }
+  
+  // Check permissions - only manager, system_admin can approve
+  if (!['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
+    showAlert('אין הרשאה לאשר רשומות', 'error');
+    return;
+  }
+  
+  if (!confirm('האם לאשר רשומה זו?')) {
+    return;
+  }
+  
+  try {
+    showAlert('מאשר רשומה...', 'info');
+    
+    const response = await fetch(`${API_BASE_URL}?action=updaterecord`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: recordId,
+        status: 'מאושר',
+        approvedBy: user.employeeName || user.employeeId,
+        approvedDate: new Date().toISOString()
+      })
+    });
+    
+    if (response.ok) {
+      showAlert('הרשומה אושרה בהצלחה!', 'success');
+      // Refresh dashboard
+      updateAdminDashboard();
+    } else {
+      throw new Error('Failed to approve record');
+    }
+  } catch (error) {
+    console.error('Error approving record:', error);
+    showAlert('שגיאה באישור הרשומה', 'error');
   }
 }
 
@@ -7218,10 +7378,16 @@ function toggleAdminEmployeeDetails(empId) {
                 <th style="padding: 10px; text-align: right;">בית ספר</th>
                 <th style="padding: 10px; text-align: center;">ק"מ</th>
                 <th style="padding: 10px; text-align: center;">הוצאות</th>
+                <th style="padding: 10px; text-align: center;">סטטוס</th>
+                <th style="padding: 10px; text-align: center;">פעולות</th>
               </tr>
             </thead>
             <tbody>
-              ${records.map(rec => `
+              ${records.map(rec => {
+                const recId = rec.ID || rec.id || '';
+                const status = rec.status || 'ממתין';
+                const statusColor = status === 'מאושר' ? '#22c55e' : (status === 'נדחה' ? '#ef4444' : '#f59e0b');
+                return `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 8px; text-align: right;">${rec.attendanceDate || ''}</td>
                   <td style="padding: 8px; text-align: center;">${rec.startTime || ''}</td>
@@ -7231,8 +7397,13 @@ function toggleAdminEmployeeDetails(empId) {
                   <td style="padding: 8px; text-align: right;">${extractValue(rec.schoolName) || extractValue(rec.SchoolName) || ''}</td>
                   <td style="padding: 8px; text-align: center;">${rec.kilometers || rec.km || 0}</td>
                   <td style="padding: 8px; text-align: center;">${(rec.totalExpenses || 0).toFixed(0)} ₪</td>
+                  <td style="padding: 8px; text-align: center;"><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${status}</span></td>
+                  <td style="padding: 8px; text-align: center; white-space: nowrap;">
+                    <button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;" title="עריכה"><i class="fas fa-edit"></i></button>
+                    <button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="אישור"><i class="fas fa-check"></i></button>
+                  </td>
                 </tr>
-              `).join('')}
+              `;}).join('')}
             </tbody>
           </table>
         `;
