@@ -2078,7 +2078,7 @@
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,system_admin">
         <i class="fas fa-users"></i>
-        <span>ימי עבודה בצוות</span>
+        <span>סטטוס ואישורים</span>
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
         <i class="fas fa-file-alt"></i>
@@ -4509,7 +4509,9 @@ async function loadMonthlyApprovalsTable() {
 
   // Filter only instructors (if role info available)
   const instructorsOnly = approvalsData.filter(emp => {
-    const empRole = (emp.role || '').toLowerCase().replace(/\s+/g, '_');
+    let roleStr = emp.role || '';
+    if (typeof roleStr !== 'string') roleStr = String(roleStr);
+    const empRole = roleStr.toLowerCase().replace(/\s+/g, '_');
     // Include if role is instructor or not specified (for backwards compatibility)
     return !emp.role || empRole === 'instructor' || empRole === 'מדריך' || empRole === 'מדריכה';
   });
@@ -4972,6 +4974,9 @@ function toggleMobileMenu() {
 }
 
 function editTeamRecord(recordId) {
+  // Close the employee details modal first
+  closeEmployeeDetailsModal();
+  
   // Find record in cache and open edit modal
   const record = teamRecordsCache.find(r =>
     (r.ID || r.Id || r.id || r.recordId) == recordId
