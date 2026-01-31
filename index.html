@@ -2068,15 +2068,15 @@
         <i class="fas fa-chart-line"></i>
         <span>לוח בקרה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="instructor">
+      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="instructor,system_admin">
         <i class="fas fa-plus-circle"></i>
         <span>הוספת רשומה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor">
+      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor,system_admin">
         <i class="fas fa-table"></i>
         <span>ימי עבודה (נוכחות)</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,system_admin">
         <i class="fas fa-users"></i>
         <span>ימי עבודה בצוות</span>
       </a>
@@ -2105,11 +2105,11 @@
         <i class="fas fa-home"></i>
         <span>ראשי</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('add-record')" id="mobileNavAdd" data-roles="instructor">
+      <button class="mobile-nav-item" onclick="mobileNavTo('add-record')" id="mobileNavAdd" data-roles="instructor,system_admin">
         <i class="fas fa-plus-circle"></i>
         <span>הוספה</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor">
+      <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor,system_admin">
         <i class="fas fa-list"></i>
         <span>ימי עבודה</span>
       </button>
@@ -3076,9 +3076,9 @@ const LOGIC_APP_URL = CONFIG.LOGIC_APP_URL;
 
 const API_FEATURES = {
   approvals: true,
-  recordUpdates: false,
-  recordDeletes: false,
-  exports: false
+  recordUpdates: true,
+  recordDeletes: true,
+  exports: true
 };
 
 function isApprovalsSupported() {
@@ -3284,6 +3284,44 @@ function normalizePayload(action, data) {
       return {
         action: 'getemployeerecords',
         employeeId: data.employeeId
+      };
+      
+    case 'getteamapprovalstatus':
+      return {
+        action: 'getteamapprovalstatus',
+        team: data.team || 'all',
+        month: data.month || ''
+      };
+      
+    case 'updaterecord':
+      return cleanPayload({
+        action: 'updaterecord',
+        recordId: data.recordId,
+        attendanceDate: data.attendanceDate,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        workHours: Number(data.workHours || 0),
+        activityType: String(data.activityType || ''),
+        schoolName: String(data.schoolName || ''),
+        municipality: String(data.municipality || ''),
+        programName: String(data.programName || ''),
+        sessionNumber: Number(data.sessionNumber || 0),
+        kilometers: Number(data.kilometers || 0),
+        totalExpenses: Number(data.totalExpenses || 0),
+        expensesDetails: String(data.expensesDetails || ''),
+        notes: String(data.notes || ''),
+        status: data.status
+      });
+      
+    case 'deleterecord':
+      return {
+        action: 'deleterecord',
+        recordId: data.recordId
+      };
+      
+    case 'exportdata':
+      return {
+        action: 'exportdata'
       };
       
     default:
@@ -3597,6 +3635,10 @@ function getCurrentUserData() {
 }
 
 function updateMenuByRole(role) {
+  // Normalize the role (in case it wasn't normalized earlier)
+  const normalizedRole = normalizeRole(role);
+  console.log('updateMenuByRole called with:', role, '-> normalized to:', normalizedRole);
+  
   // Handle sidebar nav items via data-roles
   const navItems = document.querySelectorAll('#sidebarNav .nav-item');
   navItems.forEach(item => {
@@ -3604,8 +3646,10 @@ function updateMenuByRole(role) {
     if (allowedRoles === 'all') {
       item.style.display = 'flex';
     } else {
-      const roles = allowedRoles.split(',');
-      item.style.display = roles.includes(role) ? 'flex' : 'none';
+      const roles = allowedRoles.split(',').map(r => r.trim());
+      const isAllowed = roles.includes(normalizedRole);
+      console.log('Menu item:', item.querySelector('span')?.textContent, 'roles:', roles, 'allowed:', isAllowed);
+      item.style.display = isAllowed ? 'flex' : 'none';
     }
   });
 
@@ -3616,8 +3660,8 @@ function updateMenuByRole(role) {
     if (!allowedRoles || allowedRoles === 'all') {
       item.style.display = 'flex';
     } else {
-      const roles = allowedRoles.split(',');
-      item.style.display = roles.includes(role) ? 'flex' : 'none';
+      const roles = allowedRoles.split(',').map(r => r.trim());
+      item.style.display = roles.includes(normalizedRole) ? 'flex' : 'none';
     }
   });
 
