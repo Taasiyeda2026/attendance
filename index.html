@@ -4553,11 +4553,29 @@ async function loadInstructorMonthlyApprovalStatus() {
   }
 
   if (approvalDate) {
-    statusEl.textContent = `אושר בתאריך ${formatApprovalDate(approvalDate)}`;
-    buttonEl.disabled = true;
+    // Check if 20 days passed since approval - allow new month reporting
+    const approvalDateObj = new Date(approvalDate);
+    const daysSinceApproval = Math.floor((now - approvalDateObj) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceApproval >= 20) {
+      // 20 days passed - enable for new month
+      statusEl.textContent = 'ניתן לדווח על החודש החדש';
+      buttonEl.disabled = false;
+      buttonEl.style.background = '';
+      buttonEl.style.opacity = '';
+    } else {
+      // Still within 20 days - keep disabled and gray
+      const daysRemaining = 20 - daysSinceApproval;
+      statusEl.textContent = `אושר בתאריך ${formatApprovalDate(approvalDate)} (ישוחרר בעוד ${daysRemaining} ימים)`;
+      buttonEl.disabled = true;
+      buttonEl.style.background = '#94a3b8';
+      buttonEl.style.opacity = '0.7';
+    }
   } else {
     statusEl.textContent = 'טרם אושר החודש';
     buttonEl.disabled = false;
+    buttonEl.style.background = '';
+    buttonEl.style.opacity = '';
   }
 }
 
@@ -4868,11 +4886,12 @@ async function approveMonthToPayroll() {
   try {
     showAlert('מאשר דיווח לשכר...', 'info');
     
-    const response = await fetch(`${API_BASE_URL}?action=releaseMonth`, {
+    const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        month: monthKey,
+        action: 'setmanagerapproval',
+        monthKey: monthKey,
         team: team,
         approvedBy: user.empName || user.empNum,
         approvedByRole: user.role
@@ -7496,11 +7515,12 @@ async function approveRecordFromAdmin(recordId) {
   try {
     showAlert('מאשר רשומה...', 'info');
     
-    const response = await fetch(`${API_BASE_URL}?action=updaterecord`, {
+    const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        id: recordId,
+        action: 'updaterecord',
+        recordId: recordId,
         status: 'מאושר',
         approvedBy: user.employeeName || user.employeeId,
         approvedDate: new Date().toISOString()
