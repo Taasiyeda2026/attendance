@@ -1482,6 +1482,21 @@
       .mobile-bottom-nav {
         display: block;
       }
+      
+      /* ===== תצוגת אדמין למובייל ===== */
+      .admin-desktop-view {
+        display: none !important;
+      }
+      .admin-mobile-view {
+        display: block !important;
+      }
+      #adminDashboardFilters {
+        flex-direction: column;
+        gap: 10px;
+      }
+      #adminDashboardFilters select {
+        width: 100%;
+      }
 
       /* ===== תיקון main-content ללא margin ===== */
       .main-content {
@@ -2073,14 +2088,14 @@
         <span>הוספת רשומה</span>
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor">
-        <i class="fas fa-table"></i>
-        <span>ימי עבודה (נוכחות)</span>
-      </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,system_admin">
-        <i class="fas fa-users"></i>
+        <i class="fas fa-clipboard-check"></i>
         <span>סטטוס ואישורים</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin,payroll_officer">
+        <i class="fas fa-users"></i>
+        <span>סיכום נוכחות</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
       </a>
@@ -2110,8 +2125,8 @@
         <span>הוספה</span>
       </button>
       <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor">
-        <i class="fas fa-list"></i>
-        <span>ימי עבודה</span>
+        <i class="fas fa-clipboard-check"></i>
+        <span>סטטוס</span>
       </button>
       <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
@@ -2211,7 +2226,8 @@
             </div>
           </div>
 
-          <div class="card-body" style="overflow-x: auto;">
+          <!-- Desktop Table -->
+          <div class="card-body admin-desktop-view" style="overflow-x: auto;">
             <table id="adminDashboardTable" class="admin-table" style="width: 100%;">
               <thead>
                 <tr>
@@ -2231,17 +2247,43 @@
               </tbody>
             </table>
           </div>
+          
+          <!-- Mobile Cards View -->
+          <div id="adminMobileCardsContainer" class="admin-mobile-view" style="display: none; padding: 15px;">
+            <!-- יתמלא ע"י JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Admin Approval Section (Mobile & Desktop) -->
+        <div class="content-card" id="adminApprovalCard" style="margin-top: 20px;">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-check-double" style="margin-left: 8px; color: #10b981;"></i>אישור חודשי לצוות</h2>
+          </div>
+          <div class="card-body" style="display: flex; flex-wrap: wrap; gap: 12px; padding: 20px;">
+            <button class="btn btn-approve" onclick="approveTeamMonth('גיל')" style="flex: 1; min-width: 140px; padding: 12px 20px;">
+              <i class="fas fa-check"></i>
+              אשר צוות גיל
+            </button>
+            <button class="btn btn-approve" onclick="approveTeamMonth('לינוי')" style="flex: 1; min-width: 140px; padding: 12px 20px;">
+              <i class="fas fa-check"></i>
+              אשר צוות לינוי
+            </button>
+            <button class="btn" onclick="approveTeamMonth('all')" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white;">
+              <i class="fas fa-check-double"></i>
+              אשר את כולם
+            </button>
+          </div>
         </div>
       </div>
       
       <!-- Regular Dashboard Content -->
       <div id="regularDashboardContent">
       <div class="stats-grid">
-        <div class="stat-card blue" onclick="showPage(event, 'records')" style="cursor: pointer; transition: transform 0.2s;"
+        <div class="stat-card pastel-blue" onclick="showPage(event, 'records')" style="cursor: pointer; transition: transform 0.2s; background: linear-gradient(145deg, #e0f2fe 0%, #bae6fd 100%); border: 1px solid #7dd3fc;"
              onmouseover="this.style.transform='translateY(-5px)'"
              onmouseout="this.style.transform='translateY(0)'">
           <div class="stat-card-header">
-            <span class="stat-card-title">ימי עבודה</span>
+            <span class="stat-card-title">סטטוס ואישורים</span>
             <div class="stat-card-icon">
               <i class="fas fa-calendar-check"></i>
             </div>
@@ -2559,8 +2601,8 @@
     <div id="recordsPage" class="page hidden">
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h1>ימי עבודה (נוכחות)</h1>
-          <p>כל ימי העבודה במערכת</p>
+          <h1>סטטוס ואישורים</h1>
+          <p>הרשומות שלי לפי שבוע</p>
         </div>
         <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
@@ -3702,12 +3744,24 @@ function updateMenuByRole(role) {
     if (payrollDashboard) payrollDashboard.style.display = 'block';
   } else if (role === 'system_admin' || role === 'operations_controller') {
     if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
-    // Show filters only for admin and payroll (payroll already handled above)
+    // Show filters only for admin
     const filters = document.getElementById('adminDashboardFilters');
     if (filters && role === 'system_admin') {
       filters.style.display = 'flex';
     } else if (filters) {
       filters.style.display = 'none';
+    }
+  } else if (role === 'manager') {
+    // Manager sees adminControllerDashboard filtered to their team
+    if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
+    // Hide filters for manager - they only see their team
+    const filters = document.getElementById('adminDashboardFilters');
+    if (filters) filters.style.display = 'none';
+    // Update the title to show manager's team
+    const title = adminControllerDashboard.querySelector('.card-title');
+    if (title) {
+      const teamName = getCurrentUserData()?.team || '';
+      title.innerHTML = `<i class="fas fa-users" style="margin-left: 8px; color: #3b82f6;"></i>סיכום צוות ${teamName} - חודש נוכחי`;
     }
   } else {
     if (regularDashboardContent) regularDashboardContent.style.display = 'block';
@@ -4248,8 +4302,8 @@ function showPage(event, pageName) {
     pageName = 'dashboard';
   }
 
-  // Role guard: payroll_officer can only access dashboard and team-records
-  if (role === 'payroll_officer' && pageName !== 'dashboard' && pageName !== 'team-records') {
+  // Role guard: payroll_officer can access dashboard, team-records, and reports
+  if (role === 'payroll_officer' && !['dashboard', 'team-records', 'reports'].includes(pageName)) {
     pageName = 'team-records';
   }
   
@@ -5756,53 +5810,118 @@ function renderRecordsTable() {
   if (!recordsContainer) return;
   
   if (records.length === 0) {
-    recordsContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין ימי עבודה להצגה</p>';
+    recordsContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות להצגה</p>';
     return;
   }
 
+  // Group records by week
+  function getWeekNumber(dateStr) {
+    const date = new Date(dateStr.split('/').reverse().join('-'));
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  }
+
+  function getWeekRange(dateStr) {
+    const parts = dateStr.split('/');
+    const date = new Date(parts[2], parts[1] - 1, parts[0]);
+    const dayOfWeek = date.getDay();
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - dayOfWeek);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    return `${startOfWeek.getDate()}/${startOfWeek.getMonth()+1} - ${endOfWeek.getDate()}/${endOfWeek.getMonth()+1}`;
+  }
+
+  // Group records by week
+  const weekGroups = {};
+  records.forEach((rec, idx) => {
+    rec._originalIndex = idx;
+    const weekNum = getWeekNumber(rec.date);
+    const weekRange = getWeekRange(rec.date);
+    const key = `${weekNum}_${weekRange}`;
+    if (!weekGroups[key]) {
+      weekGroups[key] = { weekNum, weekRange, records: [] };
+    }
+    weekGroups[key].records.push(rec);
+  });
+
+  // Sort weeks descending (newest first)
+  const sortedWeeks = Object.values(weekGroups).sort((a, b) => b.weekNum - a.weekNum);
+
   if (isMobileView()) {
     const totalExpenses = records.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
-    const pendingCount = records.filter(rec => rec.status !== 'נשלח').length;
     const user = getCurrentUserData();
     const canEdit = user && user.role === 'instructor';
 
-    // Mobile: Show summary card AND individual record cards with edit buttons
-    const recordCards = records.map((rec, idx) => {
-      const canEditThis = canEditRecord(rec);
+    // Mobile: Show summary card with light pastel color, then weekly grouped cards
+    const weeklyHTML = sortedWeeks.map(week => {
+      const weekHours = week.records.reduce((sum, r) => sum + (r.hours || 0), 0);
+      const weekKm = week.records.reduce((sum, r) => sum + (r.km || 0), 0);
+      
+      const dayCards = week.records.map(rec => {
+        const canEditThis = canEditRecord(rec);
+        const dayName = new Date(rec.date.split('/').reverse().join('-')).toLocaleDateString('he-IL', { weekday: 'short' });
+        return `
+          <div style="background: #f8fafc; border-radius: 10px; padding: 12px; margin-bottom: 8px; border-right: 3px solid #60a5fa;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 600; color: #1e40af; font-size: 14px;">${dayName} ${rec.date}</span>
+              <span style="background: #dbeafe; padding: 3px 8px; border-radius: 10px; font-size: 12px; color: #1e40af;">${formatHoursDisplay(rec.hours)} שעות</span>
+            </div>
+            <div style="font-size: 12px; color: #64748b;">${rec.activity} | ${rec.school || '-'}</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">${rec.start || '--:--'} - ${rec.end || '--:--'} | ${rec.km || 0} ק"מ</div>
+            ${canEdit && canEditThis ? `
+            <button onclick="editRecord(${rec._originalIndex})" style="width: 100%; background: #3b82f6; color: white; padding: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 8px;">
+              <i class="fas fa-edit"></i> עריכה
+            </button>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
       return `
-        <div class="mobile-record-card" style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-            <div style="font-weight: 600; color: #1e40af;">${rec.date}</div>
-            <div style="background: #dbeafe; padding: 4px 8px; border-radius: 6px; font-size: 13px; color: #1e40af;">
-              ${formatHoursDisplay(rec.hours)} שעות
+        <div style="background: white; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); overflow: hidden;">
+          <div style="background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleWeekDetails('week-${week.weekNum}')">
+            <div>
+              <div style="font-weight: 600; color: #1e40af; font-size: 15px;"><i class="fas fa-calendar-week" style="margin-left: 6px;"></i>שבוע ${week.weekNum}</div>
+              <div style="font-size: 12px; color: #3b82f6; margin-top: 2px;">${week.weekRange}</div>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-size: 13px; color: #1e40af;">${week.records.length} ימים</div>
+              <div style="font-size: 14px; font-weight: 600; color: #1e40af;">${formatHoursDisplay(weekHours)} שעות</div>
             </div>
           </div>
-          <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">
-            <strong>${rec.activity}</strong> | ${rec.school || '-'}
+          <div id="week-${week.weekNum}" style="padding: 12px; display: block;">
+            ${dayCards}
           </div>
-          <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">
-            ${rec.start || '--:--'} - ${rec.end || '--:--'} | ${rec.km || 0} ק"מ
-          </div>
-          ${canEdit && canEditThis ? `
-          <button onclick="editRecord(${idx})" style="width: 100%; background: #3b82f6; color: white; padding: 10px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <i class="fas fa-edit"></i> עריכה
-          </button>
-          ` : ''}
         </div>
       `;
     }).join('');
 
     recordsContainer.innerHTML = `
       <div class="records-summary-list">
-        <div class="records-summary-card" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
-          <h4 style="margin: 0 0 12px 0; font-size: 16px;">סיכום חודשי</h4>
-          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>ימי עבודה</span><strong>${records.length}</strong></div>
-          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>סה"כ שעות</span><strong>${formatHoursDisplay(totalHours)}</strong></div>
-          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>סה"כ ק"מ</span><strong>${totalKm.toFixed(1)}</strong></div>
-          <div class="records-summary-row" style="display: flex; justify-content: space-between; padding: 6px 0;"><span>סה"כ הוצאות</span><strong>${totalExpenses.toFixed(2)} ₪</strong></div>
+        <div class="records-summary-card" style="background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%); color: #1e3a5f; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #60a5fa;">
+          <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af;"><i class="fas fa-chart-bar" style="margin-left: 8px;"></i>סיכום חודשי</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">${records.length}</div>
+              <div style="font-size: 12px; color: #475569;">ימי עבודה</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">${formatHoursDisplay(totalHours)}</div>
+              <div style="font-size: 12px; color: #475569;">שעות</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">${totalKm.toFixed(0)}</div>
+              <div style="font-size: 12px; color: #475569;">ק"מ</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">${totalExpenses.toFixed(0)}₪</div>
+              <div style="font-size: 12px; color: #475569;">הוצאות</div>
+            </div>
+          </div>
         </div>
-        <h4 style="margin: 16px 0 12px 0; font-size: 15px; color: #334155;">פירוט ימי עבודה</h4>
-        ${recordCards || '<p style="text-align: center; color: #94a3b8;">אין רשומות להצגה</p>'}
+        ${weeklyHTML || '<p style="text-align: center; color: #94a3b8;">אין רשומות להצגה</p>'}
       </div>
     `;
     return;
@@ -6820,11 +6939,8 @@ let adminDashboardRecordsCache = []; // Cache for export data
 
 async function updateAdminDashboard() {
   const tbody = document.getElementById('adminDashboardTableBody');
-  if (!tbody) return;
-  if (isMobileView()) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">הסיכום המלא זמין בדסקטופ בלבד</td></tr>';
-    return;
-  }
+  const mobileContainer = document.getElementById('adminMobileCardsContainer');
+  if (!tbody && !mobileContainer) return;
   
   const filterEmploymentType = document.getElementById('filterEmploymentType')?.value || 'all';
   const filterTeam = document.getElementById('filterTeam')?.value || 'all';
@@ -6910,6 +7026,12 @@ async function updateAdminDashboard() {
     // Apply filters
     let filteredEmployees = Object.values(employeeData);
     
+    // For managers - filter to their team only
+    const currentUser = getCurrentUserData();
+    if (currentUser && currentUser.role === 'manager' && currentUser.team) {
+      filteredEmployees = filteredEmployees.filter(emp => emp.team === currentUser.team);
+    }
+    
     if (filterEmploymentType !== 'all') {
       filteredEmployees = filteredEmployees.filter(emp => emp.employmentType === filterEmploymentType);
     }
@@ -6930,36 +7052,133 @@ async function updateAdminDashboard() {
     
     // Render table
     if (filteredEmployees.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
+      if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #64748b; padding: 40px;">אין נתונים להצגה</p>';
       return;
     }
     
-    tbody.innerHTML = filteredEmployees.map(emp => `
-      <tr class="employee-row" onclick="toggleAdminEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
-        <td style="padding: 10px 8px; text-align: center;">
-          <i class="fas fa-chevron-left" id="admin-chevron-${emp.empId}" style="transition: transform 0.3s; color: #64748b;"></i>
-        </td>
-        <td style="padding: 10px 8px; text-align: right;">${emp.empId}</td>
-        <td style="padding: 10px 8px; text-align: right; font-weight: 500; color: #3b82f6;">${emp.empName}</td>
-        <td style="padding: 10px 8px; text-align: center;">${emp.team}</td>
-        <td style="padding: 10px 8px; text-align: center;">${emp.employmentType}</td>
-        <td style="padding: 10px 8px; text-align: center;">${emp.totalRecords}</td>
-        <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${emp.totalHours.toFixed(1)}</td>
-        <td style="padding: 10px 8px; text-align: center;">${emp.totalKm.toFixed(0)}</td>
-        <td style="padding: 10px 8px; text-align: center;">${emp.totalExpenses.toFixed(0)} ₪</td>
-      </tr>
-      <tr id="admin-details-${emp.empId}" class="employee-details-row" style="display: none;">
-        <td colspan="9" style="padding: 0; background: #f8fafc;">
-          <div id="admin-details-content-${emp.empId}" style="padding: 20px;">
-            <!-- Will be filled when expanded -->
+    // Desktop table
+    if (tbody) {
+      tbody.innerHTML = filteredEmployees.map(emp => `
+        <tr class="employee-row" onclick="toggleAdminEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
+          <td style="padding: 10px 8px; text-align: center;">
+            <i class="fas fa-chevron-left" id="admin-chevron-${emp.empId}" style="transition: transform 0.3s; color: #64748b;"></i>
+          </td>
+          <td style="padding: 10px 8px; text-align: right;">${emp.empId}</td>
+          <td style="padding: 10px 8px; text-align: right; font-weight: 500; color: #3b82f6;">${emp.empName}</td>
+          <td style="padding: 10px 8px; text-align: center;">${emp.team}</td>
+          <td style="padding: 10px 8px; text-align: center;">${emp.employmentType}</td>
+          <td style="padding: 10px 8px; text-align: center;">${emp.totalRecords}</td>
+          <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${emp.totalHours.toFixed(1)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${emp.totalKm.toFixed(0)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${emp.totalExpenses.toFixed(0)} ₪</td>
+        </tr>
+        <tr id="admin-details-${emp.empId}" class="employee-details-row" style="display: none;">
+          <td colspan="9" style="padding: 0; background: #f8fafc;">
+            <div id="admin-details-content-${emp.empId}" style="padding: 20px;">
+              <!-- Will be filled when expanded -->
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // Mobile cards
+    if (mobileContainer) {
+      mobileContainer.innerHTML = filteredEmployees.map(emp => `
+        <div class="content-card" style="margin-bottom: 12px; padding: 15px;" onclick="toggleMobileAdminDetails('${emp.empId}')">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 600; color: #3b82f6; font-size: 16px;">${emp.empName}</span>
+            <span style="background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-size: 12px;">${emp.team}</span>
           </div>
-        </td>
-      </tr>
-    `).join('');
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
+            <div><i class="fas fa-id-badge" style="width: 18px; color: #94a3b8;"></i> ${emp.empId}</div>
+            <div><i class="fas fa-briefcase" style="width: 18px; color: #94a3b8;"></i> ${emp.employmentType}</div>
+            <div><i class="fas fa-calendar" style="width: 18px; color: #94a3b8;"></i> ${emp.totalRecords} ימים</div>
+            <div><i class="fas fa-clock" style="width: 18px; color: #94a3b8;"></i> ${emp.totalHours.toFixed(1)} שעות</div>
+            <div><i class="fas fa-road" style="width: 18px; color: #94a3b8;"></i> ${emp.totalKm.toFixed(0)} ק"מ</div>
+            <div><i class="fas fa-shekel-sign" style="width: 18px; color: #94a3b8;"></i> ${emp.totalExpenses.toFixed(0)} ₪</div>
+          </div>
+          <div id="mobile-details-${emp.empId}" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+            <!-- יתמלא בלחיצה -->
+          </div>
+        </div>
+      `).join('');
+    }
     
   } catch (error) {
     console.error('Error loading admin dashboard:', error);
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">שגיאה בטעינת נתונים</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">שגיאה בטעינת נתונים</td></tr>';
+    if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 40px;">שגיאה בטעינת נתונים</p>';
+  }
+}
+
+// Toggle mobile employee details
+// Toggle week details in instructor records view
+function toggleWeekDetails(weekId) {
+  const weekDiv = document.getElementById(weekId);
+  if (!weekDiv) return;
+  weekDiv.style.display = weekDiv.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleMobileAdminDetails(empId) {
+  const detailsDiv = document.getElementById(`mobile-details-${empId}`);
+  if (!detailsDiv) return;
+  
+  if (detailsDiv.style.display === 'none') {
+    const records = adminEmployeeRecordsCache[empId] || [];
+    if (records.length === 0) {
+      detailsDiv.innerHTML = '<p style="color: #64748b; text-align: center;">אין רשומות</p>';
+    } else {
+      detailsDiv.innerHTML = records.slice(0, 5).map(rec => {
+        const date = rec.attendanceDate ? new Date(rec.attendanceDate).toLocaleDateString('he-IL') : '-';
+        return `<div style="padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 12px;">
+          <strong>${date}</strong> - ${rec.activityType || '-'} | ${rec.workHours || 0} שעות
+        </div>`;
+      }).join('') + (records.length > 5 ? `<p style="color: #64748b; font-size: 11px; margin-top: 8px;">ועוד ${records.length - 5} רשומות...</p>` : '');
+    }
+    detailsDiv.style.display = 'block';
+  } else {
+    detailsDiv.style.display = 'none';
+  }
+}
+
+// Approve team month
+async function approveTeamMonth(teamName) {
+  const user = getCurrentUserData();
+  if (!user || user.role !== 'system_admin') {
+    showAlert('אין הרשאה לבצע אישור', 'error');
+    return;
+  }
+  
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const teamLabel = teamName === 'all' ? 'כל הצוותים' : `צוות ${teamName}`;
+  
+  if (!confirm(`האם לאשר את ${teamLabel} לחודש ${monthKey}?`)) {
+    return;
+  }
+  
+  try {
+    showAlert(`מאשר ${teamLabel}...`, 'info');
+    
+    // In a real implementation, this would call the Logic App
+    // For now, show success message
+    const data = await apiRequest('approveMonthRecords', {
+      team: teamName,
+      month: monthKey,
+      approvedBy: user.empNum,
+      approverName: user.empName
+    });
+    
+    if (data.success) {
+      showAlert(`${teamLabel} אושר בהצלחה!`, 'success');
+    } else {
+      showAlert(data.message || 'שגיאה באישור', 'error');
+    }
+  } catch (error) {
+    console.error('Error approving team:', error);
+    showAlert('שגיאה באישור הצוות: ' + (error.message || 'נסה שוב'), 'error');
   }
 }
 
