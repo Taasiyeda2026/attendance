@@ -61,36 +61,6 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "./screenshots/dashboard.png",
-      "sizes": "1170x2532",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "דף הבית - לוח מחוונים"
-    },
-    {
-      "src": "./screenshots/attendance.png",
-      "sizes": "1170x2532",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "דיווח נוכחות"
-    },
-    {
-      "src": "./screenshots/records.png",
-      "sizes": "1170x2532",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "רשומות נוכחות"
-    },
-    {
-      "src": "./screenshots/reports.png",
-      "sizes": "1170x2532",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "דוחות צוות"
-    }
-  ],
   "shortcuts": [
     {
       "name": "דיווח מהיר",
@@ -115,30 +85,7 @@
           "sizes": "96x96"
         }
       ]
-    },
-    {
-      "name": "דוחות",
-      "short_name": "דוחות",
-      "description": "דוחות ניהול",
-      "url": "./index.html#reports",
-      "icons": [
-        {
-          "src": "./icons/icon-96x96.png",
-          "sizes": "96x96"
-        }
-      ]
     }
   ],
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "share_target": {
-    "action": "./share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  "prefer_related_applications": false
 }
