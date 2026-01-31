@@ -1,4 +1,4 @@
-const CACHE_NAME = 'attendance-v3';
+const CACHE_NAME = 'attendance-v4';
 const urlsToCache = [
   './index.html',
   './manifest.json',
