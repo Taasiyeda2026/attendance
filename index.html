@@ -2088,8 +2088,8 @@
         <span>הוספת רשומה</span>
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor">
-        <i class="fas fa-clipboard-check"></i>
-        <span>סטטוס ואישורים</span>
+        <i class="fas fa-list"></i>
+        <span>הרשומות שלי</span>
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
@@ -2098,6 +2098,10 @@
       <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
+      </a>
+      <a href="#" class="nav-item" onclick="showPage(event, 'approvals-status')" data-roles="system_admin">
+        <i class="fas fa-clipboard-check"></i>
+        <span>סטטוס אישורים</span>
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'admin')" data-roles="system_admin">
         <i class="fas fa-cog"></i>
@@ -2125,8 +2129,8 @@
         <span>הוספה</span>
       </button>
       <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor">
-        <i class="fas fa-clipboard-check"></i>
-        <span>סטטוס</span>
+        <i class="fas fa-list"></i>
+        <span>רשומות</span>
       </button>
       <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-users"></i>
@@ -2283,7 +2287,7 @@
              onmouseover="this.style.transform='translateY(-5px)'"
              onmouseout="this.style.transform='translateY(0)'">
           <div class="stat-card-header">
-            <span class="stat-card-title">סטטוס ואישורים</span>
+            <span class="stat-card-title">הרשומות שלי</span>
             <div class="stat-card-icon">
               <i class="fas fa-calendar-check"></i>
             </div>
@@ -2331,14 +2335,14 @@
       <!-- Monthly Approval (Instructor only) -->
       <div class="content-card" id="monthlyApprovalCard" style="margin-top: 24px; display: none;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <h2 class="card-title"><i class="fas fa-calendar-check" style="margin-left: 8px; color: #3b82f6;"></i>אישור חודש נוכחי</h2>
+          <h2 class="card-title"><i class="fas fa-calendar-check" style="margin-left: 8px; color: #3b82f6;"></i>סיום דיווח חודשי</h2>
           <span id="monthlyApprovalMonthLabel" style="color: #64748b; font-size: 13px;"></span>
         </div>
         <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
           <div id="monthlyApprovalStatus" style="color: #475569; font-size: 14px;">טוען סטטוס...</div>
-          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport()" style="min-width: 140px; height: 40px;">
+          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport()" style="min-width: 160px; height: 40px;">
             <i class="fas fa-check-circle"></i>
-            אשר חודש
+            סיום דיווח חודשי
           </button>
         </div>
       </div>
@@ -2601,8 +2605,8 @@
     <div id="recordsPage" class="page hidden">
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-          <h1>סטטוס ואישורים</h1>
-          <p>הרשומות שלי לפי שבוע</p>
+          <h1>הרשומות שלי</h1>
+          <p>צפייה ברשומות לפי שבוע</p>
         </div>
         <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
@@ -2651,6 +2655,10 @@
             <button class="btn" onclick="loadMonthlyApprovalsTable()" style="background: #3b82f6; color: white;">
               <i class="fas fa-sync-alt"></i>
               רענן סטטוס
+            </button>
+            <button class="btn" id="approveToPayrollBtn" onclick="approveMonthToPayroll()" style="background: #10b981; color: white; display: none;">
+              <i class="fas fa-check-double"></i>
+              אישור דיווח לשכר
             </button>
             <button class="btn" id="resetMonthBtn" onclick="resetTeamMonth()" style="background: #f97316; color: white; display: none;">
               <i class="fas fa-unlock"></i>
@@ -2870,6 +2878,54 @@
               <i class="fas fa-sync-alt"></i><br>
               סנכרון מ-SharePoint
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approvals Status Page (Admin Only) -->
+    <div id="approvalsStatusPage" class="page hidden">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>סטטוס אישורים</h1>
+          <p>מעקב אחר אישורי מדריכים ומנהלים</p>
+        </div>
+        <button class="btn btn-primary" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה" style="width: 48px; height: 48px; min-width: 48px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px;">
+          <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
+        </button>
+      </div>
+      
+      <div class="content-card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+          <h2 class="card-title">סטטוס אישורים חודשי</h2>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <select id="approvalsMonthFilter" onchange="loadApprovalsStatusPage()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <option value="1">ינואר</option>
+              <option value="2">פברואר</option>
+              <option value="3">מרץ</option>
+              <option value="4">אפריל</option>
+              <option value="5">מאי</option>
+              <option value="6">יוני</option>
+              <option value="7">יולי</option>
+              <option value="8">אוגוסט</option>
+              <option value="9">ספטמבר</option>
+              <option value="10">אוקטובר</option>
+              <option value="11">נובמבר</option>
+              <option value="12">דצמבר</option>
+            </select>
+            <select id="approvalsYearFilter" onchange="loadApprovalsStatusPage()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <option value="2025">2025</option>
+              <option value="2026" selected>2026</option>
+              <option value="2027">2027</option>
+            </select>
+            <button class="btn" onclick="loadApprovalsStatusPage()" style="background: #3b82f6; color: white;">
+              <i class="fas fa-sync-alt"></i> רענן
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="approvalsStatusTable" style="overflow-x: auto;">
+            <p style="text-align: center; color: #94a3b8; padding: 30px;">טוען נתונים...</p>
           </div>
         </div>
       </div>
@@ -4322,6 +4378,7 @@ if (typeof closeMobileMenu === 'function') {
     'records': 'recordsPage',
     'team-records': 'teamRecordsPage',
     'reports': 'reportsPage',
+    'approvals-status': 'approvalsStatusPage',
     'admin': 'adminPage'
   };
   
@@ -4345,6 +4402,7 @@ if (typeof closeMobileMenu === 'function') {
   if (pageName === 'records') renderRecordsTable();
   if (pageName === 'team-records') loadTeamRecords();
   if (pageName === 'reports') initReportsPage();
+  if (pageName === 'approvals-status') loadApprovalsStatusPage();
   if (pageName === 'add-record') {
     // Populate employee info in header
     const user = getCurrentUserData();
@@ -4410,12 +4468,12 @@ async function ensureMonthEditable(employeeId, dateString) {
   if (!monthKey) return true;
   const user = getCurrentUserData();
   const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user?.team || '');
-  if (approvalStatus.released) {
-    showAlert('החודש שוחרר ונעול לקריאה בלבד', 'error');
+  if (approvalStatus.released && user?.role !== 'system_admin') {
+    showAlert('הדיווח אושר לשכר. רק מנהל מערכת יכול לערוך.', 'error');
     return false;
   }
-  if (approvalStatus.approved && user?.role === 'instructor') {
-    showAlert('החודש אושר ואינו ניתן לעריכה. ניתן לדווח לחודש הבא.', 'error');
+  if (approvalStatus.approved && ['instructor', 'payroll_officer'].includes(user?.role)) {
+    showAlert('החודש אושר ואינו ניתן לעריכה.', 'error');
     return false;
   }
   return true;
@@ -4440,6 +4498,12 @@ function updateMonthlyApprovalVisibility() {
 
   if (approvalsCard) {
     approvalsCard.style.display = (!isMobileView() && ['manager', 'system_admin', 'operations_controller'].includes(user.role)) ? 'block' : 'none';
+  }
+
+  // Show approve to payroll button for managers and operations_controller
+  const approveToPayrollBtn = document.getElementById('approveToPayrollBtn');
+  if (approveToPayrollBtn) {
+    approveToPayrollBtn.style.display = ['manager', 'operations_controller'].includes(user.role) ? 'inline-flex' : 'none';
   }
 
   // Show reset/unlock buttons for managers and admins
@@ -4608,12 +4672,13 @@ async function loadMonthlyApprovalsTable() {
       const teamEmps = byTeam[teamName];
       const rows = teamEmps.map(emp => {
         const approvalDate = emp.approvalDate || null;
+        const isReleased = emp.released || false;
         return `
           <tr>
             <td>${emp.name || emp.employeeName || '—'}</td>
             <td>${emp.employeeId || '—'}</td>
-            <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
-            <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
+            <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? '✓ סיום דיווח' : '⏳ ממתין'}</td>
+            <td style="font-weight: 600; color: ${isReleased ? '#16a34a' : '#94a3b8'};">${isReleased ? '✓ אושר לשכר' : '—'}</td>
           </tr>
         `;
       }).join('');
@@ -4629,8 +4694,8 @@ async function loadMonthlyApprovalsTable() {
                 <tr>
                   <th>שם עובד</th>
                   <th>מספר עובד</th>
-                  <th>תאריך אישור</th>
-                  <th>סטטוס</th>
+                  <th>סיום דיווח</th>
+                  <th>אישור לשכר</th>
                 </tr>
               </thead>
               <tbody>${rows}</tbody>
@@ -4671,6 +4736,158 @@ async function loadMonthlyApprovalsTable() {
         </table>
       </div>
     `;
+  }
+}
+
+// Load Approvals Status Page (Admin only - shows both approval statuses)
+async function loadApprovalsStatusPage() {
+  const user = getCurrentUserData();
+  const container = document.getElementById('approvalsStatusTable');
+
+  if (!container) return;
+  if (!user || user.role !== 'system_admin') {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">עמוד זה זמין למנהל מערכת בלבד</p>';
+    return;
+  }
+
+  const monthSelect = document.getElementById('approvalsMonthFilter');
+  const yearSelect = document.getElementById('approvalsYearFilter');
+  const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
+  const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
+  const monthKey = getApprovalMonthKey(month, year);
+
+  container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;"><i class="fas fa-spinner fa-spin"></i> טוען נתונים...</p>';
+
+  let approvalsData = [];
+  try {
+    const data = await apiRequest('getTeamApprovalStatus', {
+      team: 'all',
+      month: monthKey
+    });
+    approvalsData = Array.isArray(data.employees) ? data.employees : [];
+  } catch (error) {
+    console.error('Error loading approval status:', error);
+    container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 30px;">שגיאה בטעינת הנתונים</p>';
+    return;
+  }
+
+  // Filter only instructors
+  const instructorsOnly = approvalsData.filter(emp => {
+    let roleStr = emp.role || '';
+    if (typeof roleStr !== 'string') roleStr = String(roleStr);
+    const empRole = roleStr.toLowerCase().replace(/\s+/g, '_');
+    return !emp.role || empRole === 'instructor' || empRole === 'מדריך' || empRole === 'מדריכה';
+  });
+
+  if (instructorsOnly.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין מדריכים להצגה</p>';
+    return;
+  }
+
+  // Group by team
+  const byTeam = {};
+  instructorsOnly.forEach(emp => {
+    const teamName = emp.team || 'ללא צוות';
+    if (!byTeam[teamName]) byTeam[teamName] = [];
+    byTeam[teamName].push(emp);
+  });
+
+  let html = '';
+  Object.keys(byTeam).sort().forEach(teamName => {
+    const teamEmps = byTeam[teamName];
+    const rows = teamEmps.map(emp => {
+      const approvalDate = emp.approvalDate || null;
+      const isReleased = emp.released || false;
+      const employmentType = emp.employmentType || '—';
+      return `
+        <tr>
+          <td>${emp.name || emp.employeeName || '—'}</td>
+          <td>${emp.employeeId || '—'}</td>
+          <td>${teamName}</td>
+          <td>${employmentType}</td>
+          <td style="text-align: center;">
+            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; color: ${approvalDate ? '#166534' : '#92400e'};">
+              <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
+              ${approvalDate ? 'סיים דיווח' : 'ממתין'}
+            </span>
+          </td>
+          <td style="text-align: center;">
+            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; color: ${isReleased ? '#166534' : '#64748b'};">
+              <i class="fas ${isReleased ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
+              ${isReleased ? 'אושר לשכר' : 'לא אושר'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    html += `
+      <div style="margin-bottom: 25px;">
+        <h4 style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 12px 18px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-users"></i>${teamName}
+          <span style="margin-right: auto; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 15px; font-size: 13px;">${teamEmps.length} מדריכים</span>
+        </h4>
+        <div style="overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <table style="margin: 0;">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th style="padding: 12px 15px;">שם עובד</th>
+                <th style="padding: 12px 15px;">מספר עובד</th>
+                <th style="padding: 12px 15px;">צוות</th>
+                <th style="padding: 12px 15px;">סוג העסקה</th>
+                <th style="padding: 12px 15px; text-align: center;">אישור מדריך</th>
+                <th style="padding: 12px 15px; text-align: center;">אישור מנהל</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// Approve month to payroll - sends to admin for salary processing
+async function approveMonthToPayroll() {
+  const user = getCurrentUserData();
+  if (!user || !['manager', 'operations_controller'].includes(user.role)) {
+    showAlert('אין הרשאה לאישור דיווח לשכר', 'error');
+    return;
+  }
+  
+  if (!confirm('האם לאשר את הדיווח החודשי ולהעביר לאדמין להכנת שכר?\n\nלאחר האישור, רק האדמין יוכל לבצע שינויים.')) {
+    return;
+  }
+  
+  const now = new Date();
+  const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+  const team = user.role === 'manager' ? (user.team || '') : 'all';
+  
+  try {
+    showAlert('מאשר דיווח לשכר...', 'info');
+    
+    const response = await fetch(`${API_BASE_URL}?action=releaseMonth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: monthKey,
+        team: team,
+        approvedBy: user.empName || user.empNum,
+        approvedByRole: user.role
+      })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      showAlert('הדיווח אושר והועבר לאדמין להכנת שכר!', 'success');
+      await loadMonthlyApprovalsTable();
+    } else {
+      showAlert(data.message || 'שגיאה באישור הדיווח', 'error');
+    }
+  } catch (error) {
+    showAlert('שגיאה באישור הדיווח: ' + error.message, 'error');
   }
 }
 
