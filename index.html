@@ -3324,6 +3324,22 @@ function normalizePayload(action, data) {
         action: 'exportdata'
       };
       
+    case 'checkmonthapproval':
+      return {
+        action: 'checkmonthapproval',
+        employeeId: data.employeeId,
+        month: data.month,
+        year: data.year
+      };
+      
+    case 'resetteammonth':
+      return {
+        action: 'resetteammonth',
+        team: data.team,
+        month: data.month,
+        year: data.year
+      };
+      
     default:
       throw new Error(`Unsupported action: ${normalizedAction}`);
   }
@@ -3922,6 +3938,8 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     const payload = {
       action: 'updaterecord',
       recordId: updatedRecord.recordId,
+      employeeId: updatedRecord.empNum || updatedRecord.employeeId || localStorage.getItem("employeeId") || '',
+      employeeName: updatedRecord.empName || updatedRecord.employeeName || localStorage.getItem("employeeName") || '',
       attendanceDate: updatedRecord.date || updatedRecord.attendanceDate,
       startTime: updatedRecord.start || updatedRecord.startTime,
       endTime: updatedRecord.end || updatedRecord.endTime,
@@ -7197,8 +7215,8 @@ function renderReportByEmployee() {
     const emp = byEmployee[name];
     html += `
       <tr>
-        <td>${name}</td>
-        <td>${emp.empNum}</td>
+        <td>${name || 'לא ידוע'}</td>
+        <td>${emp.empNum || '-'}</td>
         <td>${emp.count}</td>
         <td><strong>${formatHoursDisplay(emp.hours)}</strong></td>
         <td>${emp.km.toFixed(0)}</td>
