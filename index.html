@@ -10,8 +10,8 @@
   <meta name="apple-mobile-web-app-title" content="נוכחות">
   <title>מערכת נוכחות - תעשיידע</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" href="./logo.png">
-  <link rel="apple-touch-icon" href="./logo.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192x192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192x192.png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -719,6 +719,9 @@
     @media (max-width: 768px) {
       .form-grid {
         grid-template-columns: 1fr;
+      }
+      .hide-mobile {
+        display: none !important;
       }
     }
 
@@ -2221,7 +2224,7 @@
         <div class="content-card">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h2 class="card-title"><i class="fas fa-users" style="margin-left: 8px; color: #3b82f6;"></i>סיכום לפי מדריך - חודש נוכחי</h2>
-            <button class="btn btn-success" onclick="exportPayrollToExcel()">
+            <button class="btn btn-success hide-mobile" onclick="exportPayrollToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2253,7 +2256,7 @@
         <div class="content-card">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <h2 class="card-title"><i class="fas fa-users-cog" style="margin-left: 8px; color: #3b82f6;"></i>סיכום כל העובדים - חודש נוכחי</h2>
-            <button class="btn btn-success" onclick="exportAdminDashboardToExcel()">
+            <button class="btn btn-success hide-mobile" onclick="exportAdminDashboardToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2406,7 +2409,7 @@
           <i class="fas fa-plus"></i>
           הוסף רשומה חדשה
         </button>
-        <button class="btn btn-success" onclick="exportToExcel()">
+        <button class="btn btn-success hide-mobile" onclick="exportToExcel()">
           <i class="fas fa-file-excel"></i>
           ייצוא ל-Excel
         </button>
@@ -2670,7 +2673,7 @@
         <div class="card-header">
           <h2 class="card-title">סה"כ <span id="totalRecordsCount">0</span> ימי עבודה</h2>
           <div style="display: flex; gap: 10px;">
-            <button class="btn btn-success" onclick="exportToExcel()">
+            <button class="btn btn-success hide-mobile" onclick="exportToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2734,7 +2737,7 @@
         <div class="card-header" style="flex-direction: column; gap: 15px;">
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
             <h2 class="card-title">סיכום צוות <span id="teamName"></span></h2>
-            <button class="btn btn-success" onclick="exportTeamToExcel()">
+            <button class="btn btn-success hide-mobile" onclick="exportTeamToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
             </button>
@@ -2783,7 +2786,7 @@
           <p>סיכומים וסטטיסטיקות</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="btn btn-success" onclick="openExportModal()">
+          <button class="btn btn-success hide-mobile" onclick="openExportModal()">
             <i class="fas fa-file-excel"></i>
             ייצוא ל-Excel
           </button>
@@ -2923,7 +2926,7 @@
               <i class="fas fa-database"></i>
               צפייה בכל ימי העבודה
             </button>
-            <button class="btn btn-success" onclick="exportAllToExcel()">
+            <button class="btn btn-success hide-mobile" onclick="exportAllToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא כל הנתונים
             </button>
