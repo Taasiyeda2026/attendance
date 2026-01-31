@@ -2068,11 +2068,11 @@
         <i class="fas fa-chart-line"></i>
         <span>לוח בקרה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="instructor,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'add-record')" data-roles="instructor">
         <i class="fas fa-plus-circle"></i>
         <span>הוספת רשומה</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor,system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'records')" data-roles="instructor">
         <i class="fas fa-table"></i>
         <span>ימי עבודה (נוכחות)</span>
       </a>
@@ -2105,11 +2105,11 @@
         <i class="fas fa-home"></i>
         <span>ראשי</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('add-record')" id="mobileNavAdd" data-roles="instructor,system_admin">
+      <button class="mobile-nav-item" onclick="mobileNavTo('add-record')" id="mobileNavAdd" data-roles="instructor">
         <i class="fas fa-plus-circle"></i>
         <span>הוספה</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor,system_admin">
+      <button class="mobile-nav-item" onclick="mobileNavTo('records')" id="mobileNavRecords" data-roles="instructor">
         <i class="fas fa-list"></i>
         <span>ימי עבודה</span>
       </button>
@@ -4507,40 +4507,96 @@ async function loadMonthlyApprovalsTable() {
     console.error('Error loading approval status:', error);
   }
 
-  if (approvalsData.length === 0) {
-    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין נתוני אישורים להצגה</p>';
+  // Filter only instructors (if role info available)
+  const instructorsOnly = approvalsData.filter(emp => {
+    const empRole = (emp.role || '').toLowerCase().replace(/\s+/g, '_');
+    // Include if role is instructor or not specified (for backwards compatibility)
+    return !emp.role || empRole === 'instructor' || empRole === 'מדריך' || empRole === 'מדריכה';
+  });
+
+  if (instructorsOnly.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין מדריכים להצגה</p>';
     return;
   }
 
-  const rows = approvalsData.map(emp => {
-    const approvalDate = emp.approvalDate || null;
-    return `
-      <tr>
-        <td>${emp.name || emp.employeeName || '—'}</td>
-        <td>${emp.employeeId || '—'}</td>
-        <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
-        <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
-      </tr>
-    `;
-  }).join('');
+  // For system_admin, group by team
+  if (user.role === 'system_admin') {
+    const byTeam = {};
+    instructorsOnly.forEach(emp => {
+      const teamName = emp.team || 'ללא צוות';
+      if (!byTeam[teamName]) byTeam[teamName] = [];
+      byTeam[teamName].push(emp);
+    });
 
-  container.innerHTML = `
-    <div style="overflow-x: auto;">
-      <table>
-        <thead>
+    let html = '';
+    Object.keys(byTeam).sort().forEach(teamName => {
+      const teamEmps = byTeam[teamName];
+      const rows = teamEmps.map(emp => {
+        const approvalDate = emp.approvalDate || null;
+        return `
           <tr>
-            <th>שם עובד</th>
-            <th>מספר עובד</th>
-            <th>תאריך אישור</th>
-            <th>סטטוס</th>
+            <td>${emp.name || emp.employeeName || '—'}</td>
+            <td>${emp.employeeId || '—'}</td>
+            <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
+            <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
           </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    </div>
-  `;
+        `;
+      }).join('');
+
+      html += `
+        <div style="margin-bottom: 20px;">
+          <h4 style="background: #f1f5f9; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; color: #1e40af;">
+            <i class="fas fa-users" style="margin-left: 8px;"></i>${teamName}
+          </h4>
+          <div style="overflow-x: auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>שם עובד</th>
+                  <th>מספר עובד</th>
+                  <th>תאריך אישור</th>
+                  <th>סטטוס</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  } else {
+    // For manager - show simple table
+    const rows = instructorsOnly.map(emp => {
+      const approvalDate = emp.approvalDate || null;
+      return `
+        <tr>
+          <td>${emp.name || emp.employeeName || '—'}</td>
+          <td>${emp.employeeId || '—'}</td>
+          <td>${approvalDate ? formatApprovalDate(approvalDate) : '—'}</td>
+          <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? 'אושר' : 'ממתין'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>שם עובד</th>
+              <th>מספר עובד</th>
+              <th>תאריך אישור</th>
+              <th>סטטוס</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
 }
 
 async function resetTeamMonth() {
@@ -4852,6 +4908,8 @@ function closeEmployeeDetailsModal() {
 function renderEmployeeDetailsModal(employeeId, employeeName, detailedRecords) {
   const content = document.getElementById('employeeDetailsContent');
   const title = document.getElementById('employeeDetailsTitle');
+  const user = getCurrentUserData();
+  const canEdit = user && ['manager', 'system_admin'].includes(user.role);
 
   title.textContent = employeeName ? `פירוט שעות - ${employeeName}` : 'פירוט שעות';
 
@@ -4870,10 +4928,12 @@ function renderEmployeeDetailsModal(employeeId, employeeName, detailedRecords) {
           <th>פעילות</th>
           <th>ק"מ</th>
           <th>הערות</th>
+          ${canEdit ? '<th>פעולות</th>' : ''}
         </tr>
       </thead>
       <tbody>
         ${detailedRecords.map(rec => {
+          const recordId = rec.ID || rec.Id || rec.id || rec.recordId || '';
           const date = rec.attendanceDate || rec.date || rec.AttendanceDate || '';
           const start = rec.startTime || rec.start || rec.StartTime || '';
           const end = rec.endTime || rec.end || rec.EndTime || '';
@@ -4889,6 +4949,13 @@ function renderEmployeeDetailsModal(employeeId, employeeName, detailedRecords) {
               <td>${activity || '-'}</td>
               <td>${km}</td>
               <td>${notes || '-'}</td>
+              ${canEdit && recordId ? `
+                <td>
+                  <button onclick="editTeamRecord('${recordId}')" style="background: #3b82f6; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                    <i class="fas fa-edit"></i> עריכה
+                  </button>
+                </td>
+              ` : (canEdit ? '<td>-</td>' : '')}
             </tr>
           `;
         }).join('')}
