@@ -4370,6 +4370,7 @@ function updateMonthlyApprovalVisibility() {
     approvalsCard.style.display = (!isMobileView() && ['manager', 'system_admin', 'operations_controller'].includes(user.role)) ? 'block' : 'none';
   }
 
+  // Show reset/unlock buttons for managers and admins
   if (resetButton) {
     resetButton.style.display = ['manager', 'system_admin', 'operations_controller'].includes(user.role) ? 'inline-flex' : 'none';
   }
@@ -4775,11 +4776,11 @@ function renderTeamTable(recordsList) {
     const empName = rec.employeeName || rec.empName || rec.EmployeeName || 'לא ידוע';
     const team = rec.team || rec.Team || '-';
     const empType = normalizeEmploymentType(rec, 'תעשיידע');
-    const hasSummaryTotals = rec.totalHours != null || rec.totalKm != null || rec.totalExpenses != null || rec.totalRecords != null;
     const hours = parseFloat(rec.totalHours || rec.workHours || rec.hours || rec.WorkHours || 0);
     const km = parseFloat(rec.totalKm || rec.kilometers || rec.km || rec.Kilometers || 0);
     const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
-    const recordCount = parseInt(rec.totalRecords || rec.totalDays || rec.workDays || (hasSummaryTotals ? 0 : 1), 10);
+    // Each record = 1 work day unless explicitly specified
+    const recordCount = parseInt(rec.totalRecords || rec.totalDays || rec.workDays || 1, 10);
 
     if (!employeeSummary[empId]) {
       employeeSummary[empId] = {
