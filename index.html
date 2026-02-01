@@ -4302,6 +4302,12 @@ async function doLogin(event) {
       updateMenuByRole(empData.role);
       loadFromLocalStorage();
       
+      // Reset filter session flags on new login
+      const teamMonthFilter = document.getElementById('teamMonthFilter');
+      const teamYearFilter = document.getElementById('teamYearFilter');
+      if (teamMonthFilter) delete teamMonthFilter.dataset.sessionInit;
+      if (teamYearFilter) delete teamYearFilter.dataset.sessionInit;
+      
       await syncFromSharePoint(empData.empNum);
       
       updateStats();
@@ -4726,8 +4732,19 @@ async function loadMonthlyApprovalsTable() {
     console.error('Error loading approval status:', error);
   }
 
+  // For managers - filter to their team first (client-side fallback)
+  let teamFilteredData = approvalsData;
+  if (user.role === 'manager' && user.team) {
+    const managerTeam = user.team.trim().toLowerCase();
+    teamFilteredData = approvalsData.filter(emp => {
+      const empTeam = (emp.team || '').trim().toLowerCase();
+      return empTeam === managerTeam;
+    });
+    console.log('Manager team filter applied:', user.team, '- Found:', teamFilteredData.length, 'employees');
+  }
+  
   // Filter only instructors (if role info available)
-  const instructorsOnly = approvalsData.filter(emp => {
+  const instructorsOnly = teamFilteredData.filter(emp => {
     let roleStr = emp.role || '';
     if (typeof roleStr !== 'string') roleStr = String(roleStr);
     const empRole = roleStr.toLowerCase().replace(/\s+/g, '_');
@@ -5052,22 +5069,37 @@ async function unlockTeamMonth() {
 
 // =============== Team Records Functions ===============
 let teamRecordsCache = [];
-async function loadTeamRecords() {
+async function loadTeamRecords(resetFilters = false) {
   const user = getCurrentUserData();
   if (!user) return;
 
-  // Set default month/year to current
   const now = new Date();
   const monthSelect = document.getElementById('teamMonthFilter');
   const yearSelect = document.getElementById('teamYearFilter');
 
-  if (monthSelect && !monthSelect.dataset.initialized) {
-    monthSelect.value = now.getMonth() + 1;
-    monthSelect.dataset.initialized = 'true';
-  }
-  if (yearSelect && !yearSelect.dataset.initialized) {
-    yearSelect.value = now.getFullYear();
-    yearSelect.dataset.initialized = 'true';
+  // Reset to appropriate month/year on fresh page load or when explicitly requested
+  // If we're in the first 5 days of the month, default to previous month
+  if (resetFilters || !monthSelect?.dataset.sessionInit) {
+    let defaultMonth = now.getMonth() + 1;
+    let defaultYear = now.getFullYear();
+    
+    if (now.getDate() <= 5) {
+      // Show previous month by default in first 5 days
+      defaultMonth = now.getMonth(); // getMonth() returns 0-11, so this gives previous month
+      if (defaultMonth === 0) {
+        defaultMonth = 12;
+        defaultYear = now.getFullYear() - 1;
+      }
+    }
+    
+    if (monthSelect) {
+      monthSelect.value = defaultMonth;
+      monthSelect.dataset.sessionInit = 'true';
+    }
+    if (yearSelect) {
+      yearSelect.value = defaultYear;
+      yearSelect.dataset.sessionInit = 'true';
+    }
   }
 
   const selectedMonth = monthSelect ? parseInt(monthSelect.value) : now.getMonth() + 1;
@@ -5684,7 +5716,8 @@ function updateDashboard() {
   const role = localStorage.getItem("role") || '';
   if (role === 'payroll_officer') {
     updatePayrollSummaryTable();
-  } else if (!isMobileView() && (role === 'system_admin' || role === 'operations_controller')) {
+  } else if (role === 'system_admin' || role === 'operations_controller' || role === 'manager') {
+    // Update admin dashboard for admins, controllers, and managers
     updateAdminDashboard();
   }
 }
@@ -7357,10 +7390,16 @@ async function updateAdminDashboard() {
     // Apply filters
     let filteredEmployees = Object.values(employeeData);
     
-    // For managers - filter to their team only
+    // For managers - filter to their team only (case-insensitive)
     const currentUser = getCurrentUserData();
     if (currentUser && currentUser.role === 'manager' && currentUser.team) {
-      filteredEmployees = filteredEmployees.filter(emp => emp.team === currentUser.team);
+      const managerTeam = currentUser.team.trim().toLowerCase();
+      console.log('Dashboard manager team filter:', currentUser.team, '- Total employees before filter:', filteredEmployees.length);
+      filteredEmployees = filteredEmployees.filter(emp => {
+        const empTeam = (emp.team || '').trim().toLowerCase();
+        return empTeam === managerTeam;
+      });
+      console.log('After team filter:', filteredEmployees.length, 'employees');
     }
     
     if (filterEmploymentType !== 'all') {
