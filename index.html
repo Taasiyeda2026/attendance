@@ -615,6 +615,98 @@
       background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
     }
 
+    /* Searchable Dropdown */
+    .searchable-dropdown {
+      position: relative;
+      width: 100%;
+    }
+    
+    .searchable-dropdown-toggle {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Heebo', sans-serif;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 44px;
+      text-align: right;
+    }
+    
+    .searchable-dropdown-toggle:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .searchable-dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      left: 0;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      max-height: 280px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    
+    .searchable-dropdown-menu.open {
+      display: block;
+    }
+    
+    .searchable-dropdown-search {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      padding: 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .searchable-dropdown-search input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'Heebo', sans-serif;
+    }
+    
+    .searchable-dropdown-search input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    
+    .searchable-dropdown-option {
+      padding: 12px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+    
+    .searchable-dropdown-option:hover {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+    
+    .searchable-dropdown-option.selected {
+      background: #dbeafe;
+      color: #1e40af;
+      font-weight: 600;
+    }
+    
+    .searchable-dropdown-option.hidden {
+      display: none;
+    }
+
     /* כפתור אייקון בלבד */
     .btn-icon {
       min-width: 48px;
@@ -892,6 +984,16 @@
       }
       .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Add Record Page - Desktop Compact */
+    @media (min-width: 769px) {
+      #addRecordPage .card {
+        max-width: 95%;
+        margin: 0 auto;
+        transform: scale(0.95);
+        transform-origin: top center;
       }
     }
 
@@ -1582,6 +1684,14 @@
         max-width: none !important;
       }
       
+      /* כפתורי אייקון נשארים קטנים במובייל */
+      .page-header button.btn-icon {
+        width: 48px !important;
+        min-width: 48px !important;
+        max-width: 48px !important;
+        flex-shrink: 0 !important;
+      }
+      
       /* ===== הזזת הודעות למעלה כדי לא לכסות שם משתמש ===== */
       .alert {
         top: calc(56px + 44px + 12px) !important;
@@ -2192,6 +2302,18 @@
         <i class="fas fa-users"></i>
         <span>צוות</span>
       </button>
+      <button class="mobile-nav-item" onclick="mobileNavTo('reports')" id="mobileNavReports" data-roles="manager,operations_controller,system_admin,payroll_officer">
+        <i class="fas fa-chart-bar"></i>
+        <span>דוחות</span>
+      </button>
+      <button class="mobile-nav-item" onclick="mobileNavTo('approvals-status')" id="mobileNavApprovals" data-roles="manager,system_admin">
+        <i class="fas fa-check-double"></i>
+        <span>אישורים</span>
+      </button>
+      <button class="mobile-nav-item" onclick="mobileNavTo('admin')" id="mobileNavAdmin" data-roles="system_admin">
+        <i class="fas fa-cog"></i>
+        <span>ניהול</span>
+      </button>
       <button class="mobile-nav-item" onclick="logout()" style="color: #dc2626;" data-roles="all">
         <i class="fas fa-sign-out-alt"></i>
         <span>יציאה</span>
@@ -2235,7 +2357,6 @@
                 <tr>
                   <th style="text-align: right; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שם המדריך</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">צוות</th>
-                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">ימי עבודה</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות קורס</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות הכשרה</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות ביטול</th>
@@ -2296,7 +2417,6 @@
                   <th style="text-align: right; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שם עובד</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">צוות</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סוג העסקה</th>
-                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">ימי עבודה</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ ק"מ</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ הוצאות</th>
@@ -2537,9 +2657,21 @@
               </div>
               <div class="form-field">
                 <label for="schoolField">בית ספר <span style="color: #ef4444;">*</span></label>
-                <select id="schoolField" onchange="updateMunicipalityFromSchool()" required style="max-width: 100%;">
-                  <option value="">בחר בית ספר</option>
-                </select>
+                <div class="searchable-dropdown" id="schoolDropdown">
+                  <div class="searchable-dropdown-toggle" onclick="toggleSearchableDropdown('schoolDropdown')" tabindex="0">
+                    <span id="schoolFieldDisplay">בחר בית ספר</span>
+                    <i class="fas fa-chevron-down" style="color: #94a3b8;"></i>
+                  </div>
+                  <div class="searchable-dropdown-menu" id="schoolDropdownMenu">
+                    <div class="searchable-dropdown-search">
+                      <input type="text" id="schoolSearchInput" placeholder="🔍 חפש בית ספר..." oninput="filterSchoolDropdown(this.value)">
+                    </div>
+                    <div id="schoolDropdownOptions">
+                      <!-- Options will be populated by JavaScript -->
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="schoolField" required>
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
@@ -2862,13 +2994,6 @@
       </div>
       
       <div class="stats-grid">
-        <div class="stat-card blue">
-          <div class="stat-card-header">
-            <span class="stat-card-title">סה"כ ימי עבודה בצוות</span>
-            <div class="stat-card-icon"><i class="fas fa-clipboard-list"></i></div>
-          </div>
-          <div class="stat-card-value" id="teamTotalRecords">0</div>
-        </div>
         <div class="stat-card purple">
           <div class="stat-card-header">
             <span class="stat-card-title">סה"כ שעות הצוות</span>
@@ -3935,11 +4060,16 @@ function canEditRecord(record) {
     return true;
   }
 
+  // operations_controller can edit all teams (like manager but no team filter)
+  if (role === 'operations_controller') {
+    return true;
+  }
+
   // manager can edit team records (bypass approval lock for team management)
   if (role === 'manager') {
     if (!record) return false;
     const recordTeam = record.team || record.Team || '';
-    return !recordTeam || recordTeam === user.team;
+    return !recordTeam || recordTeam.trim().toLowerCase() === (user.team || '').trim().toLowerCase();
   }
 
   // instructor can edit only their own records, unless month is approved
@@ -3981,8 +4111,8 @@ function getEditBlockReason(record) {
 
   const role = user.role;
 
-  // Admins can always edit
-  if (role === 'system_admin' || role === 'manager') {
+  // Admins, managers, and operations controller can always edit
+  if (role === 'system_admin' || role === 'manager' || role === 'operations_controller') {
     return null; // No block reason
   }
 
@@ -4020,13 +4150,49 @@ function canDeleteRecord(record) {
   if (!isRecordDeleteSupported()) {
     return false;
   }
+  if (!record) return false;
+  
   const user = getCurrentUserData();
   if (!user) return false;
   
   const role = user.role;
   
   // payroll_officer = view only, no delete
-  return role === 'system_admin';
+  if (role === 'payroll_officer') {
+    return false;
+  }
+  
+  // system_admin can always delete
+  if (role === 'system_admin') {
+    return true;
+  }
+  
+  // Check if record has double approval (instructor + manager)
+  const hasDoubleApproval = record && record.status === 'approved' && record.managerApproved;
+  
+  // After double approval, only admin can delete
+  if (hasDoubleApproval) {
+    return false;
+  }
+  
+  // Before double approval: instructor, manager, operations_controller can delete
+  if (['instructor', 'manager', 'operations_controller'].includes(role)) {
+    // Instructor can only delete own records
+    if (role === 'instructor') {
+      const recordEmpNum = record.empNum || record.employeeId;
+      const userEmpNum = user.empNum || localStorage.getItem('employeeId');
+      return String(recordEmpNum) === String(userEmpNum);
+    }
+    // Manager can delete team records
+    if (role === 'manager') {
+      const recordTeam = record.team || record.Team || '';
+      return !recordTeam || recordTeam.trim().toLowerCase() === (user.team || '').trim().toLowerCase();
+    }
+    // Operations controller can delete all
+    return true;
+  }
+  
+  return false;
 }
 
 function canAddRecord() {
@@ -4403,6 +4569,12 @@ function updateMobileNavActive(pageName) {
     document.getElementById('mobileNavRecords')?.classList.add('active');
   } else if (pageName === 'team-records') {
     document.getElementById('mobileNavTeamRecords')?.classList.add('active');
+  } else if (pageName === 'reports') {
+    document.getElementById('mobileNavReports')?.classList.add('active');
+  } else if (pageName === 'approvals-status') {
+    document.getElementById('mobileNavApprovals')?.classList.add('active');
+  } else if (pageName === 'admin') {
+    document.getElementById('mobileNavAdmin')?.classList.add('active');
   }
 }
 
@@ -5217,7 +5389,6 @@ function renderTeamTable(recordsList) {
         <div class="team-summary-card">
           <h4>סיכום צוות</h4>
           <div class="team-summary-row"><span>עובדים</span><strong>${summaryList.length}</strong></div>
-          <div class="team-summary-row"><span>ימי עבודה</span><strong>${grandTotalRecords}</strong></div>
           <div class="team-summary-row"><span>סה"כ שעות</span><strong>${formatHoursDisplay(grandTotalHours)}</strong></div>
           <div class="team-summary-row"><span>סה"כ ק"מ</span><strong>${grandTotalKm.toFixed(1)}</strong></div>
           <div class="team-summary-row"><span>סה"כ הוצאות</span><strong>${grandTotalExpenses.toFixed(2)} ₪</strong></div>
@@ -5229,7 +5400,7 @@ function renderTeamTable(recordsList) {
 
   const tableHTML = `
     <div style="margin-bottom: 15px;">
-      <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים | ${grandTotalRecords} ימי עבודה</span>
+      <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים</span>
     </div>
     <table>
       <thead>
@@ -5238,7 +5409,6 @@ function renderTeamTable(recordsList) {
           <th>שם עובד</th>
           <th>צוות</th>
           <th>סוג העסקה</th>
-          <th>ימי עבודה</th>
           <th>סה"כ שעות</th>
           <th>סה"כ ק"מ</th>
           <th>סה"כ הוצאות</th>
@@ -5251,7 +5421,6 @@ function renderTeamTable(recordsList) {
             <td><strong style="color: #3b82f6;">${emp.empName}</strong></td>
             <td>${emp.team || '-'}</td>
             <td>${emp.employmentType || '-'}</td>
-            <td>${emp.totalRecords}</td>
             <td><strong>${formatHoursDisplay(emp.totalHours)}</strong></td>
             <td>${emp.totalKm.toFixed(1)}</td>
             <td>${emp.totalExpenses.toFixed(2)} ₪</td>
@@ -5259,7 +5428,6 @@ function renderTeamTable(recordsList) {
         `).join('')}
         <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td colspan="4" style="text-align: left;">סה"כ:</td>
-          <td>${grandTotalRecords}</td>
           <td style="color: #3b82f6;">${formatHoursDisplay(grandTotalHours)}</td>
           <td>${grandTotalKm.toFixed(1)}</td>
           <td>${grandTotalExpenses.toFixed(2)} ₪</td>
@@ -5789,7 +5957,7 @@ async function updatePayrollSummaryTable() {
   const sortedInstructors = Object.values(instructorData).sort((a, b) => a.name.localeCompare(b.name, 'he'));
   
   if (sortedInstructors.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
     return;
   }
   
@@ -5797,7 +5965,6 @@ async function updatePayrollSummaryTable() {
     <tr>
       <td style="padding: 10px 8px; text-align: right; font-weight: 500;">${inst.name}</td>
       <td style="padding: 10px 8px; text-align: center;">${inst.team || '-'}</td>
-      <td style="padding: 10px 8px; text-align: center;">${inst.workDays.size}</td>
       <td style="padding: 10px 8px; text-align: center;">${inst.hoursCourse.toFixed(1)}</td>
       <td style="padding: 10px 8px; text-align: center;">${inst.hoursTraining.toFixed(1)}</td>
       <td style="padding: 10px 8px; text-align: center;">${inst.hoursCancel.toFixed(1)}</td>
@@ -6216,7 +6383,10 @@ function renderRecordsTable() {
   if (isMobileView()) {
     const totalExpenses = records.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
     const user = getCurrentUserData();
-    const canEdit = user && user.role === 'instructor';
+    const userRole = user ? user.role : '';
+    // Roles that can potentially edit records (actual permission checked per record)
+    const canPotentiallyEdit = ['instructor', 'manager', 'operations_controller', 'system_admin'].includes(userRole);
+    const canPotentiallyDelete = ['instructor', 'manager', 'operations_controller', 'system_admin'].includes(userRole);
 
     // Mobile: Show summary card with light pastel color, then weekly grouped cards
     const weeklyHTML = sortedWeeks.map(week => {
@@ -6225,7 +6395,18 @@ function renderRecordsTable() {
       
       const dayCards = week.records.map(rec => {
         const canEditThis = canEditRecord(rec);
+        const canDeleteThis = canDeleteRecord(rec);
         const dayName = new Date(rec.date.split('/').reverse().join('-')).toLocaleDateString('he-IL', { weekday: 'short' });
+        
+        // Build action buttons based on permissions
+        let actionButtons = '';
+        if (canPotentiallyEdit && canEditThis) {
+          actionButtons += `<button onclick="editRecord(${rec._originalIndex})" style="flex: 1; background: #3b82f6; color: white; padding: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;"><i class="fas fa-edit"></i> עריכה</button>`;
+        }
+        if (canPotentiallyDelete && canDeleteThis) {
+          actionButtons += `<button onclick="deleteRecord(${rec._originalIndex})" style="flex: 1; background: #ef4444; color: white; padding: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;"><i class="fas fa-trash"></i> מחיקה</button>`;
+        }
+        
         return `
           <div style="background: #f8fafc; border-radius: 10px; padding: 12px; margin-bottom: 8px; border-right: 3px solid #60a5fa;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -6234,11 +6415,7 @@ function renderRecordsTable() {
             </div>
             <div style="font-size: 12px; color: #64748b;">${rec.activity} | ${rec.school || '-'}</div>
             <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">${rec.start || '--:--'} - ${rec.end || '--:--'} | ${rec.km || 0} ק"מ</div>
-            ${canEdit && canEditThis ? `
-            <button onclick="editRecord(${rec._originalIndex})" style="width: 100%; background: #3b82f6; color: white; padding: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 8px;">
-              <i class="fas fa-edit"></i> עריכה
-            </button>
-            ` : ''}
+            ${actionButtons ? `<div style="display: flex; gap: 8px; margin-top: 8px;">${actionButtons}</div>` : ''}
           </div>
         `;
       }).join('');
@@ -6593,14 +6770,76 @@ async function saveEdit() {
 
 // =============== Schools Functions ===============
 function populateSchools() {
-  const schoolSelect = document.getElementById('schoolField');
-  schoolSelect.innerHTML = '<option value="">בחר בית ספר</option>';
+  const optionsContainer = document.getElementById('schoolDropdownOptions');
+  if (!optionsContainer) return;
   
-  schoolsData.forEach(school => {
-    const option = document.createElement('option');
-    option.value = JSON.stringify(school);
-    option.textContent = school['בית ספר'];
-    schoolSelect.appendChild(option);
+  optionsContainer.innerHTML = '';
+  
+  schoolsData.forEach((school, index) => {
+    const option = document.createElement('div');
+    option.className = 'searchable-dropdown-option';
+    option.dataset.value = JSON.stringify(school);
+    option.dataset.searchText = `${school['בית ספר']} ${school['רשות']}`.toLowerCase();
+    option.textContent = `${school['בית ספר']} (${school['רשות']})`;
+    option.onclick = () => selectSchool(school);
+    optionsContainer.appendChild(option);
+  });
+}
+
+function toggleSearchableDropdown(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  const menu = dropdown.querySelector('.searchable-dropdown-menu');
+  const isOpen = menu.classList.contains('open');
+  
+  // Close all other dropdowns
+  document.querySelectorAll('.searchable-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+  
+  if (!isOpen) {
+    menu.classList.add('open');
+    const searchInput = menu.querySelector('input');
+    if (searchInput) {
+      setTimeout(() => searchInput.focus(), 100);
+    }
+  }
+}
+
+function filterSchoolDropdown(searchText) {
+  const options = document.querySelectorAll('#schoolDropdownOptions .searchable-dropdown-option');
+  const searchLower = searchText.toLowerCase();
+  
+  options.forEach(option => {
+    const text = option.dataset.searchText || option.textContent.toLowerCase();
+    if (text.includes(searchLower)) {
+      option.classList.remove('hidden');
+    } else {
+      option.classList.add('hidden');
+    }
+  });
+}
+
+function selectSchool(school) {
+  const hiddenField = document.getElementById('schoolField');
+  const displayField = document.getElementById('schoolFieldDisplay');
+  const menu = document.getElementById('schoolDropdownMenu');
+  
+  hiddenField.value = JSON.stringify(school);
+  displayField.textContent = school['בית ספר'];
+  menu.classList.remove('open');
+  
+  // Clear search
+  const searchInput = document.getElementById('schoolSearchInput');
+  if (searchInput) searchInput.value = '';
+  filterSchoolDropdown('');
+  
+  // Update municipality
+  updateMunicipalityFromSchool();
+  
+  // Mark selected option
+  document.querySelectorAll('#schoolDropdownOptions .searchable-dropdown-option').forEach(opt => {
+    opt.classList.remove('selected');
+    if (opt.dataset.value === JSON.stringify(school)) {
+      opt.classList.add('selected');
+    }
   });
 }
 
@@ -6630,6 +6869,13 @@ function updateMunicipalityFromSchool() {
     }
   }
 }
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.searchable-dropdown')) {
+    document.querySelectorAll('.searchable-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+  }
+});
 
 // =============== Export & Clear ===============
 function normalizeExportRecord(rec) {
@@ -7324,7 +7570,7 @@ async function updateAdminDashboard() {
     const data = await apiRequest('getsummary', {});
     
     if (!data.success || !Array.isArray(data.records)) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
       return;
     }
     
@@ -7422,7 +7668,7 @@ async function updateAdminDashboard() {
     
     // Render table
     if (filteredEmployees.length === 0) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
       if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #64748b; padding: 40px;">אין נתונים להצגה</p>';
       return;
     }
@@ -7438,13 +7684,12 @@ async function updateAdminDashboard() {
           <td style="padding: 10px 8px; text-align: right; font-weight: 500; color: #3b82f6;">${emp.empName}</td>
           <td style="padding: 10px 8px; text-align: center;">${emp.team}</td>
           <td style="padding: 10px 8px; text-align: center;">${emp.employmentType}</td>
-          <td style="padding: 10px 8px; text-align: center;">${emp.totalRecords}</td>
           <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${emp.totalHours.toFixed(1)}</td>
           <td style="padding: 10px 8px; text-align: center;">${emp.totalKm.toFixed(0)}</td>
           <td style="padding: 10px 8px; text-align: center;">${emp.totalExpenses.toFixed(0)} ₪</td>
         </tr>
         <tr id="admin-details-${emp.empId}" class="employee-details-row" style="display: none;">
-          <td colspan="9" style="padding: 0; background: #f8fafc;">
+          <td colspan="8" style="padding: 0; background: #f8fafc;">
             <div id="admin-details-content-${emp.empId}" style="padding: 20px;">
               <!-- Will be filled when expanded -->
             </div>
@@ -7464,7 +7709,6 @@ async function updateAdminDashboard() {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
             <div><i class="fas fa-id-badge" style="width: 18px; color: #94a3b8;"></i> ${emp.empId}</div>
             <div><i class="fas fa-briefcase" style="width: 18px; color: #94a3b8;"></i> ${emp.employmentType}</div>
-            <div><i class="fas fa-calendar" style="width: 18px; color: #94a3b8;"></i> ${emp.totalRecords} ימים</div>
             <div><i class="fas fa-clock" style="width: 18px; color: #94a3b8;"></i> ${emp.totalHours.toFixed(1)} שעות</div>
             <div><i class="fas fa-road" style="width: 18px; color: #94a3b8;"></i> ${emp.totalKm.toFixed(0)} ק"מ</div>
             <div><i class="fas fa-shekel-sign" style="width: 18px; color: #94a3b8;"></i> ${emp.totalExpenses.toFixed(0)} ₪</div>
@@ -7478,7 +7722,7 @@ async function updateAdminDashboard() {
     
   } catch (error) {
     console.error('Error loading admin dashboard:', error);
-    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #ef4444;">שגיאה בטעינת נתונים</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">שגיאה בטעינת נתונים</td></tr>';
     if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 40px;">שגיאה בטעינת נתונים</p>';
   }
 }
@@ -7917,7 +8161,6 @@ function renderReportByEmployee() {
     container.innerHTML = `
       <div class="mobile-report-summary">
         <div style="font-weight: 600; margin-bottom: 8px;">במובייל מוצג סיכום כללי בלבד.</div>
-        <div>ימי עבודה: <strong>${totals.count}</strong></div>
         <div>שעות: <strong>${formatHoursDisplay(totals.hours)}</strong></div>
         <div>ק"מ: <strong>${totals.km.toFixed(0)}</strong></div>
         <div>הוצאות: <strong>${totals.expenses.toFixed(0)} ₪</strong></div>
@@ -7945,7 +8188,6 @@ function renderReportByEmployee() {
           <tr>
             <th>שם עובד</th>
             <th>מספר עובד</th>
-            <th>ימי עבודה</th>
             <th>שעות</th>
             <th>ק"מ</th>
             <th>הוצאות</th>
@@ -7960,7 +8202,6 @@ function renderReportByEmployee() {
       <tr>
         <td>${name || 'לא ידוע'}</td>
         <td>${emp.empNum || '-'}</td>
-        <td>${emp.count}</td>
         <td><strong>${formatHoursDisplay(emp.hours)}</strong></td>
         <td>${emp.km.toFixed(0)}</td>
         <td>${emp.expenses.toFixed(0)} ₪</td>
@@ -7978,7 +8219,6 @@ function renderReportByEmployee() {
   html += `
       <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
         <td colspan="2">סה"כ</td>
-        <td>${totals.count}</td>
         <td style="color: #3b82f6;">${totals.hours.toFixed(1)}</td>
         <td style="color: #3b82f6;">${totals.km.toFixed(0)}</td>
         <td style="color: #3b82f6;">${totals.expenses.toFixed(0)} ₪</td>
