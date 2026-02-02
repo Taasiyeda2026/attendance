@@ -6187,11 +6187,25 @@ async function updatePayrollSummaryTable() {
   const currentMonth = payrollMonthEl ? parseInt(payrollMonthEl.value) - 1 : now.getMonth();
   const currentYear = payrollYearEl ? parseInt(payrollYearEl.value) : now.getFullYear();
   
-  // Filter records to current month only
+  // Filter records to current month only - support both DD/MM/YYYY and YYYY-MM-DD formats
   const currentMonthRecords = records.filter(rec => {
     if (!rec.date) return false;
-    const recDate = new Date(rec.date);
-    return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
+    const dateStr = rec.date;
+    let recMonth, recYear;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length < 3) return false;
+      recMonth = parseInt(parts[1]) - 1;
+      recYear = parseInt(parts[2]);
+    } else if (dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      if (parts.length < 3) return false;
+      recYear = parseInt(parts[0]);
+      recMonth = parseInt(parts[1]) - 1;
+    } else {
+      return false;
+    }
+    return recMonth === currentMonth && recYear === currentYear;
   });
   
   // Group records by instructor
@@ -7981,11 +7995,25 @@ async function updateAdminDashboard() {
       return '';
     };
     
-    // Filter to current month
+    // Filter to current month - support both DD/MM/YYYY and YYYY-MM-DD formats
     const currentMonthRecords = data.records.filter(rec => {
       if (!rec.attendanceDate) return false;
-      const recDate = new Date(rec.attendanceDate);
-      return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
+      const dateStr = rec.attendanceDate;
+      let recMonth, recYear;
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length < 3) return false;
+        recMonth = parseInt(parts[1]) - 1;
+        recYear = parseInt(parts[2]);
+      } else if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length < 3) return false;
+        recYear = parseInt(parts[0]);
+        recMonth = parseInt(parts[1]) - 1;
+      } else {
+        return false;
+      }
+      return recMonth === currentMonth && recYear === currentYear;
     });
     
     // Group by employee
