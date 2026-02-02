@@ -1655,6 +1655,23 @@
       #adminDashboardFilters select {
         width: 100%;
       }
+      
+      /* ===== בורר חודש למדריכים במובייל ===== */
+      #instructorMonthSelector,
+      #recordsMonthSelector {
+        gap: 6px;
+        padding: 0 10px;
+      }
+      #instructorMonthSelector select,
+      #recordsMonthSelector select {
+        padding: 6px 8px;
+        font-size: 13px;
+      }
+      #instructorMonthSelector button,
+      #recordsMonthSelector button {
+        padding: 6px 10px;
+        font-size: 14px;
+      }
 
       /* ===== תיקון main-content ללא margin ===== */
       .main-content {
@@ -2498,6 +2515,36 @@
       
       <!-- Regular Dashboard Content -->
       <div id="regularDashboardContent">
+      
+      <!-- Instructor Month Selection -->
+      <div id="instructorMonthSelector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+        <button onclick="changeInstructorMonth(-1)" style="padding: 8px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 16px;">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <select id="instructorMonth" onchange="loadInstructorMonthData()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+          <option value="1">ינואר</option>
+          <option value="2">פברואר</option>
+          <option value="3">מרץ</option>
+          <option value="4">אפריל</option>
+          <option value="5">מאי</option>
+          <option value="6">יוני</option>
+          <option value="7">יולי</option>
+          <option value="8">אוגוסט</option>
+          <option value="9">ספטמבר</option>
+          <option value="10">אוקטובר</option>
+          <option value="11">נובמבר</option>
+          <option value="12">דצמבר</option>
+        </select>
+        <select id="instructorYear" onchange="loadInstructorMonthData()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+          <option value="2025">2025</option>
+          <option value="2026">2026</option>
+          <option value="2027">2027</option>
+        </select>
+        <button onclick="changeInstructorMonth(1)" style="padding: 8px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 16px;">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
+      
       <div class="stats-grid">
         <div class="stat-card pastel-blue" onclick="showPage(event, 'records')" style="cursor: pointer; transition: transform 0.2s; background: linear-gradient(145deg, #e0f2fe 0%, #bae6fd 100%); border: 1px solid #7dd3fc;"
              onmouseover="this.style.transform='translateY(-5px)'"
@@ -2842,9 +2889,39 @@
       </div>
       
       <div class="content-card">
-        <div class="card-header">
-          <h2 class="card-title">סה"כ <span id="totalRecordsCount">0</span> ימי עבודה</h2>
-          <div style="display: flex; gap: 10px;">
+        <div class="card-header" style="flex-direction: column; gap: 15px;">
+          <!-- Month Navigation for Records -->
+          <div id="recordsMonthSelector" style="display: flex; justify-content: center; gap: 10px; width: 100%; flex-wrap: wrap; align-items: center;">
+            <button onclick="changeRecordsMonth(-1)" style="padding: 8px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 16px;">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            <select id="recordsMonth" onchange="loadRecordsForMonth()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+              <option value="1">ינואר</option>
+              <option value="2">פברואר</option>
+              <option value="3">מרץ</option>
+              <option value="4">אפריל</option>
+              <option value="5">מאי</option>
+              <option value="6">יוני</option>
+              <option value="7">יולי</option>
+              <option value="8">אוגוסט</option>
+              <option value="9">ספטמבר</option>
+              <option value="10">אוקטובר</option>
+              <option value="11">נובמבר</option>
+              <option value="12">דצמבר</option>
+            </select>
+            <select id="recordsYear" onchange="loadRecordsForMonth()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+            </select>
+            <button onclick="changeRecordsMonth(1)" style="padding: 8px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 16px;">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h2 class="card-title">סה"כ <span id="totalRecordsCount">0</span> ימי עבודה</h2>
+            <div style="display: flex; gap: 10px;">
             <button class="btn btn-success hide-mobile" onclick="exportToExcel()">
               <i class="fas fa-file-excel"></i>
               ייצוא ל-Excel
@@ -2853,6 +2930,7 @@
               <i class="fas fa-sync"></i>
               רענן נתונים
             </button>
+            </div>
           </div>
         </div>
         <div class="card-body">
@@ -4051,6 +4129,15 @@ function updateMenuByRole(role) {
   } else {
     if (regularDashboardContent) regularDashboardContent.style.display = 'block';
   }
+  
+  // Show instructor month selector only for instructors
+  const instructorMonthSelector = document.getElementById('instructorMonthSelector');
+  if (instructorMonthSelector) {
+    instructorMonthSelector.style.display = (role === 'instructor') ? 'flex' : 'none';
+  }
+  
+  // Initialize instructor month selectors
+  initInstructorMonthSelectors();
 
   updateMonthlyApprovalVisibility();
 }
@@ -5893,10 +5980,12 @@ function renderSummaryTable() {
 
 // =============== Statistics ===============
 function updateStats() {
-  // Filter records for current month only
+  // Get month from instructor selector or use current
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const instrMonthEl = document.getElementById('instructorMonth');
+  const instrYearEl = document.getElementById('instructorYear');
+  const currentMonth = instrMonthEl ? parseInt(instrMonthEl.value) - 1 : now.getMonth();
+  const currentYear = instrYearEl ? parseInt(instrYearEl.value) : now.getFullYear();
   
   const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   
@@ -5934,6 +6023,115 @@ function updateDashboard() {
     // Update admin dashboard for admins, controllers, and managers
     loadAdminDashboard();
   }
+}
+
+// =============== Instructor Month Navigation ===============
+function initInstructorMonthSelectors() {
+  const now = new Date();
+  
+  // Dashboard month selector
+  const instrMonthEl = document.getElementById('instructorMonth');
+  const instrYearEl = document.getElementById('instructorYear');
+  if (instrMonthEl && !instrMonthEl.dataset.initialized) {
+    instrMonthEl.value = now.getMonth() + 1;
+    instrMonthEl.dataset.initialized = 'true';
+  }
+  if (instrYearEl && !instrYearEl.dataset.initialized) {
+    instrYearEl.value = now.getFullYear();
+    instrYearEl.dataset.initialized = 'true';
+  }
+  
+  // Records page month selector
+  const recMonthEl = document.getElementById('recordsMonth');
+  const recYearEl = document.getElementById('recordsYear');
+  if (recMonthEl && !recMonthEl.dataset.initialized) {
+    recMonthEl.value = now.getMonth() + 1;
+    recMonthEl.dataset.initialized = 'true';
+  }
+  if (recYearEl && !recYearEl.dataset.initialized) {
+    recYearEl.value = now.getFullYear();
+    recYearEl.dataset.initialized = 'true';
+  }
+}
+
+function changeInstructorMonth(direction) {
+  const monthEl = document.getElementById('instructorMonth');
+  const yearEl = document.getElementById('instructorYear');
+  if (!monthEl || !yearEl) return;
+  
+  let month = parseInt(monthEl.value);
+  let year = parseInt(yearEl.value);
+  
+  month += direction;
+  if (month < 1) {
+    month = 12;
+    year--;
+  } else if (month > 12) {
+    month = 1;
+    year++;
+  }
+  
+  monthEl.value = month;
+  yearEl.value = year;
+  loadInstructorMonthData();
+}
+
+function loadInstructorMonthData() {
+  // Sync with records page selector
+  const instrMonthEl = document.getElementById('instructorMonth');
+  const instrYearEl = document.getElementById('instructorYear');
+  const recMonthEl = document.getElementById('recordsMonth');
+  const recYearEl = document.getElementById('recordsYear');
+  
+  if (instrMonthEl && recMonthEl) {
+    recMonthEl.value = instrMonthEl.value;
+  }
+  if (instrYearEl && recYearEl) {
+    recYearEl.value = instrYearEl.value;
+  }
+  
+  // Update stats with filtered month
+  updateStats();
+}
+
+function changeRecordsMonth(direction) {
+  const monthEl = document.getElementById('recordsMonth');
+  const yearEl = document.getElementById('recordsYear');
+  if (!monthEl || !yearEl) return;
+  
+  let month = parseInt(monthEl.value);
+  let year = parseInt(yearEl.value);
+  
+  month += direction;
+  if (month < 1) {
+    month = 12;
+    year--;
+  } else if (month > 12) {
+    month = 1;
+    year++;
+  }
+  
+  monthEl.value = month;
+  yearEl.value = year;
+  loadRecordsForMonth();
+}
+
+function loadRecordsForMonth() {
+  // Sync with dashboard selector
+  const instrMonthEl = document.getElementById('instructorMonth');
+  const instrYearEl = document.getElementById('instructorYear');
+  const recMonthEl = document.getElementById('recordsMonth');
+  const recYearEl = document.getElementById('recordsYear');
+  
+  if (recMonthEl && instrMonthEl) {
+    instrMonthEl.value = recMonthEl.value;
+  }
+  if (recYearEl && instrYearEl) {
+    instrYearEl.value = recYearEl.value;
+  }
+  
+  // Re-render records table
+  renderRecordsTable();
 }
 
 // =============== Payroll Officer Functions ===============
@@ -6386,15 +6584,28 @@ function clearAddForm() {
 
 // =============== Records Table ===============
 function renderRecordsTable() {
-  document.getElementById('totalRecordsCount').textContent = records.length;
+  // Filter records by selected month
+  const now = new Date();
+  const recMonthEl = document.getElementById('recordsMonth');
+  const recYearEl = document.getElementById('recordsYear');
+  const selectedMonth = recMonthEl ? parseInt(recMonthEl.value) - 1 : now.getMonth();
+  const selectedYear = recYearEl ? parseInt(recYearEl.value) : now.getFullYear();
   
-  const totalHours = records.reduce((sum, rec) => sum + (rec.hours || 0), 0);
-  const totalKm = records.reduce((sum, rec) => sum + (rec.km || 0), 0);
+  const filteredRecords = records.filter(r => {
+    if (!r.date) return false;
+    const recDate = new Date(r.date);
+    return recDate.getMonth() === selectedMonth && recDate.getFullYear() === selectedYear;
+  });
+  
+  document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
+  
+  const totalHours = filteredRecords.reduce((sum, rec) => sum + (rec.hours || 0), 0);
+  const totalKm = filteredRecords.reduce((sum, rec) => sum + (rec.km || 0), 0);
   const recordsContainer = document.getElementById('recordsTable');
   if (!recordsContainer) return;
   
-  if (records.length === 0) {
-    recordsContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות להצגה</p>';
+  if (filteredRecords.length === 0) {
+    recordsContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות להצגה לחודש זה</p>';
     return;
   }
 
@@ -6432,8 +6643,11 @@ function renderRecordsTable() {
 
   // Group records by week
   const weekGroups = {};
-  records.forEach((rec, idx) => {
-    rec._originalIndex = idx;
+  filteredRecords.forEach((rec) => {
+    // Find original index in the full records array
+    rec._originalIndex = records.findIndex(r => 
+      r.date === rec.date && r.empNum === rec.empNum && r.activity === rec.activity && r.hours === rec.hours
+    );
     const weekNum = getWeekNumber(rec.date);
     const weekRange = getWeekRange(rec.date);
     const key = `${weekNum}_${weekRange}`;
@@ -6447,7 +6661,7 @@ function renderRecordsTable() {
   const sortedWeeks = Object.values(weekGroups).sort((a, b) => b.weekNum - a.weekNum);
 
   if (isMobileView()) {
-    const totalExpenses = records.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
+    const totalExpenses = filteredRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
     const user = getCurrentUserData();
     const userRole = user ? user.role : '';
     // Roles that can potentially edit records (actual permission checked per record)
