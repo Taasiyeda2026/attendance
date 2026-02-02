@@ -4148,12 +4148,20 @@ function updateMenuByRole(role) {
     if (payrollDashboard) payrollDashboard.style.display = 'block';
   } else if (role === 'system_admin' || role === 'operations_controller') {
     if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
-    // Show filters only for admin
+    // Show filters for admin and operations_controller
     const filters = document.getElementById('adminDashboardFilters');
-    if (filters && role === 'system_admin') {
+    if (filters) {
       filters.style.display = 'flex';
-    } else if (filters) {
-      filters.style.display = 'none';
+    }
+    // Show team filter only for system_admin (operations_controller sees all teams without filter)
+    const filterTeam = document.getElementById('filterTeam');
+    if (filterTeam) {
+      filterTeam.style.display = role === 'system_admin' ? 'inline-block' : 'none';
+    }
+    // Show employment type filter for both system_admin and operations_controller
+    const filterEmploymentType = document.getElementById('filterEmploymentType');
+    if (filterEmploymentType) {
+      filterEmploymentType.style.display = 'inline-block';
     }
     // Show approval buttons only for system_admin
     const adminApprovalCard = document.getElementById('adminApprovalCard');
@@ -4163,9 +4171,13 @@ function updateMenuByRole(role) {
   } else if (role === 'manager') {
     // Manager sees adminControllerDashboard filtered to their team
     if (adminControllerDashboard) adminControllerDashboard.style.display = 'block';
-    // Hide filters for manager - they only see their team
+    // Show month/year filters for manager, hide team filter (they only see their team)
     const filters = document.getElementById('adminDashboardFilters');
-    if (filters) filters.style.display = 'none';
+    if (filters) filters.style.display = 'flex';
+    const filterTeam = document.getElementById('filterTeam');
+    if (filterTeam) filterTeam.style.display = 'none';
+    const filterEmploymentType = document.getElementById('filterEmploymentType');
+    if (filterEmploymentType) filterEmploymentType.style.display = 'none';
     // Hide approval buttons for managers - only system_admin can approve teams from dashboard
     const adminApprovalCard = document.getElementById('adminApprovalCard');
     if (adminApprovalCard) adminApprovalCard.style.display = 'none';
@@ -6033,10 +6045,37 @@ async function submitAll() {
 
 // =============== Summary Table ===============
 function renderSummaryTable() {
+  // Filter records by selected month (same logic as updateStats)
+  const now = new Date();
+  const instrMonthEl = document.getElementById('instructorMonth');
+  const instrYearEl = document.getElementById('instructorYear');
+  const currentMonth = instrMonthEl ? parseInt(instrMonthEl.value) - 1 : now.getMonth();
+  const currentYear = instrYearEl ? parseInt(instrYearEl.value) : now.getFullYear();
+  
+  // Filter records to selected month
+  const monthRecords = records.filter(r => {
+    if (!r.date) return false;
+    let recMonth, recYear;
+    if (r.date.includes('/')) {
+      const parts = r.date.split('/');
+      if (parts.length < 3) return false;
+      recMonth = parseInt(parts[1]) - 1;
+      recYear = parseInt(parts[2]);
+    } else if (r.date.includes('-')) {
+      const parts = r.date.split('-');
+      if (parts.length < 3) return false;
+      recYear = parseInt(parts[0]);
+      recMonth = parseInt(parts[1]) - 1;
+    } else {
+      return false;
+    }
+    return recMonth === currentMonth && recYear === currentYear;
+  });
+  
   const summaryData = {};
   let totalKm = 0;
 
-  records.forEach(rec => {
+  monthRecords.forEach(rec => {
     const activity = rec.activity || 'אחר';
     const hours = parseFloat(rec.hours) || 0;
     const km = parseFloat(rec.km) || 0;
@@ -6069,7 +6108,7 @@ function renderSummaryTable() {
   }
 
   // שורת סיכום סופית
-  const totalHours = records.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
+  const totalHours = monthRecords.reduce((sum, r) => sum + (parseFloat(r.hours) || 0), 0);
   html += `
     <tr style="background: #f8fafc; font-weight: 700;">
       <td style="color: #1e40af;">סה"כ כולל</td>
@@ -6087,8 +6126,14 @@ function updateStats() {
   const now = new Date();
   const instrMonthEl = document.getElementById('instructorMonth');
   const instrYearEl = document.getElementById('instructorYear');
+  
+  console.log('updateStats - instrMonthEl value:', instrMonthEl ? instrMonthEl.value : 'not found');
+  console.log('updateStats - instrYearEl value:', instrYearEl ? instrYearEl.value : 'not found');
+  
   const currentMonth = instrMonthEl ? parseInt(instrMonthEl.value) - 1 : now.getMonth();
   const currentYear = instrYearEl ? parseInt(instrYearEl.value) : now.getFullYear();
+  
+  console.log('updateStats - filtering for month:', currentMonth, 'year:', currentYear);
   
   const monthNames = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
   
@@ -6145,6 +6190,7 @@ function updateDashboard() {
 // =============== Instructor Month Navigation ===============
 function initInstructorMonthSelectors() {
   const now = new Date();
+  console.log('initInstructorMonthSelectors - current date:', now.getMonth() + 1, '/', now.getFullYear());
   
   // Dashboard month selector
   const instrMonthEl = document.getElementById('instructorMonth');
@@ -6152,10 +6198,12 @@ function initInstructorMonthSelectors() {
   if (instrMonthEl && !instrMonthEl.dataset.initialized) {
     instrMonthEl.value = now.getMonth() + 1;
     instrMonthEl.dataset.initialized = 'true';
+    console.log('initInstructorMonthSelectors - set month to:', instrMonthEl.value);
   }
   if (instrYearEl && !instrYearEl.dataset.initialized) {
     instrYearEl.value = now.getFullYear();
     instrYearEl.dataset.initialized = 'true';
+    console.log('initInstructorMonthSelectors - set year to:', instrYearEl.value);
   }
   
   // Records page month selector
@@ -6207,8 +6255,12 @@ function loadInstructorMonthData() {
     recYearEl.value = instrYearEl.value;
   }
   
-  // Update stats with filtered month
+  // Update stats and summary table with filtered month
   updateStats();
+  renderSummaryTable();
+  
+  // Also update instructor monthly approval status if on dashboard
+  loadInstructorMonthlyApprovalStatus();
 }
 
 function changeRecordsMonth(direction) {
@@ -8037,14 +8089,18 @@ function loadAdminDashboard() {
   const now = new Date();
   const monthEl = document.getElementById('dashboardMonth');
   const yearEl = document.getElementById('dashboardYear');
+  console.log('loadAdminDashboard - current date:', now.getMonth() + 1, '/', now.getFullYear());
   if (monthEl && !monthEl.dataset.initialized) {
     monthEl.value = now.getMonth() + 1;
     monthEl.dataset.initialized = 'true';
+    console.log('loadAdminDashboard - initialized month to:', monthEl.value);
   }
   if (yearEl && !yearEl.dataset.initialized) {
     yearEl.value = now.getFullYear();
     yearEl.dataset.initialized = 'true';
+    console.log('loadAdminDashboard - initialized year to:', yearEl.value);
   }
+  console.log('loadAdminDashboard - selector values: month=', monthEl?.value, 'year=', yearEl?.value);
   updateAdminDashboard();
 }
 
@@ -8060,8 +8116,14 @@ async function updateAdminDashboard() {
   const now = new Date();
   const dashboardMonthEl = document.getElementById('dashboardMonth');
   const dashboardYearEl = document.getElementById('dashboardYear');
+  
+  console.log('updateAdminDashboard - dashboardMonthEl value:', dashboardMonthEl?.value);
+  console.log('updateAdminDashboard - dashboardYearEl value:', dashboardYearEl?.value);
+  
   const currentMonth = dashboardMonthEl ? parseInt(dashboardMonthEl.value) - 1 : now.getMonth();
   const currentYear = dashboardYearEl ? parseInt(dashboardYearEl.value) : now.getFullYear();
+  
+  console.log('updateAdminDashboard - filtering for month:', currentMonth, 'year:', currentYear);
   
   // Get user role to check permissions
   const userRole = localStorage.getItem('role') || '';
@@ -8994,6 +9056,10 @@ window.addEventListener('DOMContentLoaded', function() {
 
       updateMenuByRole(empData.role || 'instructor');
       loadFromLocalStorage();
+      
+      // Initialize month selectors BEFORE updateStats to ensure correct filtering
+      initInstructorMonthSelectors();
+      
       updateStats();
       showPage(null, 'dashboard');
 
