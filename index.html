@@ -2344,12 +2344,33 @@
       <!-- Payroll Officer Dashboard -->
       <div id="payrollDashboard" style="display: none;">
         <div class="content-card">
-          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 class="card-title"><i class="fas fa-users" style="margin-left: 8px; color: #3b82f6;"></i>סיכום לפי מדריך - חודש נוכחי</h2>
-            <button class="btn btn-success hide-mobile" onclick="exportPayrollToExcel()">
-              <i class="fas fa-file-excel"></i>
-              ייצוא ל-Excel
-            </button>
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2 class="card-title"><i class="fas fa-users" style="margin-left: 8px; color: #3b82f6;"></i>סיכום לפי מדריך</h2>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <select id="payrollMonth" onchange="loadPayrollSummary()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+                <option value="1">ינואר</option>
+                <option value="2">פברואר</option>
+                <option value="3">מרץ</option>
+                <option value="4">אפריל</option>
+                <option value="5">מאי</option>
+                <option value="6">יוני</option>
+                <option value="7">יולי</option>
+                <option value="8">אוגוסט</option>
+                <option value="9">ספטמבר</option>
+                <option value="10">אוקטובר</option>
+                <option value="11">נובמבר</option>
+                <option value="12">דצמבר</option>
+              </select>
+              <select id="payrollYear" onchange="loadPayrollSummary()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+              </select>
+              <button class="btn btn-success hide-mobile" onclick="exportPayrollToExcel()">
+                <i class="fas fa-file-excel"></i>
+                ייצוא ל-Excel
+              </button>
+            </div>
           </div>
           <div class="card-body" style="overflow-x: auto;">
             <table id="payrollSummaryTable" class="admin-table" style="width: 100%;">
@@ -2389,6 +2410,25 @@
               <label style="font-weight: 500; color: #475569; font-size: 14px;">סינון:</label>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <select id="dashboardMonth" onchange="loadAdminDashboard()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+                <option value="1">ינואר</option>
+                <option value="2">פברואר</option>
+                <option value="3">מרץ</option>
+                <option value="4">אפריל</option>
+                <option value="5">מאי</option>
+                <option value="6">יוני</option>
+                <option value="7">יולי</option>
+                <option value="8">אוגוסט</option>
+                <option value="9">ספטמבר</option>
+                <option value="10">אוקטובר</option>
+                <option value="11">נובמבר</option>
+                <option value="12">דצמבר</option>
+              </select>
+              <select id="dashboardYear" onchange="loadAdminDashboard()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+              </select>
               <select id="filterEmploymentType" onchange="updateAdminDashboard()" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px;">
                 <option value="all">כל סוגי ההעסקה</option>
                 <option value="תעשיידע">תעשיידע</option>
@@ -5599,8 +5639,8 @@ async function deleteTeamRecord(recordId) {
 }
 
 function loadReports() {
-  document.getElementById('teamTotalRecords').textContent = '0';
   document.getElementById('teamTotalHours').textContent = '0:00';
+  document.getElementById('teamTotalKm').textContent = '0';
   document.getElementById('teamTotalExpenses').textContent = '0 ₪';
   
   document.getElementById('reportsByEmployee').innerHTML = `
@@ -5883,22 +5923,40 @@ function updateDashboard() {
   // Update appropriate dashboard based on role
   const role = localStorage.getItem("role") || '';
   if (role === 'payroll_officer') {
-    updatePayrollSummaryTable();
+    loadPayrollSummary();
   } else if (role === 'system_admin' || role === 'operations_controller' || role === 'manager') {
     // Update admin dashboard for admins, controllers, and managers
-    updateAdminDashboard();
+    loadAdminDashboard();
   }
 }
 
 // =============== Payroll Officer Functions ===============
+function loadPayrollSummary() {
+  // Set default month/year if not already set
+  const now = new Date();
+  const monthEl = document.getElementById('payrollMonth');
+  const yearEl = document.getElementById('payrollYear');
+  if (monthEl && !monthEl.dataset.initialized) {
+    monthEl.value = now.getMonth() + 1;
+    monthEl.dataset.initialized = 'true';
+  }
+  if (yearEl && !yearEl.dataset.initialized) {
+    yearEl.value = now.getFullYear();
+    yearEl.dataset.initialized = 'true';
+  }
+  updatePayrollSummaryTable();
+}
+
 async function updatePayrollSummaryTable() {
   const tbody = document.getElementById('payrollSummaryTableBody');
   if (!tbody) return;
   
-  // Get current month for filtering
+  // Get month/year from filters or use current
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const payrollMonthEl = document.getElementById('payrollMonth');
+  const payrollYearEl = document.getElementById('payrollYear');
+  const currentMonth = payrollMonthEl ? parseInt(payrollMonthEl.value) - 1 : now.getMonth();
+  const currentYear = payrollYearEl ? parseInt(payrollYearEl.value) : now.getFullYear();
   
   // Filter records to current month only
   const currentMonthRecords = records.filter(rec => {
@@ -5975,12 +6033,14 @@ async function updatePayrollSummaryTable() {
 }
 
 function exportPayrollToExcel() {
-  // Get current month for filtering
+  // Get month/year from filters or use current
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const payrollMonthEl = document.getElementById('payrollMonth');
+  const payrollYearEl = document.getElementById('payrollYear');
+  const currentMonth = payrollMonthEl ? parseInt(payrollMonthEl.value) - 1 : now.getMonth();
+  const currentYear = payrollYearEl ? parseInt(payrollYearEl.value) : now.getFullYear();
   
-  // Filter records to current month only
+  // Filter records to selected month only
   const currentMonthRecords = records.filter(rec => {
     if (!rec.date) return false;
     const recDate = new Date(rec.date);
@@ -7547,6 +7607,22 @@ async function exportApprovalStatusOnly() {
 let adminEmployeeRecordsCache = {}; // Cache for expanded employee records
 let adminDashboardRecordsCache = []; // Cache for export data
 
+function loadAdminDashboard() {
+  // Set default month/year if not already set
+  const now = new Date();
+  const monthEl = document.getElementById('dashboardMonth');
+  const yearEl = document.getElementById('dashboardYear');
+  if (monthEl && !monthEl.dataset.initialized) {
+    monthEl.value = now.getMonth() + 1;
+    monthEl.dataset.initialized = 'true';
+  }
+  if (yearEl && !yearEl.dataset.initialized) {
+    yearEl.value = now.getFullYear();
+    yearEl.dataset.initialized = 'true';
+  }
+  updateAdminDashboard();
+}
+
 async function updateAdminDashboard() {
   const tbody = document.getElementById('adminDashboardTableBody');
   const mobileContainer = document.getElementById('adminMobileCardsContainer');
@@ -7555,10 +7631,12 @@ async function updateAdminDashboard() {
   const filterEmploymentType = document.getElementById('filterEmploymentType')?.value || 'all';
   const filterTeam = document.getElementById('filterTeam')?.value || 'all';
   
-  // Get current month for filtering
+  // Get month/year from filters or use current
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const dashboardMonthEl = document.getElementById('dashboardMonth');
+  const dashboardYearEl = document.getElementById('dashboardYear');
+  const currentMonth = dashboardMonthEl ? parseInt(dashboardMonthEl.value) - 1 : now.getMonth();
+  const currentYear = dashboardYearEl ? parseInt(dashboardYearEl.value) : now.getFullYear();
   
   // Get user role to check permissions
   const userRole = localStorage.getItem('role') || '';
@@ -8131,12 +8209,10 @@ async function loadReportData() {
 }
 
 function updateReportStats() {
-  const totalRecords = reportRecords.length;
   const totalHours = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.hours) || 0), 0);
   const totalKm = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.km) || 0), 0);
   const totalExpenses = reportRecords.reduce((sum, rec) => sum + (parseFloat(rec.totalExpenses) || 0), 0);
   
-  document.getElementById('teamTotalRecords').textContent = totalRecords;
   document.getElementById('teamTotalHours').textContent = formatHoursDisplay(totalHours);
   document.getElementById('teamTotalKm').textContent = totalKm.toFixed(1);
   document.getElementById('teamTotalExpenses').textContent = `${totalExpenses.toFixed(0)} ₪`;
