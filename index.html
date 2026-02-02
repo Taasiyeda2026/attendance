@@ -2595,7 +2595,7 @@
         </div>
       </div>
 
-      <!-- Monthly Approval (Instructor only) -->
+      <!-- Monthly Approval (Instructor only) - Current Month -->
       <div class="content-card" id="monthlyApprovalCard" style="margin-top: 24px; display: none;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <h2 class="card-title"><i class="fas fa-calendar-check" style="margin-left: 8px; color: #3b82f6;"></i>סיום דיווח חודשי</h2>
@@ -2603,9 +2603,27 @@
         </div>
         <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
           <div id="monthlyApprovalStatus" style="color: #475569; font-size: 14px;">טוען סטטוס...</div>
-          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport()">
+          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport('current')">
             <i class="fas fa-check-circle"></i>
             סיום דיווח חודשי
+          </button>
+        </div>
+      </div>
+      
+      <!-- Monthly Approval (Instructor only) - Previous Month (Grace Period) -->
+      <div class="content-card" id="previousMonthApprovalCard" style="margin-top: 16px; display: none; border: 2px solid #f97316; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <h2 class="card-title" style="color: #ea580c;"><i class="fas fa-exclamation-triangle" style="margin-left: 8px; color: #f97316;"></i>חודש קודם - טרם אושר!</h2>
+          <span id="previousMonthApprovalMonthLabel" style="color: #ea580c; font-size: 13px; font-weight: 600;"></span>
+        </div>
+        <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <div id="previousMonthApprovalStatus" style="color: #c2410c; font-size: 14px;">
+            <i class="fas fa-clock" style="margin-left: 5px;"></i>
+            <span id="gracePeriodDaysLeft"></span>
+          </div>
+          <button class="btn btn-warning" id="previousMonthApprovalBtn" onclick="approveMonthlyReport('previous')" style="background: #f97316; border-color: #ea580c;">
+            <i class="fas fa-check-circle"></i>
+            אשר חודש קודם
           </button>
         </div>
       </div>
@@ -4801,7 +4819,9 @@ if (typeof closeMobileMenu === 'function') {
 }
 
 // =============== Monthly Approvals Functions ===============
+const GRACE_PERIOD_DAYS = 5; // Days at start of month to approve previous month
 let instructorApprovalInfo = null;
+let previousMonthApprovalInfo = null;
 
 function getApprovalMonthKey(month, year) {
   const monthValue = String(month).padStart(2, '0');
@@ -4908,6 +4928,14 @@ async function loadInstructorMonthlyApprovalStatus() {
   const statusEl = document.getElementById('monthlyApprovalStatus');
   const buttonEl = document.getElementById('monthlyApprovalBtn');
   const monthLabel = document.getElementById('monthlyApprovalMonthLabel');
+  const previousMonthCard = document.getElementById('previousMonthApprovalCard');
+  const previousMonthLabel = document.getElementById('previousMonthApprovalMonthLabel');
+  const previousMonthStatus = document.getElementById('previousMonthApprovalStatus');
+  const previousMonthBtn = document.getElementById('previousMonthApprovalBtn');
+  const gracePeriodDaysLeft = document.getElementById('gracePeriodDaysLeft');
+
+  // Hide previous month card by default
+  if (previousMonthCard) previousMonthCard.style.display = 'none';
 
   if (!statusEl || !buttonEl || !monthLabel) return;
 
@@ -4924,34 +4952,32 @@ async function loadInstructorMonthlyApprovalStatus() {
   }
 
   const now = new Date();
-  const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+  const currentDay = now.getDate();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const monthKey = getApprovalMonthKey(currentMonth, currentYear);
   const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
 
-  monthLabel.textContent = getApprovalMonthLabel(now.getMonth() + 1, now.getFullYear());
+  monthLabel.textContent = getApprovalMonthLabel(currentMonth, currentYear);
 
   const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user.team || '');
   const approvalDate = approvalStatus.approvalDate || null;
   instructorApprovalInfo = { monthKey, approvalDate };
 
+  // Handle current month status
   if (approvalStatus.released) {
     statusEl.textContent = `החודש שוחרר ב-${formatApprovalDate(approvalStatus.releaseDate)}`;
     buttonEl.disabled = true;
-    return;
-  }
-
-  if (approvalDate) {
-    // Check if 20 days passed since approval - allow new month reporting
+  } else if (approvalDate) {
     const approvalDateObj = new Date(approvalDate);
     const daysSinceApproval = Math.floor((now - approvalDateObj) / (1000 * 60 * 60 * 24));
     
     if (daysSinceApproval >= 20) {
-      // 20 days passed - enable for new month
       statusEl.textContent = 'ניתן לדווח על החודש החדש';
       buttonEl.disabled = false;
       buttonEl.style.background = '';
       buttonEl.style.opacity = '';
     } else {
-      // Still within 20 days - keep disabled and gray
       const daysRemaining = 20 - daysSinceApproval;
       statusEl.textContent = `אושר בתאריך ${formatApprovalDate(approvalDate)} (ישוחרר בעוד ${daysRemaining} ימים)`;
       buttonEl.disabled = true;
@@ -4964,9 +4990,40 @@ async function loadInstructorMonthlyApprovalStatus() {
     buttonEl.style.background = '';
     buttonEl.style.opacity = '';
   }
+
+  // Check grace period for previous month
+  if (currentDay <= GRACE_PERIOD_DAYS && previousMonthCard) {
+    // Calculate previous month
+    let prevMonth = currentMonth - 1;
+    let prevYear = currentYear;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear = currentYear - 1;
+    }
+    const prevMonthKey = getApprovalMonthKey(prevMonth, prevYear);
+    
+    // Check if previous month was already approved
+    const prevApprovalStatus = await fetchMonthStatus(employeeId, prevMonthKey, user.team || '');
+    previousMonthApprovalInfo = { monthKey: prevMonthKey, month: prevMonth, year: prevYear };
+    
+    if (!prevApprovalStatus.approvalDate && !prevApprovalStatus.released) {
+      // Previous month not approved - show grace period card
+      previousMonthCard.style.display = 'block';
+      if (previousMonthLabel) {
+        previousMonthLabel.textContent = getApprovalMonthLabel(prevMonth, prevYear);
+      }
+      const daysLeft = GRACE_PERIOD_DAYS - currentDay + 1;
+      if (gracePeriodDaysLeft) {
+        gracePeriodDaysLeft.textContent = `נותרו ${daysLeft} ימים לאישור`;
+      }
+      if (previousMonthBtn) {
+        previousMonthBtn.disabled = false;
+      }
+    }
+  }
 }
 
-async function approveMonthlyReport() {
+async function approveMonthlyReport(whichMonth = 'current') {
   const user = getCurrentUserData();
   if (!isApprovalsSupported()) {
     showAlert('⚠️ אישורים חודשיים אינם נתמכים ב-API הנוכחי', 'error');
@@ -4978,7 +5035,17 @@ async function approveMonthlyReport() {
   }
 
   const now = new Date();
-  const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+  let monthKey, yearValue;
+  
+  if (whichMonth === 'previous' && previousMonthApprovalInfo) {
+    // Approve previous month (grace period)
+    monthKey = previousMonthApprovalInfo.monthKey;
+    yearValue = String(previousMonthApprovalInfo.year);
+  } else {
+    // Approve current month
+    monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
+    yearValue = String(now.getFullYear());
+  }
 
   const status = await fetchMonthStatus(String(user.empNum || localStorage.getItem('employeeId') || ''), monthKey, user.team || '');
   if (status.released) {
@@ -4986,7 +5053,10 @@ async function approveMonthlyReport() {
     return;
   }
 
-  const buttonEl = document.getElementById('monthlyApprovalBtn');
+  // Disable the appropriate button
+  const buttonEl = whichMonth === 'previous' 
+    ? document.getElementById('previousMonthApprovalBtn')
+    : document.getElementById('monthlyApprovalBtn');
   if (buttonEl) {
     buttonEl.disabled = true;
   }
@@ -4996,7 +5066,7 @@ async function approveMonthlyReport() {
     const data = await apiRequest('approveMonthRecords', {
       employeeId,
       month: monthKey,
-      year: String(now.getFullYear())
+      year: yearValue
     });
     if (data.success) {
       showAlert('האישור החודשי נשמר בהצלחה', 'success');
