@@ -5991,8 +5991,12 @@ function updateStats() {
   
   const monthRecords = records.filter(r => {
     if (!r.date) return false;
-    const recDate = new Date(r.date);
-    return recDate.getMonth() === currentMonth && recDate.getFullYear() === currentYear;
+    // Parse DD/MM/YYYY format correctly
+    const parts = r.date.split('/');
+    if (parts.length < 3) return false;
+    const recMonth = parseInt(parts[1]) - 1; // Month is 0-indexed
+    const recYear = parseInt(parts[2]);
+    return recMonth === currentMonth && recYear === currentYear;
   });
   
   const uniqueDates = new Set(monthRecords.map(r => r.date)).size;
@@ -6593,8 +6597,12 @@ function renderRecordsTable() {
   
   const filteredRecords = records.filter(r => {
     if (!r.date) return false;
-    const recDate = new Date(r.date);
-    return recDate.getMonth() === selectedMonth && recDate.getFullYear() === selectedYear;
+    // Parse DD/MM/YYYY format correctly
+    const parts = r.date.split('/');
+    if (parts.length < 3) return false;
+    const recMonth = parseInt(parts[1]) - 1; // Month is 0-indexed
+    const recYear = parseInt(parts[2]);
+    return recMonth === selectedMonth && recYear === selectedYear;
   });
   
   document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
