@@ -4624,7 +4624,13 @@ function isMobileView() {
 
 // =============== Page Navigation ===============
 function showPage(event, pageName) {
-  if (event) {
+  // Handle both showPage(event, 'page') and showPage('page') calling patterns
+  if (typeof event === 'string') {
+    pageName = event;
+    event = null;
+  }
+  
+  if (event && typeof event.preventDefault === 'function') {
     event.preventDefault();
   }
   
@@ -6695,6 +6701,7 @@ async function editRecord(index) {
 function closeEditModal() {
   document.getElementById('editModal').style.display = 'none';
   editingIndex = -1;
+  adminEditRecordId = null;
 }
 
 function updateEditMunicipality() {
@@ -6724,10 +6731,25 @@ function updateEditMunicipality() {
 }
 
 async function saveEdit() {
-  if (editingIndex === -1) return;
+  // Check if editing from admin dashboard or instructor view
+  const isAdminEdit = adminEditRecordId !== null;
   
-  const originalDate = records[editingIndex].date;
-  const originalStartTime = records[editingIndex].start;
+  if (editingIndex === -1 && !isAdminEdit) return;
+  
+  let originalDate, originalStartTime;
+  if (isAdminEdit) {
+    // Find record in admin cache
+    let foundRec = null;
+    for (const empId in adminEmployeeRecordsCache) {
+      foundRec = adminEmployeeRecordsCache[empId].find(r => (r.ID || r.id) == adminEditRecordId);
+      if (foundRec) break;
+    }
+    originalDate = foundRec?.attendanceDate || foundRec?.date;
+    originalStartTime = foundRec?.startTime;
+  } else {
+    originalDate = records[editingIndex].date;
+    originalStartTime = records[editingIndex].start;
+  }
   
   const date = document.getElementById('editDate').value;
   const startTime = document.getElementById('editStartTime').value;
@@ -6743,7 +6765,10 @@ async function saveEdit() {
   const expensesDetail = document.getElementById('editExpensesDetail').value;
   const notes = document.getElementById('editNotes').value;
   const attachmentsInput = document.getElementById('editAttachments');
-  let attachments = records[editingIndex].attachments || [];
+  let attachments = [];
+  if (!isAdminEdit && editingIndex >= 0 && records[editingIndex]) {
+    attachments = records[editingIndex].attachments || [];
+  }
   
   if (attachmentsInput.files.length > 0) {
     for (const file of attachmentsInput.files) {
@@ -6781,21 +6806,31 @@ async function saveEdit() {
     return;
   }
   
-  records[editingIndex] = {
-    ...records[editingIndex],
+  // Build updated record object
+  const updatedRecord = {
     date,
+    attendanceDate: date,
     start: startTime,
+    startTime: startTime,
     end: endTime,
+    endTime: endTime,
     hours,
+    workHours: hours,
     activity,
+    activityType: activity,
     school,
+    schoolName: school,
     municipality,
     location: '',
     program,
+    programName: program,
     session,
+    sessionNumber: session,
     km,
+    kilometers: km,
     totalExpenses,
     expensesDetail,
+    expensesDetails: expensesDetail,
     notes,
     attachments,
     status: 'ממתין'
@@ -6804,27 +6839,58 @@ async function saveEdit() {
   showAlert('🔄 מעדכן רשומה בשרת...', 'info');
 
   try {
-    const ok = await updateRecordOnServer(records[editingIndex], originalDate, originalStartTime);
+    if (isAdminEdit) {
+      // Admin edit - use recordId directly
+      const ok = await updateRecordOnServer({
+        ...updatedRecord,
+        recordId: adminEditRecordId,
+        id: adminEditRecordId
+      }, originalDate, originalStartTime);
 
-    if (!ok) {
-      showAlert('⚠️ העדכון נשמר מקומית אבל נכשל בשרת', 'error');
-      saveToLocalStorage();
-      updateStats();
-      renderRecordsTable();
+      if (!ok) {
+        showAlert('⚠️ העדכון נכשל בשרת', 'error');
+        closeEditModal();
+        adminEditRecordId = null;
+        return;
+      }
+
+      // Refresh admin dashboard
+      adminEditRecordId = null;
       closeEditModal();
-      return;
-    }
+      updateAdminDashboard();
+      showAlert('✅ הרשומה עודכנה בהצלחה', 'success');
+    } else {
+      // Instructor edit
+      records[editingIndex] = {
+        ...records[editingIndex],
+        ...updatedRecord
+      };
+      
+      const ok = await updateRecordOnServer(records[editingIndex], originalDate, originalStartTime);
 
-    await loadMyRecordsFromServer();
-    closeEditModal();
-    showAlert('✅ הרשומה עודכנה בהצלחה ונשמרה בשרת', 'success');
+      if (!ok) {
+        showAlert('⚠️ העדכון נשמר מקומית אבל נכשל בשרת', 'error');
+        saveToLocalStorage();
+        updateStats();
+        renderRecordsTable();
+        closeEditModal();
+        return;
+      }
+
+      await loadMyRecordsFromServer();
+      closeEditModal();
+      showAlert('✅ הרשומה עודכנה בהצלחה ונשמרה בשרת', 'success');
+    }
   } catch (e) {
     console.error(e);
     showAlert('❌ שגיאה בעדכון הרשומה בשרת', 'error');
-    saveToLocalStorage();
-    updateStats();
-    renderRecordsTable();
+    if (!isAdminEdit) {
+      saveToLocalStorage();
+      updateStats();
+      renderRecordsTable();
+    }
     closeEditModal();
+    adminEditRecordId = null;
   }
 }
 
@@ -7849,6 +7915,8 @@ function toggleMobileAdminDetails(empId) {
 }
 
 // Edit record from admin dashboard
+let adminEditRecordId = null;
+
 async function editRecordFromAdmin(recordId) {
   if (!recordId) {
     showAlert('לא נמצא מזהה רשומה', 'error');
@@ -7870,16 +7938,50 @@ async function editRecordFromAdmin(recordId) {
     return;
   }
   
-  // Store the record for editing
-  currentEditRecord = recordToEdit;
+  // Store for saving
+  adminEditRecordId = recordId;
   
-  // Navigate to add record page and populate fields
-  showPage('addRecordPage');
+  // Populate edit form
+  const rec = recordToEdit;
+  document.getElementById('editDate').value = rec.attendanceDate || rec.date || '';
+  document.getElementById('editStartTime').value = rec.startTime || '';
+  document.getElementById('editEndTime').value = rec.endTime || '';
+  document.getElementById('editHours').value = rec.workHours || rec.hours || '';
+  document.getElementById('editActivity').value = rec.activityType || rec.activity || '';
   
-  // Wait for page to render then populate
-  setTimeout(() => {
-    populateEditForm(recordToEdit);
-  }, 100);
+  // Populate school dropdown
+  const schoolSelect = document.getElementById('editSchool');
+  schoolSelect.innerHTML = '<option value="">בחר בית ספר</option>';
+  schoolsData.forEach(school => {
+    const option = document.createElement('option');
+    option.value = JSON.stringify(school);
+    option.textContent = school['בית ספר'];
+    if (school['בית ספר'] === (rec.schoolName || rec.school)) {
+      option.selected = true;
+    }
+    schoolSelect.appendChild(option);
+  });
+  
+  document.getElementById('editMunicipality').value = rec.municipality || '';
+  document.getElementById('editProgram').value = rec.programName || rec.program || '';
+  document.getElementById('editSession').value = rec.sessionNumber || rec.session || '';
+  document.getElementById('editKm').value = rec.kilometers || rec.km || '';
+  document.getElementById('editTotalExpenses').value = rec.totalExpenses || '';
+  document.getElementById('editExpensesDetail').value = rec.expensesDetails || rec.expensesDetail || '';
+  document.getElementById('editNotes').value = rec.notes || '';
+  
+  // Handle zoom school
+  if ((rec.schoolName || rec.school) === 'זום') {
+    document.getElementById('editKm').value = '0';
+    document.getElementById('editKm').readOnly = true;
+    document.getElementById('editKm').style.background = '#f1f5f9';
+  } else {
+    document.getElementById('editKm').readOnly = false;
+    document.getElementById('editKm').style.background = 'white';
+  }
+  
+  // Show modal
+  document.getElementById('editModal').style.display = 'flex';
 }
 
 // Populate edit form with record data
