@@ -3750,12 +3750,12 @@ function normalizePayload(action, data) {
         action: 'exportdata'
       };
       
-    case 'checkmonthapproval':
+    case 'getmonthlyapproval':
       return {
-        action: 'checkmonthapproval',
+        action: 'getmonthlyapproval',
         employeeId: data.employeeId,
-        month: data.month,
-        year: data.year
+        monthKey: data.month || data.monthKey,
+        team: data.team
       };
       
     case 'resetteammonth':
@@ -3776,6 +3776,22 @@ function normalizePayload(action, data) {
         approvedBy: data.approvedBy,
         approverName: data.approverName
       });
+      
+    case 'setinstructorapproval':
+      return {
+        action: 'setinstructorapproval',
+        employeeId: data.employeeId,
+        employeeName: data.employeeName,
+        monthKey: data.monthKey || data.month,
+        team: data.team
+      };
+      
+    case 'setmanagerapproval':
+      return {
+        action: 'setmanagerapproval',
+        team: data.team,
+        monthKey: data.monthKey || data.month
+      };
       
     default:
       throw new Error(`Unsupported action: ${normalizedAction}`);
@@ -4877,9 +4893,9 @@ async function fetchMonthStatus(employeeId, monthKey, team) {
     return { approved: false, approvalDate: null, released: false, releaseDate: null };
   }
   try {
-    const data = await apiRequest('checkMonthApproval', {
+    const data = await apiRequest('getmonthlyapproval', {
       employeeId,
-      month: monthKey,
+      monthKey: monthKey,
       team
     });
     if (data && data.success) {
@@ -5098,7 +5114,8 @@ async function approveMonthlyReport(whichMonth = 'current') {
   try {
     const data = await apiRequest('setinstructorapproval', {
       employeeId,
-      month: monthKey,
+      employeeName: user.empName || '',
+      monthKey: monthKey,
       team: user.team || ''
     });
     if (data.success) {
@@ -8538,9 +8555,7 @@ async function approveTeamMonth(teamName) {
     // For now, show success message
     const data = await apiRequest('setmanagerapproval', {
       team: teamName,
-      month: monthKey,
-      approvedBy: user.empNum,
-      approverName: user.empName
+      monthKey: monthKey
     });
     
     if (data.success) {
