@@ -4388,9 +4388,10 @@ async function loadMyRecordsFromServer() {
       return normalized;
     });
 
+    // Initialize month selectors to current month before updating stats
+    initInstructorMonthSelectors();
     renderRecordsTable();
     updateStats();
-    showAlert(`✅ נטענו ${records.length} ימי עבודה`, 'success');
   } catch (error) {
     console.error('Load records error:', error);
     // Don't reset records on error - keep existing data
