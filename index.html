@@ -5991,11 +5991,21 @@ function updateStats() {
   
   const monthRecords = records.filter(r => {
     if (!r.date) return false;
-    // Parse DD/MM/YYYY format correctly
-    const parts = r.date.split('/');
-    if (parts.length < 3) return false;
-    const recMonth = parseInt(parts[1]) - 1; // Month is 0-indexed
-    const recYear = parseInt(parts[2]);
+    // Parse date - support both DD/MM/YYYY and YYYY-MM-DD formats
+    let recMonth, recYear;
+    if (r.date.includes('/')) {
+      const parts = r.date.split('/');
+      if (parts.length < 3) return false;
+      recMonth = parseInt(parts[1]) - 1;
+      recYear = parseInt(parts[2]);
+    } else if (r.date.includes('-')) {
+      const parts = r.date.split('-');
+      if (parts.length < 3) return false;
+      recYear = parseInt(parts[0]);
+      recMonth = parseInt(parts[1]) - 1;
+    } else {
+      return false;
+    }
     return recMonth === currentMonth && recYear === currentYear;
   });
   
@@ -6597,11 +6607,21 @@ function renderRecordsTable() {
   
   const filteredRecords = records.filter(r => {
     if (!r.date) return false;
-    // Parse DD/MM/YYYY format correctly
-    const parts = r.date.split('/');
-    if (parts.length < 3) return false;
-    const recMonth = parseInt(parts[1]) - 1; // Month is 0-indexed
-    const recYear = parseInt(parts[2]);
+    // Parse date - support both DD/MM/YYYY and YYYY-MM-DD formats
+    let recMonth, recYear;
+    if (r.date.includes('/')) {
+      const parts = r.date.split('/');
+      if (parts.length < 3) return false;
+      recMonth = parseInt(parts[1]) - 1;
+      recYear = parseInt(parts[2]);
+    } else if (r.date.includes('-')) {
+      const parts = r.date.split('-');
+      if (parts.length < 3) return false;
+      recYear = parseInt(parts[0]);
+      recMonth = parseInt(parts[1]) - 1;
+    } else {
+      return false;
+    }
     return recMonth === selectedMonth && recYear === selectedYear;
   });
   
