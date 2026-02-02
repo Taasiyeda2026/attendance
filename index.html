@@ -3737,6 +3737,17 @@ function normalizePayload(action, data) {
         year: data.year
       };
       
+    case 'approvemonthrecords':
+      return cleanPayload({
+        action: 'approvemonthrecords',
+        employeeId: data.employeeId,
+        team: data.team,
+        month: data.month,
+        year: data.year,
+        approvedBy: data.approvedBy,
+        approverName: data.approverName
+      });
+      
     default:
       throw new Error(`Unsupported action: ${normalizedAction}`);
   }
