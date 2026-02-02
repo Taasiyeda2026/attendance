@@ -8116,11 +8116,20 @@ function exportAdminDashboardToExcel() {
 // =============== Reports Functions ===============
 let reportRecords = [];
 
-function initReportsPage() {
+async function initReportsPage() {
   const now = new Date();
   document.getElementById('reportMonth').value = now.getMonth() + 1;
   document.getElementById('reportYear').value = now.getFullYear();
   populateTeamFilter();
+  
+  // Load team records first if cache is empty (for admin/manager roles)
+  const role = localStorage.getItem("role") || '';
+  if (['system_admin', 'operations_controller', 'manager', 'payroll_officer'].includes(role)) {
+    if (typeof teamRecordsCache === 'undefined' || teamRecordsCache.length === 0) {
+      await loadTeamRecords();
+    }
+  }
+  
   loadReportData();
 }
 
@@ -8168,14 +8177,23 @@ async function loadReportData() {
     showAlert('טוען נתוני דוח...', 'info');
   }
   
+  // Helper function to get available records fallback
+  function getAvailableRecords() {
+    // Try teamRecordsCache first (for admins/managers), then personal records
+    if (typeof teamRecordsCache !== 'undefined' && teamRecordsCache.length > 0) {
+      return teamRecordsCache.map(rec => normalizeRecordFromServer(rec));
+    }
+    return records;
+  }
+  
   try {
     if (isMobileView()) {
-      reportRecords = getFilteredRecordsByMonth(records, month, year);
+      reportRecords = getFilteredRecordsByMonth(getAvailableRecords(), month, year);
     } else {
       const data = await apiRequest('getsummary', {});
       
       if (!data.success || !Array.isArray(data.records)) {
-        reportRecords = getFilteredRecordsByMonth(records, month, year);
+        reportRecords = getFilteredRecordsByMonth(getAvailableRecords(), month, year);
       } else {
         reportRecords = data.records.map(rec => normalizeRecordFromServer(rec));
       }
@@ -8202,7 +8220,7 @@ async function loadReportData() {
     }
   } catch (error) {
     console.error('Load report data error:', error);
-    reportRecords = getFilteredRecordsByMonth(records, month, year);
+    reportRecords = getFilteredRecordsByMonth(getAvailableRecords(), month, year);
     updateReportStats();
     renderReportByEmployee();
   }
