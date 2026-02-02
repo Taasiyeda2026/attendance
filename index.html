@@ -3593,19 +3593,30 @@ function normalizeEmploymentType(source, defaultValue = '') {
     if (source.Value || source.Label) {
       extractedValue = source.Value || source.Label || '';
     } else {
+      // Log specifically what we're checking
+      console.log('Checking EmploymentType field:', {
+        'employmentType': source.employmentType,
+        'EmploymentType': source.EmploymentType,
+        'field_OData_EmploymentType': source.field_OData_EmploymentType,
+        'OData__EmploymentType': source.OData__EmploymentType
+      });
+      
       const possibleFields = [
         source.employmentType,
         source.EmploymentType,
         source.EmployeeType,
         source.employeeType,
         source['Employment_x0020_Type'],
-        source.SogHaasaka
+        source.SogHaasaka,
+        source.field_OData_EmploymentType,
+        source.OData__EmploymentType
       ];
 
       for (const field of possibleFields) {
         const value = extractLookupValue(field, '');
         if (value) {
           extractedValue = value;
+          console.log('Found employmentType value:', value);
           break;
         }
       }
@@ -3776,12 +3787,21 @@ function normalizePayload(action, data) {
  */
 function normalizeEmployeeFromServer(emp) {
   if (!emp) return null;
+  
+  // Log all employee fields to find employmentType
+  console.log('=== Employee data from server ===');
+  console.log('All fields:', Object.keys(emp));
+  console.log('Full employee object:', JSON.stringify(emp, null, 2));
+  
+  const empType = normalizeEmploymentType(emp, 'תעשיידע');
+  console.log('Normalized employmentType:', empType);
+  
   return {
     employeeId: emp.employeeId,
     empName: emp.EmployeeName || emp.employeeName,  // Handle both cases
     role: emp.role || 'instructor',
     team: extractLookupValue(emp.Team || emp.team || '', ''),
-    employmentType: normalizeEmploymentType(emp, '')
+    employmentType: empType
   };
 }
 
@@ -4610,7 +4630,8 @@ async function doLogin(event) {
       localStorage.setItem('employeeName', emp.empName);
       localStorage.setItem('employeeId', employeeId);
       localStorage.setItem('role', empData.role);
-      localStorage.setItem('employmentType', emp.employmentType);
+      localStorage.setItem('employmentType', emp.employmentType || 'תעשיידע');
+      console.log('Saved employmentType to localStorage:', emp.employmentType || 'תעשיידע');
       localStorage.setItem('team', emp.team);
       
       // Update UI
@@ -5063,10 +5084,10 @@ async function approveMonthlyReport(whichMonth = 'current') {
 
   const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
   try {
-    const data = await apiRequest('approveMonthRecords', {
+    const data = await apiRequest('setinstructorapproval', {
       employeeId,
       month: monthKey,
-      year: yearValue
+      team: user.team || ''
     });
     if (data.success) {
       showAlert('האישור החודשי נשמר בהצלחה', 'success');
@@ -8453,7 +8474,7 @@ async function approveTeamMonth(teamName) {
     
     // In a real implementation, this would call the Logic App
     // For now, show success message
-    const data = await apiRequest('approveMonthRecords', {
+    const data = await apiRequest('setmanagerapproval', {
       team: teamName,
       month: monthKey,
       approvedBy: user.empNum,
