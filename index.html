@@ -1051,7 +1051,7 @@
       }
 
       .mobile-info-banner {
-        display: flex;
+        display: none;
       }
 
       .mobile-menu-btn {
@@ -1538,10 +1538,16 @@
         flex-direction: column !important;
       }
       
-      #adminDashboardFilters select,
-      #adminDashboardFilters button {
+      #adminDashboardFilters select {
         width: 100% !important;
         min-height: 48px;
+      }
+      
+      #adminDashboardFilters button {
+        width: auto !important;
+        min-width: 120px;
+        min-height: 48px;
+        margin: 0 auto;
       }
       
       /* File upload */
@@ -1697,7 +1703,8 @@
       }
       
       .page-header button {
-        width: 100% !important;
+        width: auto !important;
+        min-width: 120px;
         max-width: none !important;
       }
       
@@ -2282,7 +2289,7 @@
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'approvals-status')" data-roles="system_admin">
+      <a href="#" class="nav-item" onclick="showPage(event, 'approvals-status')" data-roles="manager,operations_controller,payroll_officer,system_admin">
         <i class="fas fa-clipboard-check"></i>
         <span>סטטוס אישורים</span>
       </a>
@@ -2323,7 +2330,7 @@
         <i class="fas fa-chart-bar"></i>
         <span>דוחות</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('approvals-status')" id="mobileNavApprovals" data-roles="manager,system_admin">
+      <button class="mobile-nav-item" onclick="mobileNavTo('approvals-status')" id="mobileNavApprovals" data-roles="manager,operations_controller,payroll_officer,system_admin">
         <i class="fas fa-check-double"></i>
         <span>אישורים</span>
       </button>
@@ -3010,7 +3017,7 @@
               ייצוא ל-Excel
             </button>
           </div>
-          <!-- Month/Year Filter -->
+          <!-- Month/Year/Team Filter -->
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; width: 100%;">
             <label style="font-weight: 500; color: #475569;">תקופה:</label>
             <select id="teamMonthFilter" onchange="loadTeamRecords()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white;">
@@ -3031,6 +3038,11 @@
               <option value="2024">2024</option>
               <option value="2025">2025</option>
               <option value="2026">2026</option>
+            </select>
+            <select id="teamRecordsTeamFilter" onchange="loadTeamRecords()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; display: none;">
+              <option value="all">כל הצוותים</option>
+              <option value="גיל">גיל</option>
+              <option value="לינוי">לינוי</option>
             </select>
             <button class="btn btn-primary" onclick="loadTeamRecords()">
               <i class="fas fa-sync-alt"></i>
@@ -3716,7 +3728,7 @@ function normalizePayload(action, data) {
       return {
         action: 'getteamapprovalstatus',
         team: data.team || 'all',
-        month: data.month || ''
+        monthKey: data.monthKey || data.month || ''
       };
       
     case 'updaterecord':
@@ -4172,7 +4184,8 @@ function updateMenuByRole(role) {
     // Show team filter only for system_admin (operations_controller sees all teams without filter)
     const filterTeam = document.getElementById('filterTeam');
     if (filterTeam) {
-      filterTeam.style.display = role === 'system_admin' ? 'inline-block' : 'none';
+      // Show team filter for system_admin on all devices
+      filterTeam.style.display = role === 'system_admin' ? 'block' : 'none';
     }
     // Show employment type filter for both system_admin and operations_controller
     const filterEmploymentType = document.getElementById('filterEmploymentType');
@@ -5281,8 +5294,8 @@ async function loadApprovalsStatusPage() {
   const container = document.getElementById('approvalsStatusTable');
 
   if (!container) return;
-  if (!user || user.role !== 'system_admin') {
-    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">עמוד זה זמין למנהל מערכת בלבד</p>';
+  if (!user || !['manager', 'operations_controller', 'payroll_officer', 'system_admin'].includes(user.role)) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">עמוד זה זמין למנהלים ומנהלי מערכת בלבד</p>';
     return;
   }
 
@@ -5296,15 +5309,27 @@ async function loadApprovalsStatusPage() {
 
   let approvalsData = [];
   try {
-    const data = await apiRequest('getTeamApprovalStatus', {
-      team: 'all',
-      month: monthKey
+    // Manager sees only their team, others see all
+    const teamFilter = user.role === 'manager' ? (user.team || 'all') : 'all';
+    const data = await apiRequest('getteamapprovalstatus', {
+      team: teamFilter,
+      monthKey: monthKey
     });
     approvalsData = Array.isArray(data.employees) ? data.employees : [];
   } catch (error) {
     console.error('Error loading approval status:', error);
     container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 30px;">שגיאה בטעינת הנתונים</p>';
     return;
+  }
+
+  // Client-side team filter for managers (backup if server doesn't filter)
+  if (user.role === 'manager' && user.team) {
+    const managerTeam = user.team.trim().toLowerCase();
+    approvalsData = approvalsData.filter(emp => {
+      const empTeam = (emp.team || '').trim().toLowerCase();
+      return empTeam === managerTeam;
+    });
+    console.log('Manager team filter applied:', user.team, '- Found:', approvalsData.length, 'employees');
   }
 
   // Filter only instructors
@@ -5328,48 +5353,101 @@ async function loadApprovalsStatusPage() {
     byTeam[teamName].push(emp);
   });
 
+  const isMobile = window.innerWidth <= 768;
   let html = '';
+  
   Object.keys(byTeam).sort().forEach(teamName => {
     const teamEmps = byTeam[teamName];
-    const rows = teamEmps.map(emp => {
-      const approvalDate = emp.approvalDate || null;
-      const isReleased = emp.released || false;
-      const employmentType = emp.employmentType || '—';
-      return `
-        <tr>
-          <td>${emp.name || emp.employeeName || '—'}</td>
-          <td>${emp.employeeId || '—'}</td>
-          <td>${teamName}</td>
-          <td>${employmentType}</td>
-          <td style="text-align: center;">
-            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; color: ${approvalDate ? '#166534' : '#92400e'};">
-              <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
-              ${approvalDate ? 'סיים דיווח' : 'ממתין'}
-            </span>
-          </td>
-          <td style="text-align: center;">
-            <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; color: ${isReleased ? '#166534' : '#64748b'};">
-              <i class="fas ${isReleased ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
-              ${isReleased ? 'אושר לשכר' : 'לא אושר'}
-            </span>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
+    
+    // Summary counts
+    const approvedCount = teamEmps.filter(e => e.instructorApprovalDate || e.approvalDate).length;
+    const releasedCount = teamEmps.filter(e => e.released).length;
+    
     html += `
       <div style="margin-bottom: 25px;">
-        <h4 style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 12px 18px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+        <h4 style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 12px 18px; border-radius: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <i class="fas fa-users"></i>${teamName}
           <span style="margin-right: auto; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 15px; font-size: 13px;">${teamEmps.length} מדריכים</span>
+          <span style="background: ${approvedCount === teamEmps.length ? '#22c55e' : '#fbbf24'}; padding: 3px 10px; border-radius: 15px; font-size: 12px; color: ${approvedCount === teamEmps.length ? 'white' : '#78350f'};">
+            ${approvedCount}/${teamEmps.length} סיימו דיווח
+          </span>
         </h4>
+    `;
+    
+    if (isMobile) {
+      // Mobile: Card view
+      const cards = teamEmps.map(emp => {
+        const approvalDate = emp.instructorApprovalDate || emp.approvalDate || null;
+        const isReleased = emp.released || false;
+        const employmentType = emp.employmentType || '—';
+        const formattedApprovalDate = approvalDate ? new Date(approvalDate).toLocaleDateString('he-IL') : '';
+        
+        return `
+          <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <strong style="font-size: 16px; color: #1e293b;">${emp.name || emp.employeeName || '—'}</strong>
+              <span style="font-size: 12px; color: #64748b;">#${emp.employeeId || '—'}</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+              <span style="background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-size: 12px; color: #475569;">${employmentType}</span>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 120px; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 11px; color: ${approvalDate ? '#166534' : '#92400e'}; margin-bottom: 3px;">אישור מדריך</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; color: ${approvalDate ? '#166534' : '#92400e'};">
+                  <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
+                  ${approvalDate ? formattedApprovalDate : 'ממתין'}
+                </div>
+              </div>
+              <div style="flex: 1; min-width: 120px; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 11px; color: ${isReleased ? '#166534' : '#64748b'}; margin-bottom: 3px;">אישור מנהל</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; color: ${isReleased ? '#166534' : '#64748b'};">
+                  <i class="fas ${isReleased ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
+                  ${isReleased ? 'אושר' : 'לא אושר'}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      html += `<div>${cards}</div>`;
+    } else {
+      // Desktop: Table view
+      const rows = teamEmps.map(emp => {
+        const approvalDate = emp.instructorApprovalDate || emp.approvalDate || null;
+        const isReleased = emp.released || false;
+        const employmentType = emp.employmentType || '—';
+        const formattedApprovalDate = approvalDate ? new Date(approvalDate).toLocaleDateString('he-IL') : '';
+        
+        return `
+          <tr>
+            <td>${emp.name || emp.employeeName || '—'}</td>
+            <td>${emp.employeeId || '—'}</td>
+            <td>${employmentType}</td>
+            <td style="text-align: center;">
+              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; color: ${approvalDate ? '#166534' : '#92400e'};">
+                <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
+                ${approvalDate ? formattedApprovalDate : 'ממתין'}
+              </span>
+            </td>
+            <td style="text-align: center;">
+              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; color: ${isReleased ? '#166534' : '#64748b'};">
+                <i class="fas ${isReleased ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
+                ${isReleased ? 'אושר לשכר' : 'לא אושר'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      html += `
         <div style="overflow-x: auto; border-radius: 10px; border: 1px solid #e2e8f0;">
           <table style="margin: 0;">
             <thead>
               <tr style="background: #f8fafc;">
                 <th style="padding: 12px 15px;">שם עובד</th>
                 <th style="padding: 12px 15px;">מספר עובד</th>
-                <th style="padding: 12px 15px;">צוות</th>
                 <th style="padding: 12px 15px;">סוג העסקה</th>
                 <th style="padding: 12px 15px; text-align: center;">אישור מדריך</th>
                 <th style="padding: 12px 15px; text-align: center;">אישור מנהל</th>
@@ -5378,8 +5456,10 @@ async function loadApprovalsStatusPage() {
             <tbody>${rows}</tbody>
           </table>
         </div>
-      </div>
-    `;
+      `;
+    }
+    
+    html += '</div>';
   });
 
   container.innerHTML = html;
@@ -5513,6 +5593,16 @@ async function loadTeamRecords(resetFilters = false) {
   const now = new Date();
   const monthSelect = document.getElementById('teamMonthFilter');
   const yearSelect = document.getElementById('teamYearFilter');
+  const teamFilterSelect = document.getElementById('teamRecordsTeamFilter');
+
+  // Show team filter for admin and operations_controller
+  if (teamFilterSelect) {
+    if (user.role === 'system_admin' || user.role === 'operations_controller') {
+      teamFilterSelect.style.display = 'block';
+    } else {
+      teamFilterSelect.style.display = 'none';
+    }
+  }
 
   // Reset to appropriate month/year on fresh page load or when explicitly requested
   // If we're in the first 5 days of the month, default to previous month
@@ -5542,9 +5632,12 @@ async function loadTeamRecords(resetFilters = false) {
   const selectedMonth = monthSelect ? parseInt(monthSelect.value) : now.getMonth() + 1;
   const selectedYear = yearSelect ? parseInt(yearSelect.value) : now.getFullYear();
 
+  // Get selected team filter value
+  const selectedTeamFilter = teamFilterSelect ? teamFilterSelect.value : 'all';
+
   const teamName = document.getElementById('teamName');
   if (user.role === 'system_admin' || user.role === 'operations_controller' || user.role === 'payroll_officer') {
-    teamName.textContent = '(כל הצוותים)';
+    teamName.textContent = selectedTeamFilter === 'all' ? '(כל הצוותים)' : `(${selectedTeamFilter})`;
   } else if (user.role === 'manager') {
     teamName.textContent = user.team || '';
   }
@@ -5573,7 +5666,17 @@ async function loadTeamRecords(resetFilters = false) {
 
     if (data.success && Array.isArray(data.records)) {
       teamRecordsCache = data.records;
-      renderTeamTable(data.records);
+      
+      // Apply team filter for admin/operations_controller
+      let filteredRecords = data.records;
+      if (selectedTeamFilter !== 'all' && (user.role === 'system_admin' || user.role === 'operations_controller')) {
+        filteredRecords = data.records.filter(rec => {
+          const recTeam = (rec.team || rec.Team || '').trim().toLowerCase();
+          return recTeam === selectedTeamFilter.trim().toLowerCase();
+        });
+      }
+      
+      renderTeamTable(filteredRecords);
     } else {
       const debugInfo = user.role === 'manager' 
         ? `<br><small style="font-size: 12px; color: #64748b;">מנהל: ${user.empName || ''} | צוות: ${user.team || 'לא משויך'}</small>`
@@ -7091,7 +7194,9 @@ async function editRecord(index) {
   document.getElementById('editDate').value = rec.date;
   setTimeDropdowns('editStart', rec.start || '');
   setTimeDropdowns('editEnd', rec.end || '');
-  document.getElementById('editHours').value = rec.hours;
+  // Set hours - use hours field or calculate from start/end
+  const hoursValue = rec.hours || rec.workHours || 0;
+  document.getElementById('editHours').value = typeof hoursValue === 'number' ? hoursValue.toFixed(2) : hoursValue;
   document.getElementById('editActivity').value = rec.activity;
   
   const schoolSelect = document.getElementById('editSchool');
@@ -8340,30 +8445,187 @@ function toggleMobileAdminDetails(empId) {
     if (records.length === 0) {
       detailsDiv.innerHTML = '<p style="color: #64748b; text-align: center;">אין רשומות</p>';
     } else {
-      detailsDiv.innerHTML = records.slice(0, 10).map(rec => {
-        const date = rec.attendanceDate ? new Date(rec.attendanceDate).toLocaleDateString('he-IL') : '-';
+      // Get current month/year from dashboard filters
+      const now = new Date();
+      const dashboardMonth = document.getElementById('dashboardMonth');
+      const dashboardYear = document.getElementById('dashboardYear');
+      const currentMonth = dashboardMonth ? parseInt(dashboardMonth.value) - 1 : now.getMonth();
+      const currentYear = dashboardYear ? parseInt(dashboardYear.value) : now.getFullYear();
+      
+      // Group records by week of month
+      const weekGroups = groupRecordsByWeek(records, currentMonth, currentYear);
+      
+      if (weekGroups.length === 0) {
+        detailsDiv.innerHTML = '<p style="color: #64748b; text-align: center;">אין רשומות בחודש זה</p>';
+      } else {
+        detailsDiv.innerHTML = weekGroups.map(week => {
+          const weekHours = week.records.reduce((sum, r) => sum + parseFloat(r.workHours || r.hours || 0), 0);
+          const weekKm = week.records.reduce((sum, r) => sum + parseFloat(r.kilometers || r.km || 0), 0);
+          const weekKey = `${week.startDay}-${week.endDay}`;
+          return `
+            <div style="margin-bottom: 8px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+              <div onclick="event.stopPropagation(); toggleMobileWeekDetails('${empId}', ${week.startDay}, ${week.endDay})" 
+                   style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <i class="fas fa-calendar-week" style="color: #3b82f6; margin-left: 8px;"></i>
+                  <strong style="font-size: 14px;">שבוע ${week.weekNum}</strong>
+                  <span style="font-size: 11px; color: #64748b; margin-right: 8px;">(${week.dateRange})</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 12px; color: #475569;">${week.records.length} רשומות | ${weekHours.toFixed(1)} שעות</span>
+                  <i class="fas fa-chevron-down" id="week-chevron-${empId}-${weekKey}" style="color: #64748b; transition: transform 0.3s;"></i>
+                </div>
+              </div>
+              <div id="week-records-${empId}-${weekKey}" style="display: none; padding: 10px; background: white;">
+                <!-- Will be filled when week is expanded -->
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    detailsDiv.style.display = 'block';
+  } else {
+    detailsDiv.style.display = 'none';
+  }
+}
+
+// Group records by week of month - uses explicit month/year for stability
+function groupRecordsByWeek(records, month, year) {
+  if (!records || records.length === 0) return [];
+  
+  // Use passed month/year, or fallback to current date
+  const now = new Date();
+  const targetMonth = (month !== undefined) ? month : now.getMonth();
+  const targetYear = (year !== undefined) ? year : now.getFullYear();
+  
+  // Calculate week ranges for this month
+  const lastDayOfMonth = new Date(targetYear, targetMonth + 1, 0);
+  const totalDays = lastDayOfMonth.getDate();
+  
+  // Create 4 week ranges (equal segments of ~7-8 days each)
+  const daysPerWeek = Math.ceil(totalDays / 4);
+  const weeks = [];
+  
+  for (let i = 0; i < 4; i++) {
+    const startDay = i * daysPerWeek + 1;
+    const endDay = Math.min((i + 1) * daysPerWeek, totalDays);
+    weeks.push({
+      weekNum: i + 1,
+      startDay: startDay,
+      endDay: endDay,
+      dateRange: `${startDay}-${endDay}`,
+      records: []
+    });
+  }
+  
+  // Sort records into weeks - only include records from the target month/year
+  records.forEach(rec => {
+    const recDate = parseRecordDate(rec.attendanceDate || rec.date);
+    if (recDate && recDate.getMonth() === targetMonth && recDate.getFullYear() === targetYear) {
+      const day = recDate.getDate();
+      for (let i = 0; i < weeks.length; i++) {
+        if (day >= weeks[i].startDay && day <= weeks[i].endDay) {
+          weeks[i].records.push(rec);
+          break;
+        }
+      }
+    }
+  });
+  
+  // Return only weeks with records
+  return weeks.filter(w => w.records.length > 0);
+}
+
+// Parse date from DD/MM/YYYY or YYYY-MM-DD format
+function parseRecordDate(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length >= 3) {
+      return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    }
+  } else if (dateStr.includes('-')) {
+    return new Date(dateStr);
+  }
+  return null;
+}
+
+// Toggle week records in mobile view - uses startDay/endDay for stability
+function toggleMobileWeekDetails(empId, startDay, endDay) {
+  const weekKey = `${startDay}-${endDay}`;
+  const recordsDiv = document.getElementById(`week-records-${empId}-${weekKey}`);
+  const chevron = document.getElementById(`week-chevron-${empId}-${weekKey}`);
+  if (!recordsDiv) return;
+  
+  if (recordsDiv.style.display === 'none') {
+    // Get current month/year from dashboard filters
+    const now = new Date();
+    const dashboardMonth = document.getElementById('dashboardMonth');
+    const dashboardYear = document.getElementById('dashboardYear');
+    const currentMonth = dashboardMonth ? parseInt(dashboardMonth.value) - 1 : now.getMonth();
+    const currentYear = dashboardYear ? parseInt(dashboardYear.value) : now.getFullYear();
+    
+    // Get records for this employee
+    const allRecords = adminEmployeeRecordsCache[empId] || [];
+    
+    // Filter records for this specific week by day range
+    const weekRecords = allRecords.filter(rec => {
+      const recDate = parseRecordDate(rec.attendanceDate || rec.date);
+      if (!recDate) return false;
+      if (recDate.getMonth() !== currentMonth || recDate.getFullYear() !== currentYear) return false;
+      const day = recDate.getDate();
+      return day >= startDay && day <= endDay;
+    });
+    
+    if (weekRecords.length === 0) {
+      recordsDiv.innerHTML = '<p style="color: #64748b; text-align: center; padding: 10px;">אין רשומות</p>';
+    } else {
+      // Sort by date
+      weekRecords.sort((a, b) => {
+        const dateA = parseRecordDate(a.attendanceDate || a.date);
+        const dateB = parseRecordDate(b.attendanceDate || b.date);
+        return (dateA || 0) - (dateB || 0);
+      });
+      
+      recordsDiv.innerHTML = weekRecords.map(rec => {
+        const date = formatDateHebrew(rec.attendanceDate || rec.date);
         const recId = rec.ID || rec.id || '';
         const status = rec.status || 'ממתין';
         const statusColor = status === 'מאושר' ? '#22c55e' : (status === 'נדחה' ? '#ef4444' : '#f59e0b');
+        const hours = parseFloat(rec.workHours || rec.hours || 0).toFixed(1);
+        const km = parseFloat(rec.kilometers || rec.km || 0).toFixed(0);
+        
         return `<div style="padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <strong style="font-size: 13px;">${date}</strong>
             <span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px;">${status}</span>
           </div>
           <div style="font-size: 12px; color: #475569; margin-bottom: 8px;">
-            ${rec.activityType || '-'} | ${rec.workHours || 0} שעות | ${rec.kilometers || 0} ק"מ
+            ${rec.activityType || rec.activity || '-'} | ${hours} שעות | ${km} ק"מ
           </div>
           <div style="display: flex; gap: 8px;">
             <button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="flex: 1; background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-edit"></i> עריכה</button>
             <button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="flex: 1; background: #22c55e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check"></i> אישור</button>
           </div>
         </div>`;
-      }).join('') + (records.length > 10 ? `<p style="color: #64748b; font-size: 11px; margin-top: 8px; text-align: center;">ועוד ${records.length - 10} רשומות...</p>` : '');
+      }).join('');
     }
-    detailsDiv.style.display = 'block';
+    
+    recordsDiv.style.display = 'block';
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
   } else {
-    detailsDiv.style.display = 'none';
+    recordsDiv.style.display = 'none';
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
   }
+}
+
+// Format date to Hebrew format
+function formatDateHebrew(dateStr) {
+  if (!dateStr) return '-';
+  const date = parseRecordDate(dateStr);
+  if (!date) return dateStr;
+  return date.toLocaleDateString('he-IL');
 }
 
 // Edit record from admin dashboard
@@ -8396,9 +8658,12 @@ async function editRecordFromAdmin(recordId) {
   // Populate edit form
   const rec = recordToEdit;
   document.getElementById('editDate').value = rec.attendanceDate || rec.date || '';
-  document.getElementById('editStartTime').value = rec.startTime || '';
-  document.getElementById('editEndTime').value = rec.endTime || '';
-  document.getElementById('editHours').value = rec.workHours || rec.hours || '';
+  // Set time dropdowns properly
+  setTimeDropdowns('editStart', rec.startTime || rec.start || '');
+  setTimeDropdowns('editEnd', rec.endTime || rec.end || '');
+  // Set hours - ensure proper formatting
+  const hoursVal = rec.workHours || rec.hours || 0;
+  document.getElementById('editHours').value = typeof hoursVal === 'number' ? hoursVal.toFixed(2) : hoursVal;
   document.getElementById('editActivity').value = rec.activityType || rec.activity || '';
   
   // Populate school dropdown
