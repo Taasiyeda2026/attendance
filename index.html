@@ -6854,7 +6854,24 @@ function calculateEditHours() {
 }
 
 // =============== Add Record ===============
+let isSubmitting = false;
+
 async function addRecord() {
+  // Prevent double submission
+  if (isSubmitting) {
+    console.log('Submission already in progress, ignoring click');
+    return;
+  }
+  isSubmitting = true;
+  
+  try {
+    await _addRecordInternal();
+  } finally {
+    isSubmitting = false;
+  }
+}
+
+async function _addRecordInternal() {
   // Check if we're editing an existing record
   const editingId = document.getElementById('addRecordPage')?.dataset?.editingId;
   const isEditing = editingId && editingId !== '';
