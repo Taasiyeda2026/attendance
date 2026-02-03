@@ -4866,7 +4866,7 @@ if (typeof closeMobileMenu === 'function') {
     renderSummaryTable();
     loadInstructorMonthlyApprovalStatus();
   }
-  if (pageName === 'records') renderRecordsTable();
+  if (pageName === 'records') loadRecordsForMonth();
   if (pageName === 'team-records') loadTeamRecords();
   if (pageName === 'reports') initReportsPage();
   if (pageName === 'approvals-status') loadApprovalsStatusPage();
@@ -5667,9 +5667,18 @@ async function loadTeamRecords(resetFilters = false) {
     if (data.success && Array.isArray(data.records)) {
       teamRecordsCache = data.records;
       
-      // Apply team filter for admin/operations_controller
+      // Apply team filter
       let filteredRecords = data.records;
-      if (selectedTeamFilter !== 'all' && (user.role === 'system_admin' || user.role === 'operations_controller')) {
+      
+      // Manager always sees only their own team
+      if (user.role === 'manager' && user.team) {
+        filteredRecords = data.records.filter(rec => {
+          const recTeam = (rec.team || rec.Team || '').trim().toLowerCase();
+          return recTeam === (user.team || '').trim().toLowerCase();
+        });
+      }
+      // Admin/operations_controller can filter by selected team
+      else if (selectedTeamFilter !== 'all' && (user.role === 'system_admin' || user.role === 'operations_controller')) {
         filteredRecords = data.records.filter(rec => {
           const recTeam = (rec.team || rec.Team || '').trim().toLowerCase();
           return recTeam === selectedTeamFilter.trim().toLowerCase();
@@ -5733,13 +5742,20 @@ function renderTeamTable(recordsList) {
         team,
         employmentType: empType,
         totalRecords: 0,
+        approvedRecords: 0,
         totalHours: 0,
         totalKm: 0,
-        totalExpenses: 0
+        totalExpenses: 0,
+        released: rec.released || false
       };
     }
 
     employeeSummary[empId].totalRecords += Number.isNaN(recordCount) ? 0 : recordCount;
+    // Count approved records
+    const statusRaw = (rec.status || 'pending').toLowerCase();
+    if (statusRaw === 'approved') {
+      employeeSummary[empId].approvedRecords += Number.isNaN(recordCount) ? 0 : recordCount;
+    }
     employeeSummary[empId].totalHours += hours;
     employeeSummary[empId].totalKm += km;
     employeeSummary[empId].totalExpenses += expenses;
@@ -5752,20 +5768,57 @@ function renderTeamTable(recordsList) {
   const grandTotalRecords = summaryList.reduce((sum, emp) => sum + emp.totalRecords, 0);
 
   if (isMobileView()) {
+    const user = getCurrentUserData();
+    const canRelease = user && ['manager', 'operations_controller', 'system_admin'].includes(user.role);
+    
+    const employeeCards = summaryList.map(emp => {
+      const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
+      const statusText = emp.released ? 'שוחרר לשכר' : (allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`);
+      const statusColor = emp.released ? '#8b5cf6' : (allApproved ? '#22c55e' : '#f59e0b');
+      const canReleaseThis = canRelease && allApproved && !emp.released;
+      
+      return `
+        <div class="employee-card" style="background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong style="color: #3b82f6; font-size: 16px;">${emp.empName}</strong>
+            <span style="background: ${statusColor}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">${statusText}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: #64748b;">
+            <div><span>צוות:</span> <strong style="color: #1e293b;">${emp.team || '-'}</strong></div>
+            <div><span>שעות:</span> <strong style="color: #1e293b;">${formatHoursDisplay(emp.totalHours)}</strong></div>
+            <div><span>ק"מ:</span> <strong style="color: #1e293b;">${emp.totalKm.toFixed(1)}</strong></div>
+            <div><span>הוצאות:</span> <strong style="color: #1e293b;">${emp.totalExpenses.toFixed(2)} ₪</strong></div>
+          </div>
+          ${canRelease ? `
+            <div style="margin-top: 12px; text-align: center;">
+              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; width: auto;"><i class="fas fa-check-double"></i> סמן כשוחרר</button>` : 
+              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> שוחרר</span>' : '<span style="color: #94a3b8; font-size: 12px;">לא כל הרשומות מאושרות</span>')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+    
     document.getElementById('teamRecordsTable').innerHTML = `
       <div class="team-summary-list">
-        <div class="team-summary-card">
-          <h4>סיכום צוות</h4>
-          <div class="team-summary-row"><span>עובדים</span><strong>${summaryList.length}</strong></div>
-          <div class="team-summary-row"><span>סה"כ שעות</span><strong>${formatHoursDisplay(grandTotalHours)}</strong></div>
-          <div class="team-summary-row"><span>סה"כ ק"מ</span><strong>${grandTotalKm.toFixed(1)}</strong></div>
-          <div class="team-summary-row"><span>סה"כ הוצאות</span><strong>${grandTotalExpenses.toFixed(2)} ₪</strong></div>
+        <div class="team-summary-card" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+          <h4 style="margin: 0 0 10px 0;">סיכום צוות</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
+            <div>עובדים: <strong>${summaryList.length}</strong></div>
+            <div>שעות: <strong>${formatHoursDisplay(grandTotalHours)}</strong></div>
+            <div>ק"מ: <strong>${grandTotalKm.toFixed(1)}</strong></div>
+            <div>הוצאות: <strong>${grandTotalExpenses.toFixed(2)} ₪</strong></div>
+          </div>
         </div>
+        ${employeeCards}
       </div>
     `;
     return;
   }
 
+  const user = getCurrentUserData();
+  const canRelease = user && ['manager', 'operations_controller', 'system_admin'].includes(user.role);
+  
   const tableHTML = `
     <div style="margin-bottom: 15px;">
       <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים</span>
@@ -5776,35 +5829,86 @@ function renderTeamTable(recordsList) {
           <th style="width: 30px;"></th>
           <th>שם עובד</th>
           <th>צוות</th>
-          <th>סוג העסקה</th>
           <th>סה"כ שעות</th>
           <th>סה"כ ק"מ</th>
           <th>סה"כ הוצאות</th>
+          <th>סטטוס רשומות</th>
+          ${canRelease ? '<th>פעולה</th>' : ''}
         </tr>
       </thead>
       <tbody>
-        ${summaryList.map(emp => `
+        ${summaryList.map(emp => {
+          const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
+          const statusText = emp.released ? 'שוחרר לשכר' : (allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`);
+          const statusColor = emp.released ? '#8b5cf6' : (allApproved ? '#22c55e' : '#f59e0b');
+          const canReleaseThis = canRelease && allApproved && !emp.released;
+          return `
           <tr class="employee-summary-row" onclick="showEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
             <td><i class="fas fa-chevron-left"></i></td>
             <td><strong style="color: #3b82f6;">${emp.empName}</strong></td>
             <td>${emp.team || '-'}</td>
-            <td>${emp.employmentType || '-'}</td>
             <td><strong>${formatHoursDisplay(emp.totalHours)}</strong></td>
             <td>${emp.totalKm.toFixed(1)}</td>
             <td>${emp.totalExpenses.toFixed(2)} ₪</td>
+            <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${statusText}</span></td>
+            ${canRelease ? `<td onclick="event.stopPropagation();">
+              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check-double"></i> סמן כשוחרר</button>` : 
+              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> שוחרר</span>' : '<span style="color: #94a3b8; font-size: 11px;">לא כל הרשומות מאושרות</span>')}
+            </td>` : ''}
           </tr>
-        `).join('')}
+        `;}).join('')}
         <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td colspan="4" style="text-align: left;">סה"כ:</td>
+          <td colspan="3" style="text-align: left;">סה"כ:</td>
           <td style="color: #3b82f6;">${formatHoursDisplay(grandTotalHours)}</td>
           <td>${grandTotalKm.toFixed(1)}</td>
           <td>${grandTotalExpenses.toFixed(2)} ₪</td>
+          <td colspan="${canRelease ? 2 : 1}"></td>
         </tr>
       </tbody>
     </table>
   `;
 
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
+}
+
+async function releaseEmployeeToPayroll(employeeId, employeeName) {
+  const user = getCurrentUserData();
+  if (!user || !['manager', 'operations_controller', 'system_admin'].includes(user.role)) {
+    showAlert('אין הרשאה לסמן כשוחרר', 'error');
+    return;
+  }
+  
+  if (!confirm(`האם לסמן את ${employeeName} כשוחרר לשכר?`)) {
+    return;
+  }
+  
+  const monthSelect = document.getElementById('teamMonthFilter');
+  const yearSelect = document.getElementById('teamYearFilter');
+  const month = monthSelect ? parseInt(monthSelect.value) : (new Date().getMonth() + 1);
+  const year = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
+  const monthKey = getApprovalMonthKey(month, year);
+  
+  try {
+    showAlert('מסמן כשוחרר...', 'info');
+    
+    const data = await apiRequest('setmanagerapproval', {
+      employeeId: employeeId,
+      monthKey: monthKey,
+      team: user.team || '',
+      approvedBy: user.empName || user.empNum,
+      released: true
+    });
+    
+    if (data.success) {
+      showAlert(`${employeeName} סומן כשוחרר לשכר!`, 'success');
+      await loadTeamRecords();
+    } else {
+      showAlert(data.message || 'שגיאה בסימון', 'error');
+    }
+  } catch (error) {
+    console.error('Error releasing employee:', error);
+    showAlert('שגיאה בסימון: ' + (error.message || 'נסה שוב'), 'error');
+  }
 }
 
 async function showEmployeeDetails(employeeId) {
@@ -6405,7 +6509,7 @@ function changeRecordsMonth(direction) {
   loadRecordsForMonth();
 }
 
-function loadRecordsForMonth() {
+async function loadRecordsForMonth() {
   // Sync with dashboard selector
   const instrMonthEl = document.getElementById('instructorMonth');
   const instrYearEl = document.getElementById('instructorYear');
@@ -6417,6 +6521,22 @@ function loadRecordsForMonth() {
   }
   if (recYearEl && instrYearEl) {
     instrYearEl.value = recYearEl.value;
+  }
+  
+  // Reload approval status for selected month (instructors only)
+  const user = getCurrentUserData();
+  if (user && user.role === 'instructor') {
+    const selectedMonth = recMonthEl ? parseInt(recMonthEl.value) : (new Date().getMonth() + 1);
+    const selectedYear = recYearEl ? parseInt(recYearEl.value) : new Date().getFullYear();
+    const monthKey = getApprovalMonthKey(selectedMonth, selectedYear);
+    const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
+    
+    try {
+      const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user.team || '');
+      instructorApprovalInfo = { monthKey, approvalDate: approvalStatus.approvalDate || null };
+    } catch (e) {
+      console.error('Error fetching month approval status:', e);
+    }
   }
   
   // Re-render records table
@@ -8591,8 +8711,10 @@ function toggleMobileWeekDetails(empId, startDay, endDay) {
       recordsDiv.innerHTML = weekRecords.map(rec => {
         const date = formatDateHebrew(rec.attendanceDate || rec.date);
         const recId = rec.ID || rec.id || '';
-        const status = rec.status || 'ממתין';
-        const statusColor = status === 'מאושר' ? '#22c55e' : (status === 'נדחה' ? '#ef4444' : '#f59e0b');
+        const statusRaw = (rec.status || 'pending').toLowerCase();
+        const status = statusRaw === 'approved' ? 'מאושר' : (statusRaw === 'rejected' ? 'נדחה' : 'ממתין');
+        const statusColor = statusRaw === 'approved' ? '#22c55e' : (statusRaw === 'rejected' ? '#ef4444' : '#f59e0b');
+        const isApproved = statusRaw === 'approved';
         const hours = parseFloat(rec.workHours || rec.hours || 0).toFixed(1);
         const km = parseFloat(rec.kilometers || rec.km || 0).toFixed(0);
         
@@ -8605,8 +8727,8 @@ function toggleMobileWeekDetails(empId, startDay, endDay) {
             ${rec.activityType || rec.activity || '-'} | ${hours} שעות | ${km} ק"מ
           </div>
           <div style="display: flex; gap: 8px;">
-            <button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="flex: 1; background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-edit"></i> עריכה</button>
-            <button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="flex: 1; background: #22c55e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check"></i> אישור</button>
+            ${!isApproved ? `<button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="flex: 1; background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-edit"></i> עריכה</button>` : ''}
+            ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="flex: 1; background: #22c55e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check"></i> אישור</button>` : '<span style="color: #22c55e; font-size: 12px;"><i class="fas fa-check-circle"></i> אושר</span>'}
           </div>
         </div>`;
       }).join('');
@@ -8778,8 +8900,8 @@ async function approveRecordFromAdmin(recordId) {
       body: JSON.stringify({
         action: 'updaterecord',
         recordId: recordId,
-        status: 'מאושר',
-        approvedBy: user.employeeName || user.employeeId,
+        status: 'approved',
+        approvedBy: user.empName || user.empNum,
         approvedDate: new Date().toISOString()
       })
     });
@@ -8877,8 +8999,10 @@ function toggleAdminEmployeeDetails(empId) {
             <tbody>
               ${records.map(rec => {
                 const recId = rec.ID || rec.id || '';
-                const status = rec.status || 'ממתין';
-                const statusColor = status === 'מאושר' ? '#22c55e' : (status === 'נדחה' ? '#ef4444' : '#f59e0b');
+                const statusRaw = (rec.status || 'pending').toLowerCase();
+                const status = statusRaw === 'approved' ? 'מאושר' : (statusRaw === 'rejected' ? 'נדחה' : 'ממתין');
+                const statusColor = statusRaw === 'approved' ? '#22c55e' : (statusRaw === 'rejected' ? '#ef4444' : '#f59e0b');
+                const isApproved = statusRaw === 'approved';
                 return `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 8px; text-align: right;">${rec.attendanceDate || ''}</td>
@@ -8891,8 +9015,8 @@ function toggleAdminEmployeeDetails(empId) {
                   <td style="padding: 8px; text-align: center;">${(rec.totalExpenses || 0).toFixed(0)} ₪</td>
                   <td style="padding: 8px; text-align: center;"><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${status}</span></td>
                   <td style="padding: 8px; text-align: center; white-space: nowrap;">
-                    <button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;" title="עריכה"><i class="fas fa-edit"></i></button>
-                    <button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="אישור"><i class="fas fa-check"></i></button>
+                    ${!isApproved ? `<button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;" title="עריכה"><i class="fas fa-edit"></i></button>` : ''}
+                    ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="אישור"><i class="fas fa-check"></i></button>` : '<span style="color: #22c55e;"><i class="fas fa-check-circle"></i></span>'}
                   </td>
                 </tr>
               `;}).join('')}
