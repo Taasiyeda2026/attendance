@@ -5762,7 +5762,7 @@ function renderTeamTable(recordsList) {
 
     employeeSummary[empId].totalRecords += Number.isNaN(recordCount) ? 0 : recordCount;
     // Count approved records
-    const statusRaw = (rec.status || 'pending').toLowerCase();
+    const statusRaw = String(rec.status || 'pending').toLowerCase();
     if (statusRaw === 'approved') {
       employeeSummary[empId].approvedRecords += Number.isNaN(recordCount) ? 0 : recordCount;
     }
@@ -5783,7 +5783,7 @@ function renderTeamTable(recordsList) {
     
     const employeeCards = summaryList.map(emp => {
       const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
-      const statusText = emp.released ? 'שוחרר לשכר' : (allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`);
+      const statusText = emp.released ? 'מאושר' : (allApproved ? 'ממתין לאישור' : `${emp.approvedRecords}/${emp.totalRecords}`);
       const statusColor = emp.released ? '#8b5cf6' : (allApproved ? '#22c55e' : '#f59e0b');
       const canReleaseThis = canRelease && allApproved && !emp.released;
       
@@ -5801,8 +5801,8 @@ function renderTeamTable(recordsList) {
           </div>
           ${canRelease ? `
             <div style="margin-top: 12px; text-align: center;">
-              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; width: auto;"><i class="fas fa-check-double"></i> סמן כשוחרר</button>` : 
-              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> שוחרר</span>' : '<span style="color: #94a3b8; font-size: 12px;">לא כל הרשומות מאושרות</span>')}
+              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; width: auto;"><i class="fas fa-check-double"></i> אישור</button>` : 
+              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> מאושר</span>' : '<span style="color: #94a3b8; font-size: 12px;">לא כל הרשומות מאושרות</span>')}
             </div>
           ` : ''}
         </div>
@@ -5849,7 +5849,7 @@ function renderTeamTable(recordsList) {
       <tbody>
         ${summaryList.map(emp => {
           const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
-          const statusText = emp.released ? 'שוחרר לשכר' : (allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`);
+          const statusText = emp.released ? 'מאושר' : (allApproved ? 'ממתין לאישור' : `${emp.approvedRecords}/${emp.totalRecords}`);
           const statusColor = emp.released ? '#8b5cf6' : (allApproved ? '#22c55e' : '#f59e0b');
           const canReleaseThis = canRelease && allApproved && !emp.released;
           return `
@@ -5862,8 +5862,8 @@ function renderTeamTable(recordsList) {
             <td>${emp.totalExpenses.toFixed(2)} ₪</td>
             <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${statusText}</span></td>
             ${canRelease ? `<td onclick="event.stopPropagation();">
-              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check-double"></i> סמן כשוחרר</button>` : 
-              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> שוחרר</span>' : '<span style="color: #94a3b8; font-size: 11px;">לא כל הרשומות מאושרות</span>')}
+              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check-double"></i> אישור</button>` : 
+              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> מאושר</span>' : '<span style="color: #94a3b8; font-size: 11px;">לא כל הרשומות מאושרות</span>')}
             </td>` : ''}
           </tr>
         `;}).join('')}
@@ -5884,11 +5884,11 @@ function renderTeamTable(recordsList) {
 async function releaseEmployeeToPayroll(employeeId, employeeName) {
   const user = getCurrentUserData();
   if (!user || !['manager', 'operations_controller', 'system_admin'].includes(user.role)) {
-    showAlert('אין הרשאה לסמן כשוחרר', 'error');
+    showAlert('אין הרשאה לאשר נוכחות', 'error');
     return;
   }
   
-  if (!confirm(`האם לסמן את ${employeeName} כשוחרר לשכר?`)) {
+  if (!confirm(`האם לאשר את הנוכחות של ${employeeName}?`)) {
     return;
   }
   
@@ -5899,7 +5899,7 @@ async function releaseEmployeeToPayroll(employeeId, employeeName) {
   const monthKey = getApprovalMonthKey(month, year);
   
   try {
-    showAlert('מסמן כשוחרר...', 'info');
+    showAlert('מאשר נוכחות...', 'info');
     
     const data = await apiRequest('setmanagerapproval', {
       employeeId: employeeId,
@@ -5910,7 +5910,7 @@ async function releaseEmployeeToPayroll(employeeId, employeeName) {
     });
     
     if (data.success) {
-      showAlert(`${employeeName} סומן כשוחרר לשכר!`, 'success');
+      showAlert(`הנוכחות של ${employeeName} אושרה!`, 'success');
       await loadTeamRecords();
     } else {
       showAlert(data.message || 'שגיאה בסימון', 'error');
@@ -8721,7 +8721,7 @@ function toggleMobileWeekDetails(empId, startDay, endDay) {
       recordsDiv.innerHTML = weekRecords.map(rec => {
         const date = formatDateHebrew(rec.attendanceDate || rec.date);
         const recId = rec.ID || rec.id || '';
-        const statusRaw = (rec.status || 'pending').toLowerCase();
+        const statusRaw = String(rec.status || 'pending').toLowerCase();
         const status = statusRaw === 'approved' ? 'מאושר' : (statusRaw === 'rejected' ? 'נדחה' : 'ממתין');
         const statusColor = statusRaw === 'approved' ? '#22c55e' : (statusRaw === 'rejected' ? '#ef4444' : '#f59e0b');
         const isApproved = statusRaw === 'approved';
@@ -9009,7 +9009,7 @@ function toggleAdminEmployeeDetails(empId) {
             <tbody>
               ${records.map(rec => {
                 const recId = rec.ID || rec.id || '';
-                const statusRaw = (rec.status || 'pending').toLowerCase();
+                const statusRaw = String(rec.status || 'pending').toLowerCase();
                 const status = statusRaw === 'approved' ? 'מאושר' : (statusRaw === 'rejected' ? 'נדחה' : 'ממתין');
                 const statusColor = statusRaw === 'approved' ? '#22c55e' : (statusRaw === 'rejected' ? '#ef4444' : '#f59e0b');
                 const isApproved = statusRaw === 'approved';
