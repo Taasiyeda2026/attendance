@@ -6951,11 +6951,31 @@ async function addRecord() {
     }
   }
 
+  const storedEmployeeId = localStorage.getItem("employeeId");
+  const storedEmployeeName = localStorage.getItem("employeeName");
+  
+  console.log('=== DEBUG payload creation ===');
+  console.log('localStorage employeeId:', storedEmployeeId);
+  console.log('localStorage employeeName:', storedEmployeeName);
+  console.log('userData empNum:', empNum);
+  console.log('userData empName:', empName);
+  
+  const finalEmployeeId = storedEmployeeId || empNum || '';
+  const finalEmployeeName = storedEmployeeName || empName || '';
+  
+  console.log('Final employeeId:', finalEmployeeId);
+  console.log('Final employeeName:', finalEmployeeName);
+  
+  if (!finalEmployeeId || !finalEmployeeName) {
+    showAlert('שגיאה: חסרים פרטי עובד. נסה להתנתק ולהתחבר מחדש.', 'error');
+    return;
+  }
+  
   const payload = {
     action: isEditing ? "updaterecord" : "submit",
     id: isEditing ? editingId : undefined,
-    employeeId: String(localStorage.getItem("employeeId") || empNum),
-    employeeName: String(localStorage.getItem("employeeName") || empName),
+    employeeId: String(finalEmployeeId),
+    employeeName: String(finalEmployeeName),
     team: String(localStorage.getItem("team") || ''),
     employmentType: String(localStorage.getItem("employmentType") || ''),
     role: String(localStorage.getItem("role") || ''),
