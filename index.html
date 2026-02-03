@@ -5922,15 +5922,18 @@ async function releaseEmployeeToPayroll(employeeId, employeeName) {
 }
 
 async function showEmployeeDetails(employeeId) {
+  console.log('showEmployeeDetails called with:', employeeId);
   if (isMobileView()) {
+    console.log('Mobile view - returning');
     return;
   }
 
   const modal = document.getElementById('employeeDetailsModal');
   const title = document.getElementById('employeeDetailsTitle');
   const content = document.getElementById('employeeDetailsContent');
+  console.log('teamRecordsCache:', teamRecordsCache);
   const employeeSummary = teamRecordsCache.find(rec =>
-    (rec.employeeId || rec.empNum || rec.EmployeeId) === employeeId
+    String(rec.employeeId || rec.empNum || rec.EmployeeId) === String(employeeId)
   );
   const employeeName = employeeSummary?.employeeName || employeeSummary?.empName || employeeSummary?.EmployeeName || '';
 
