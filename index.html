@@ -3735,6 +3735,10 @@ function normalizePayload(action, data) {
       return cleanPayload({
         action: 'updaterecord',
         recordId: data.recordId,
+        employeeId: String(data.employeeId || ''),
+        employeeName: String(data.employeeName || ''),
+        team: String(data.team || ''),
+        employmentType: String(data.employmentType || ''),
         attendanceDate: data.attendanceDate,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -4511,7 +4515,9 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
       action: 'updaterecord',
       recordId: String(recordId),
       employeeId: String(updatedRecord.empNum || updatedRecord.employeeId || localStorage.getItem("employeeId") || ''),
-      employeeName: updatedRecord.empName || updatedRecord.employeeName || localStorage.getItem("employeeName") || '',
+      employeeName: String(updatedRecord.empName || updatedRecord.employeeName || localStorage.getItem("employeeName") || ''),
+      team: String(updatedRecord.team || localStorage.getItem("team") || ''),
+      employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || ''),
       attendanceDate: updatedRecord.date || updatedRecord.attendanceDate,
       startTime: updatedRecord.start || updatedRecord.startTime,
       endTime: updatedRecord.end || updatedRecord.endTime,
@@ -8978,31 +8984,57 @@ async function approveRecordFromAdmin(recordId) {
     return;
   }
   
+  // Find the record in allRecordsData to get full details
+  const record = allRecordsData.find(r => 
+    String(r.ID || r.id || r.recordId) === String(recordId)
+  );
+  
+  if (!record) {
+    showAlert('לא נמצאה הרשומה', 'error');
+    return;
+  }
+  
   try {
     showAlert('מאשר רשומה...', 'info');
     
-    const response = await fetch(LOGIC_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'updaterecord',
-        recordId: recordId,
-        status: 'approved',
-        approvedBy: user.empName || user.empNum,
-        approvedDate: new Date().toISOString()
-      })
-    });
+    // Send full record data to prevent field deletion
+    const payload = {
+      action: 'updaterecord',
+      recordId: String(recordId),
+      employeeId: String(record.employeeId || record.empNum || ''),
+      employeeName: String(record.employeeName || record.empName || ''),
+      team: String(record.team || ''),
+      employmentType: String(record.employmentType || ''),
+      attendanceDate: record.attendanceDate || record.date,
+      startTime: record.startTime || record.start,
+      endTime: record.endTime || record.end,
+      workHours: Number(record.workHours || record.hours) || 0,
+      activityType: String(record.activityType || record.activity || ''),
+      schoolName: String(record.schoolName || record.school || ''),
+      municipality: String(record.municipality || ''),
+      programName: String(record.programName || record.program || ''),
+      sessionNumber: Number(record.sessionNumber || record.session) || 0,
+      kilometers: Number(record.kilometers || record.km) || 0,
+      totalExpenses: Number(record.totalExpenses) || 0,
+      expensesDetails: String(record.expensesDetails || record.expensesDetail || ''),
+      notes: String(record.notes || ''),
+      status: 'approved',
+      approvedBy: user.empName || user.empNum,
+      approvedDate: new Date().toISOString()
+    };
     
-    if (response.ok) {
+    const data = await apiRequest('updaterecord', payload);
+    
+    if (data.success) {
       showAlert('הרשומה אושרה בהצלחה!', 'success');
       // Refresh dashboard
       updateAdminDashboard();
     } else {
-      throw new Error('Failed to approve record');
+      throw new Error(data.message || 'Failed to approve record');
     }
   } catch (error) {
     console.error('Error approving record:', error);
-    showAlert('שגיאה באישור הרשומה', 'error');
+    showAlert('שגיאה באישור הרשומה: ' + (error.message || ''), 'error');
   }
 }
 
