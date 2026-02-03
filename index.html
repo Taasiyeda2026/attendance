@@ -2354,9 +2354,6 @@
       <span id="alertText"></span>
     </div>
 
-    <div class="mobile-info-banner" id="mobileInfoBanner">
-      <span>ℹ️ לתצוגה מלאה – יש להיכנס מהמחשב.</span>
-    </div>
     
     <!-- Dashboard Page -->
     <div id="dashboardPage" class="page">
@@ -7235,9 +7232,13 @@ function renderRecordsTable() {
         </tr>
       </thead>
       <tbody>
-        ${records.map((rec, idx) => `
+        ${filteredRecords.map((rec) => {
+          const originalIdx = records.findIndex(r => 
+            r.date === rec.date && r.empNum === rec.empNum && r.activity === rec.activity && r.hours === rec.hours
+          );
+          return `
           <tr>
-            <td>${rec.date}</td>
+            <td>${rec.date || ''}</td>
             <td style="text-align: center; font-family: 'Courier New', monospace;">
               ${rec.start || '--:--'}
             </td>
@@ -7247,26 +7248,26 @@ function renderRecordsTable() {
             <td style="text-align: center;">
               <strong style="color: #1e40af;">${formatHoursDisplay(rec.hours)}</strong>
             </td>
-            <td>${rec.activity}</td>
+            <td>${rec.activity || ''}</td>
             <td>${rec.school || '-'}</td>
-            <td>${rec.municipality}</td>
+            <td>${rec.municipality || ''}</td>
             <td style="text-align: center;">${rec.km || 0}</td>
             ${showActionsColumn ? `
             <td style="white-space: nowrap;">
               ${canEditRecord(rec) ? `
-              <button onclick="editRecord(${idx})" style="background: #dbeafe; color: #1e40af; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="עריכה">
+              <button onclick="editRecord(${originalIdx})" style="background: #dbeafe; color: #1e40af; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="עריכה">
                 <i class="fas fa-edit"></i>
               </button>
               ` : ''}
               ${canDeleteRecord(rec) ? `
-              <button onclick="deleteRecord(${idx})" style="background: #fecaca; color: #b91c1c; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer;" title="מחיקה">
+              <button onclick="deleteRecord(${originalIdx})" style="background: #fecaca; color: #b91c1c; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer;" title="מחיקה">
                 <i class="fas fa-trash"></i>
               </button>
               ` : ''}
             </td>
             ` : ''}
           </tr>
-        `).join('')}
+        `;}).join('')}
         <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
           <td style="text-align: left; padding-right: 20px;">סה"כ:</td>
           <td></td>
