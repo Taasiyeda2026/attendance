@@ -5442,10 +5442,21 @@ async function loadApprovalsStatusPage() {
               </div>
               <div style="flex: 1; min-width: 120px; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; padding: 8px 12px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 11px; color: ${isReleased ? '#166534' : '#64748b'}; margin-bottom: 3px;">אישור מנהל</div>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; color: ${isReleased ? '#166534' : '#64748b'};">
-                  <i class="fas ${isReleased ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
-                  ${isReleased ? 'אושר' : 'לא אושר'}
-                </div>
+                ${approvalDate ? `
+                  <label style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: ${isReleased ? 'default' : 'pointer'};">
+                    <input type="checkbox" 
+                      ${isReleased ? 'checked disabled' : ''} 
+                      onchange="toggleManagerApproval('${emp.employeeId}', '${monthKey}', this.checked)"
+                      style="width: 16px; height: 16px; accent-color: #22c55e;"
+                      data-testid="checkbox-approval-mobile-${emp.employeeId}"
+                    >
+                    <span style="font-size: 12px; font-weight: 600; color: ${isReleased ? '#166534' : '#64748b'};">
+                      ${isReleased ? 'אושר' : 'אשר'}
+                    </span>
+                  </label>
+                ` : `
+                  <span style="font-size: 12px; color: #94a3b8;">ממתין</span>
+                `}
               </div>
             </div>
           </div>
@@ -5473,10 +5484,21 @@ async function loadApprovalsStatusPage() {
               </span>
             </td>
             <td style="text-align: center;">
-              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; color: ${isReleased ? '#166534' : '#64748b'};">
-                <i class="fas ${isReleased ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
-                ${isReleased ? 'אושר לשכר' : 'לא אושר'}
-              </span>
+              ${approvalDate ? `
+                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: ${isReleased ? 'default' : 'pointer'};">
+                  <input type="checkbox" 
+                    ${isReleased ? 'checked disabled' : ''} 
+                    onchange="toggleManagerApproval('${emp.employeeId}', '${monthKey}', this.checked)"
+                    style="width: 18px; height: 18px; cursor: pointer; accent-color: #22c55e;"
+                    data-testid="checkbox-approval-${emp.employeeId}"
+                  >
+                  <span style="font-size: 13px; color: ${isReleased ? '#16a34a' : '#64748b'};">
+                    ${isReleased ? 'אושר ✓' : 'אשר בדיקה'}
+                  </span>
+                </label>
+              ` : `
+                <span style="color: #94a3b8; font-size: 12px;">ממתין לדיווח</span>
+              `}
             </td>
           </tr>
         `;
@@ -5504,6 +5526,50 @@ async function loadApprovalsStatusPage() {
   });
 
   container.innerHTML = html;
+}
+
+// Toggle manager approval for an employee's monthly report
+async function toggleManagerApproval(employeeId, monthKey, isApproved) {
+  const user = getCurrentUserData();
+  if (!user || !['manager', 'operations_controller', 'system_admin'].includes(user.role)) {
+    showAlert('אין הרשאה לאשר בדיקה', 'error');
+    loadApprovalsStatusPage(); // Refresh to reset checkbox
+    return;
+  }
+  
+  if (!isApproved) {
+    // If unchecking, ask for confirmation
+    if (!confirm('האם לבטל את האישור?')) {
+      loadApprovalsStatusPage(); // Refresh to reset checkbox
+      return;
+    }
+  }
+  
+  try {
+    showAlert(isApproved ? 'מאשר בדיקה...' : 'מבטל אישור...', 'info');
+    
+    const payload = {
+      action: 'setmanagerapproval',
+      employeeId: String(employeeId),
+      monthKey: monthKey,
+      approved: isApproved,
+      approvedBy: user.empName || user.empNum,
+      approvedDate: isApproved ? new Date().toISOString() : null
+    };
+    
+    const data = await apiRequest('setmanagerapproval', payload);
+    
+    if (data.success) {
+      showAlert(isApproved ? 'העובד אושר בהצלחה! ✓' : 'האישור בוטל', 'success');
+      loadApprovalsStatusPage(); // Refresh the table
+    } else {
+      throw new Error(data.message || 'שגיאה באישור');
+    }
+  } catch (error) {
+    console.error('Error toggling manager approval:', error);
+    showAlert('שגיאה: ' + (error.message || 'לא ניתן לעדכן אישור'), 'error');
+    loadApprovalsStatusPage(); // Refresh to reset checkbox
+  }
 }
 
 // Approve month to payroll - sends to admin for salary processing
@@ -8984,13 +9050,14 @@ async function approveRecordFromAdmin(recordId) {
     return;
   }
   
-  // Find the record in allRecordsData to get full details
-  const record = allRecordsData.find(r => 
+  // Find the record in teamRecordsCache to get full details
+  const record = (typeof teamRecordsCache !== 'undefined' ? teamRecordsCache : []).find(r => 
     String(r.ID || r.id || r.recordId) === String(recordId)
   );
   
   if (!record) {
-    showAlert('לא נמצאה הרשומה', 'error');
+    console.error('Record not found in cache, recordId:', recordId);
+    showAlert('לא נמצאה הרשומה במטמון. נסה לרענן את הדף.', 'error');
     return;
   }
   
