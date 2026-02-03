@@ -2602,36 +2602,39 @@
         </div>
       </div>
 
-      <!-- Monthly Approval (Instructor only) - Current Month -->
-      <div class="content-card" id="monthlyApprovalCard" style="margin-top: 24px; display: none;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <h2 class="card-title"><i class="fas fa-calendar-check" style="margin-left: 8px; color: #3b82f6;"></i>סיום דיווח חודשי</h2>
-          <span id="monthlyApprovalMonthLabel" style="color: #64748b; font-size: 13px;"></span>
-        </div>
-        <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-          <div id="monthlyApprovalStatus" style="color: #475569; font-size: 14px;">טוען סטטוס...</div>
-          <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport('current')">
-            <i class="fas fa-check-circle"></i>
-            סיום דיווח חודשי
-          </button>
-        </div>
-      </div>
-      
-      <!-- Monthly Approval (Instructor only) - Previous Month (Grace Period) -->
-      <div class="content-card" id="previousMonthApprovalCard" style="margin-top: 16px; display: none; border: 2px solid #f97316; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <h2 class="card-title" style="color: #ea580c;"><i class="fas fa-exclamation-triangle" style="margin-left: 8px; color: #f97316;"></i>חודש קודם - טרם אושר!</h2>
-          <span id="previousMonthApprovalMonthLabel" style="color: #ea580c; font-size: 13px; font-weight: 600;"></span>
-        </div>
-        <div class="card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-          <div id="previousMonthApprovalStatus" style="color: #c2410c; font-size: 14px;">
-            <i class="fas fa-clock" style="margin-left: 5px;"></i>
-            <span id="gracePeriodDaysLeft"></span>
+      <!-- Monthly Approval Cards Container -->
+      <div id="monthlyApprovalContainer" style="display: none; margin-top: 24px; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+        <!-- Current Month Card -->
+        <div class="content-card" id="monthlyApprovalCard" style="margin: 0; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 14px; color: #1e293b; margin: 0;"><i class="fas fa-calendar-check" style="margin-left: 6px; color: #3b82f6;"></i>סיום דיווח חודשי</h3>
+            <span id="monthlyApprovalMonthLabel" style="color: #64748b; font-size: 12px;"></span>
           </div>
-          <button class="btn btn-warning" id="previousMonthApprovalBtn" onclick="approveMonthlyReport('previous')" style="background: #f97316; border-color: #ea580c;">
-            <i class="fas fa-check-circle"></i>
-            אשר חודש קודם
-          </button>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div id="monthlyApprovalStatus" style="color: #475569; font-size: 13px;">טוען...</div>
+            <button class="btn btn-approve" id="monthlyApprovalBtn" onclick="approveMonthlyReport('current')" style="padding: 6px 12px; font-size: 12px;">
+              <i class="fas fa-check-circle"></i>
+              סיום דיווח
+            </button>
+          </div>
+        </div>
+        
+        <!-- Previous Month Card (Grace Period) -->
+        <div class="content-card" id="previousMonthApprovalCard" style="margin: 0; padding: 12px; display: none; border: 2px solid #f97316; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 14px; color: #ea580c; margin: 0;"><i class="fas fa-exclamation-triangle" style="margin-left: 6px; color: #f97316;"></i>חודש קודם</h3>
+            <span id="previousMonthApprovalMonthLabel" style="color: #ea580c; font-size: 12px; font-weight: 600;"></span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div id="previousMonthApprovalStatus" style="color: #c2410c; font-size: 13px;">
+              <i class="fas fa-clock" style="margin-left: 4px;"></i>
+              <span id="gracePeriodDaysLeft"></span>
+            </div>
+            <button class="btn btn-warning" id="previousMonthApprovalBtn" onclick="approveMonthlyReport('previous')" style="background: #f97316; border-color: #ea580c; padding: 6px 12px; font-size: 12px;">
+              <i class="fas fa-check-circle"></i>
+              אשר חודש
+            </button>
+          </div>
         </div>
       </div>
       
@@ -4950,15 +4953,22 @@ async function ensureMonthEditable(employeeId, dateString) {
 
 function updateMonthlyApprovalVisibility() {
   const user = getCurrentUserData();
+  const approvalContainer = document.getElementById('monthlyApprovalContainer');
   const instructorCard = document.getElementById('monthlyApprovalCard');
   const approvalsCard = document.getElementById('monthlyApprovalsCard');
   const resetButton = document.getElementById('resetMonthBtn');
   const unlockButton = document.getElementById('unlockMonthBtn');
 
   if (!user) {
+    if (approvalContainer) approvalContainer.style.display = 'none';
     if (instructorCard) instructorCard.style.display = 'none';
     if (approvalsCard) approvalsCard.style.display = 'none';
     return;
+  }
+
+  // Show container with grid for instructors
+  if (approvalContainer) {
+    approvalContainer.style.display = user.role === 'instructor' ? 'grid' : 'none';
   }
 
   if (instructorCard) {
