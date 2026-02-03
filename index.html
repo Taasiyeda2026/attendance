@@ -6373,6 +6373,10 @@ function updateStats() {
   
   console.log('updateStats - instrMonthEl value:', instrMonthEl ? instrMonthEl.value : 'not found');
   console.log('updateStats - instrYearEl value:', instrYearEl ? instrYearEl.value : 'not found');
+  console.log('updateStats - total records in memory:', records.length);
+  if (records.length > 0) {
+    console.log('updateStats - sample record dates:', records.slice(0, 3).map(r => r.date));
+  }
   
   const currentMonth = instrMonthEl ? parseInt(instrMonthEl.value) - 1 : now.getMonth();
   const currentYear = instrYearEl ? parseInt(instrYearEl.value) : now.getFullYear();
@@ -6485,7 +6489,7 @@ function changeInstructorMonth(direction) {
   loadInstructorMonthData();
 }
 
-function loadInstructorMonthData() {
+async function loadInstructorMonthData() {
   // Sync with records page selector
   const instrMonthEl = document.getElementById('instructorMonth');
   const instrYearEl = document.getElementById('instructorYear');
@@ -6498,6 +6502,10 @@ function loadInstructorMonthData() {
   if (instrYearEl && recYearEl) {
     recYearEl.value = instrYearEl.value;
   }
+  
+  // Reload records from server to ensure we have all months
+  console.log('loadInstructorMonthData - reloading records from server');
+  await loadMyRecordsFromServer();
   
   // Update stats and summary table with filtered month
   updateStats();
