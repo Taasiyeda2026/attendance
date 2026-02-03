@@ -4482,8 +4482,13 @@ async function loadMyRecordsFromServer() {
 }
 
 async function updateRecordOnServer(updatedRecord, originalDate, originalStartTime) {
-  if (!updatedRecord.recordId) {
+  console.log('updateRecordOnServer called with:', updatedRecord);
+  console.log('recordId:', updatedRecord.recordId, 'id:', updatedRecord.id, 'ID:', updatedRecord.ID);
+  
+  const recordId = updatedRecord.recordId || updatedRecord.id || updatedRecord.ID;
+  if (!recordId) {
     console.error('Cannot update record: missing recordId');
+    showAlert('שגיאה: חסר מזהה רשומה. נסה לרענן את הדף.', 'error');
     return false;
   }
   
@@ -4498,8 +4503,8 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     
     const payload = {
       action: 'updaterecord',
-      recordId: updatedRecord.recordId,
-      employeeId: updatedRecord.empNum || updatedRecord.employeeId || localStorage.getItem("employeeId") || '',
+      recordId: String(recordId),
+      employeeId: String(updatedRecord.empNum || updatedRecord.employeeId || localStorage.getItem("employeeId") || ''),
       employeeName: updatedRecord.empName || updatedRecord.employeeName || localStorage.getItem("employeeName") || '',
       attendanceDate: updatedRecord.date || updatedRecord.attendanceDate,
       startTime: updatedRecord.start || updatedRecord.startTime,
@@ -4534,8 +4539,10 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
 }
 
 async function deleteRecordOnServer(record) {
-  if (!record.recordId) {
+  const recordId = record.recordId || record.id || record.ID;
+  if (!recordId) {
     console.error('Cannot delete record: missing recordId');
+    showAlert('שגיאה: חסר מזהה רשומה', 'error');
     return false;
   }
   
@@ -4550,7 +4557,7 @@ async function deleteRecordOnServer(record) {
     
     const payload = {
       action: 'deleterecord',
-      recordId: record.recordId
+      recordId: String(recordId)
     };
     
     const data = await apiRequest('deleterecord', payload);
