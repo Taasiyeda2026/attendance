@@ -6246,9 +6246,9 @@ function renderTeamTable(recordsList) {
   // Group by employee and calculate summary
   const employeeSummary = {};
   recordsList.forEach(rec => {
-    const empId = rec.employeeId || rec.empNum || rec.EmployeeId;
-    const empName = rec.employeeName || rec.empName || rec.EmployeeName || 'לא ידוע';
-    const team = rec.team || rec.Team || '-';
+    const empId = extractLookupValue(rec.employeeId || rec.empNum || rec.EmployeeId, '');
+    const empName = extractLookupValue(rec.employeeName || rec.empName || rec.EmployeeName, 'לא ידוע');
+    const team = extractLookupValue(rec.team || rec.Team, '-');
     const empType = normalizeEmploymentType(rec, '');
     const hours = parseFloat(rec.totalHours || rec.workHours || rec.hours || rec.WorkHours || 0);
     const km = parseFloat(rec.totalKm || rec.kilometers || rec.km || rec.Kilometers || 0);
