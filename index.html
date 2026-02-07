@@ -3706,7 +3706,6 @@ function normalizeEmploymentType(source, defaultValue = '') {
       const value = extractFromFieldObject(field) || extractLookupValue(field, '');
       if (value && typeof value === 'string' && value.trim()) {
         extractedValue = value;
-        console.log('Found employmentType value:', value);
         break;
       }
     }
@@ -3714,14 +3713,11 @@ function normalizeEmploymentType(source, defaultValue = '') {
     extractedValue = extractLookupValue(source, '');
   }
 
-  // Validate against allowed EMPLOYMENT_TYPES list
-  if (extractedValue && EMPLOYMENT_TYPES.includes(extractedValue)) {
+  if (extractedValue && extractedValue.trim()) {
+    if (!EMPLOYMENT_TYPES.includes(extractedValue)) {
+      console.warn('Employment type not in list:', extractedValue, '- using as-is');
+    }
     return extractedValue;
-  }
-
-  // If extracted value doesn't match, log warning and return default
-  if (extractedValue && !EMPLOYMENT_TYPES.includes(extractedValue)) {
-    console.warn('Invalid employment type value:', extractedValue, '- using default:', defaultValue);
   }
 
   return defaultValue;
@@ -3813,6 +3809,11 @@ function normalizePayload(action, data) {
         action: 'getteamapprovalstatus',
         team: data.team || 'all',
         monthKey: data.monthKey || data.month || ''
+      };
+      
+    case 'getallemployees':
+      return {
+        action: 'getallemployees'
       };
       
     case 'updaterecord':
@@ -3914,39 +3915,13 @@ function normalizePayload(action, data) {
 function normalizeEmployeeFromServer(emp) {
   if (!emp) return null;
   
-  // Log all employee fields to find employmentType
-  console.log('=== Employee data from server ===');
-  console.log('All fields:', Object.keys(emp));
-  console.log('Full employee object:', JSON.stringify(emp, null, 2));
-  
-  // Check ALL fields that might contain employment type
-  console.log('=== Checking ALL possible EmploymentType fields ===');
-  const allFields = Object.keys(emp);
-  const empTypeFields = allFields.filter(k => 
-    k.toLowerCase().includes('employ') || 
-    k.toLowerCase().includes('type') ||
-    k.toLowerCase().includes('haasaka') ||
-    k.toLowerCase().includes('העסקה')
-  );
-  console.log('Potential employmentType fields found:', empTypeFields);
-  empTypeFields.forEach(f => console.log(`  ${f}:`, emp[f]));
-  
-  // Direct check for EmploymentType
-  console.log('=== Direct field check ===');
-  console.log('emp.EmploymentType =', emp.EmploymentType);
-  console.log('emp.employmentType =', emp.employmentType);
-  console.log('typeof emp.EmploymentType =', typeof emp.EmploymentType);
-  
-  const empType = normalizeEmploymentType(emp, 'תעשיידע');
-  console.log('Normalized employmentType result:', empType);
+  const empType = normalizeEmploymentType(emp, '');
   
   // Extract employee name - try all possible field names from SharePoint
   const empName = emp.EmployeeName || emp.employeeName || emp.Title || emp.title || '';
-  console.log('Extracted empName:', empName);
   
   // Extract employee ID - try all possible field names
   const empId = emp.employeeId || emp.EmployeeId || emp.ID || emp.Id || emp.id || '';
-  console.log('Extracted empId:', empId);
   
   return {
     employeeId: empId,
@@ -5682,6 +5657,9 @@ async function loadApprovalsStatusPage() {
   });
 
   if (instructorsOnly.length === 0) {
+    hideLoadingBar();
+    setSilentLoading(container.id, false);
+    if (dashboardContainer && dashboardContainer !== container) setSilentLoading(dashboardContainer.id, false);
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין מדריכים להצגה</p>';
     if (dashboardContainer && dashboardContainer !== container) dashboardContainer.innerHTML = container.innerHTML;
     return;
@@ -6209,16 +6187,18 @@ async function loadTeamRecords(resetFilters = false) {
       
       // Manager always sees only their own team
       if (user.role === 'manager' && user.team) {
+        const managerTeam = user.team.trim().toLowerCase();
         filteredRecords = data.records.filter(rec => {
-          const recTeam = (rec.team || rec.Team || '').trim().toLowerCase();
-          return recTeam === (user.team || '').trim().toLowerCase();
+          const recTeam = extractLookupValue(rec.team || rec.Team || '', '').trim().toLowerCase();
+          return recTeam === managerTeam;
         });
       }
       // Admin/operations_controller can filter by selected team
       else if (selectedTeamFilter !== 'all' && (user.role === 'system_admin' || user.role === 'operations_controller')) {
+        const filterTeam = selectedTeamFilter.trim().toLowerCase();
         filteredRecords = data.records.filter(rec => {
-          const recTeam = (rec.team || rec.Team || '').trim().toLowerCase();
-          return recTeam === selectedTeamFilter.trim().toLowerCase();
+          const recTeam = extractLookupValue(rec.team || rec.Team || '', '').trim().toLowerCase();
+          return recTeam === filterTeam;
         });
       }
       
@@ -6269,7 +6249,7 @@ function renderTeamTable(recordsList) {
     const empId = rec.employeeId || rec.empNum || rec.EmployeeId;
     const empName = rec.employeeName || rec.empName || rec.EmployeeName || 'לא ידוע';
     const team = rec.team || rec.Team || '-';
-    const empType = normalizeEmploymentType(rec, 'תעשיידע');
+    const empType = normalizeEmploymentType(rec, '');
     const hours = parseFloat(rec.totalHours || rec.workHours || rec.hours || rec.WorkHours || 0);
     const km = parseFloat(rec.totalKm || rec.kilometers || rec.km || rec.Kilometers || 0);
     const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
@@ -7178,7 +7158,7 @@ async function updatePayrollSummaryTable() {
     
     // Update team if empty
     if (!instructorData[name].team && rec.team) {
-      instructorData[name].team = rec.team;
+      instructorData[name].team = extractLookupValue(rec.team, '');
     }
   });
   
@@ -9035,6 +9015,27 @@ async function updateAdminDashboard() {
   
   let employeesMap = {};
   
+  // Fetch employees list for employmentType data
+  try {
+    const empData = await apiRequest('getallemployees', {});
+    if (empData.success && Array.isArray(empData.employees)) {
+      empData.employees.forEach(emp => {
+        const empId = emp.employeeId || emp.EmployeeId || '';
+        if (empId) {
+          employeesMap[empId] = {
+            name: emp.employeeName || emp.EmployeeName || emp.Title || '',
+            team: extractLookupValue(emp.Team || emp.team || '', ''),
+            employmentType: normalizeEmploymentType(emp, ''),
+            role: emp.role || ''
+          };
+        }
+      });
+      console.log('Loaded employeesMap with', Object.keys(employeesMap).length, 'employees');
+    }
+  } catch (e) {
+    console.warn('Could not load employees list:', e.message);
+  }
+  
   // Fetch all records from server
   try {
     const data = await apiRequest('getsummary', {});
@@ -9095,7 +9096,7 @@ async function updateAdminDashboard() {
       // Try to get employmentType and team from employees list first
       const empFromList = employeesMap[empId];
       const team = (empFromList && empFromList.team) || extractValue(rec.team) || extractValue(rec.Team) || '-';
-      const empType = (empFromList && empFromList.employmentType) || normalizeEmploymentType(rec, 'תעשיידע');
+      const empType = (empFromList && empFromList.employmentType) || normalizeEmploymentType(rec, '');
       
       if (!employeeData[empId]) {
         employeeData[empId] = {
@@ -9111,7 +9112,7 @@ async function updateAdminDashboard() {
         };
       } else {
         // עדכן employmentType רק אם הנוכחי לא ריק והשמור הוא ברירת מחדל
-        if (empType && empType !== 'תעשיידע' && employeeData[empId].employmentType === 'תעשיידע') {
+        if (empType && empType !== '' && (!employeeData[empId].employmentType || employeeData[empId].employmentType === '')) {
           employeeData[empId].employmentType = empType;
         }
         // עדכן team רק אם הנוכחי לא ריק והשמור ריק
@@ -9147,7 +9148,10 @@ async function updateAdminDashboard() {
     }
     
     if (filterTeam !== 'all') {
-      filteredEmployees = filteredEmployees.filter(emp => emp.team === filterTeam);
+      filteredEmployees = filteredEmployees.filter(emp => {
+        const empTeam = (emp.team || '').trim().toLowerCase();
+        return empTeam === filterTeam.trim().toLowerCase();
+      });
     }
     
     // Sort by name
@@ -10049,18 +10053,27 @@ async function loadReportData() {
     
     // Manager can only see their own team
     if (user.role === 'manager') {
-      const managerTeam = user.team || localStorage.getItem('team') || '';
+      const managerTeam = (user.team || localStorage.getItem('team') || '').trim().toLowerCase();
       if (managerTeam) {
-        reportRecords = reportRecords.filter(rec => rec.team === managerTeam);
+        reportRecords = reportRecords.filter(rec => {
+          const recTeam = extractLookupValue(rec.team, '').trim().toLowerCase();
+          return recTeam === managerTeam;
+        });
       }
     }
     
     if (employmentType !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
+      reportRecords = reportRecords.filter(rec => {
+        const recType = extractLookupValue(rec.employmentType, '');
+        return recType === employmentType;
+      });
     }
     
     if (team !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.team === team);
+      reportRecords = reportRecords.filter(rec => {
+        const recTeam = extractLookupValue(rec.team, '').trim().toLowerCase();
+        return recTeam === team.trim().toLowerCase();
+      });
     }
     
     if (activityType !== 'all') {
