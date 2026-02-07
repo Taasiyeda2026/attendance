@@ -942,6 +942,28 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    .silent-loading {
+      opacity: 0.5;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    @keyframes subtleLoadBar {
+      0% { width: 5%; opacity: 0.7; }
+      50% { width: 70%; opacity: 1; }
+      100% { width: 95%; opacity: 0.7; }
+    }
+
+    .loading-bar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      z-index: 99999;
+      animation: subtleLoadBar 1.8s ease-in-out infinite;
+    }
+
     /* Hide floating submit on desktop */
     .mobile-floating-submit {
       display: none;
@@ -1033,6 +1055,14 @@
       }
     }
 
+    /* ============= Desktop default - hide mobile, show desktop ============= */
+    .admin-mobile-view {
+      display: none;
+    }
+    .admin-desktop-view {
+      display: block;
+    }
+    
     /* ============= MOBILE RESPONSIVE - 768px ============= */
     @media (max-width: 768px) {
       /* Base */
@@ -2281,17 +2311,9 @@
         <i class="fas fa-list"></i>
         <span>הרשומות שלי</span>
       </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'team-records')" data-roles="manager,operations_controller,system_admin,payroll_officer">
-        <i class="fas fa-users"></i>
-        <span>סיכום נוכחות</span>
-      </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'reports')" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-file-alt"></i>
         <span>דוחות</span>
-      </a>
-      <a href="#" class="nav-item" onclick="showPage(event, 'approvals-status')" data-roles="manager,operations_controller,payroll_officer,system_admin">
-        <i class="fas fa-clipboard-check"></i>
-        <span>סטטוס אישורים</span>
       </a>
       <a href="#" class="nav-item" onclick="showPage(event, 'admin')" data-roles="system_admin">
         <i class="fas fa-cog"></i>
@@ -2322,17 +2344,9 @@
         <i class="fas fa-list"></i>
         <span>רשומות</span>
       </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('team-records')" id="mobileNavTeamRecords" data-roles="manager,operations_controller,system_admin,payroll_officer">
-        <i class="fas fa-users"></i>
-        <span>צוות</span>
-      </button>
       <button class="mobile-nav-item" onclick="mobileNavTo('reports')" id="mobileNavReports" data-roles="manager,operations_controller,system_admin,payroll_officer">
         <i class="fas fa-chart-bar"></i>
         <span>דוחות</span>
-      </button>
-      <button class="mobile-nav-item" onclick="mobileNavTo('approvals-status')" id="mobileNavApprovals" data-roles="manager,operations_controller,payroll_officer,system_admin">
-        <i class="fas fa-check-double"></i>
-        <span>אישורים</span>
       </button>
       <button class="mobile-nav-item" onclick="mobileNavTo('admin')" id="mobileNavAdmin" data-roles="system_admin">
         <i class="fas fa-cog"></i>
@@ -2416,6 +2430,22 @@
 
       <!-- Admin/Controller Dashboard (All Employees Summary) -->
       <div id="adminControllerDashboard" style="display: none;">
+        <!-- Monthly Approvals Status Card (moved from teamRecordsPage) -->
+        <div class="content-card" id="dashboardApprovalsCard" style="margin-bottom: 20px;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2 class="card-title"><i class="fas fa-user-check" style="margin-left: 8px; color: #3b82f6;"></i>סטטוס אישורי חודש</h2>
+            <button class="btn btn-primary" onclick="loadApprovalsStatusPage()">
+              <i class="fas fa-sync-alt"></i>
+              רענן סטטוס
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="dashboardApprovalsContent">
+              <p style="text-align: center; color: #94a3b8; padding: 30px;">טוען סטטוס אישורים...</p>
+            </div>
+          </div>
+        </div>
+
         <div class="content-card">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <h2 class="card-title"><i class="fas fa-users-cog" style="margin-left: 8px; color: #3b82f6;"></i>סיכום כל העובדים - חודש נוכחי</h2>
@@ -2490,7 +2520,7 @@
           </div>
           
           <!-- Mobile Cards View -->
-          <div id="adminMobileCardsContainer" class="admin-mobile-view" style="display: none; padding: 15px;">
+          <div id="adminMobileCardsContainer" class="admin-mobile-view" style="padding: 15px;">
             <!-- יתמלא ע"י JavaScript -->
           </div>
         </div>
@@ -2604,7 +2634,7 @@
         <!-- Current Month Card -->
         <div class="content-card" id="monthlyApprovalCard" style="margin: 0; padding: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h3 style="font-size: 14px; color: #1e293b; margin: 0;"><i class="fas fa-calendar-check" style="margin-left: 6px; color: #3b82f6;"></i>סיום דיווח חודשי</h3>
+            <h3 style="font-size: 14px; color: #1e293b; margin: 0;"><i class="fas fa-calendar-check" style="margin-left: 6px; color: #3b82f6;"></i>סיום דיווח חודשי (עד 2 בחודש)</h3>
             <span id="monthlyApprovalMonthLabel" style="color: #64748b; font-size: 12px;"></span>
           </div>
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
@@ -2989,11 +3019,11 @@
             </button>
             <button class="btn btn-success" id="approveToPayrollBtn" onclick="approveMonthToPayroll()" style="display: none;">
               <i class="fas fa-check-double"></i>
-              אישור דיווח לשכר
+              אישור נוכחות חודשית
             </button>
             <button class="btn btn-warning" id="resetMonthBtn" onclick="resetTeamMonth()" style="display: none;">
               <i class="fas fa-unlock"></i>
-              שחרור חודש
+              איפוס חודש
             </button>
             <button class="btn btn-danger" id="unlockMonthBtn" onclick="unlockTeamMonth()" style="display: none;">
               <i class="fas fa-lock-open"></i>
@@ -3577,6 +3607,44 @@ function formatHoursDisplay(decimalHours) {
   return `${hours}:${minutes.toString().padStart(2, '0')}`;
 }
 
+// =============== Helper: Extract Status Value (handles string, object, and Choice fields) ===============
+function extractStatusValue(statusField, defaultValue = 'pending') {
+  if (!statusField) return defaultValue;
+  if (typeof statusField === 'object' && statusField.Value) return statusField.Value;
+  if (typeof statusField === 'string') return statusField;
+  return defaultValue;
+}
+
+function deriveRecordStatus(record) {
+  const statusVal = extractStatusValue(record?.status || record?.Status, '').toLowerCase();
+  if (statusVal === 'approved' || statusVal === 'מאושר') return 'approved';
+  if (statusVal === 'rejected' || statusVal === 'נדחה') return 'rejected';
+  const approvedBy = record?.approvedBy || record?.ApprovedBy || '';
+  if (approvedBy && String(approvedBy).trim() !== '') return 'approved';
+  return 'pending';
+}
+
+function getStatusDisplayText(statusFieldOrRecord) {
+  if (statusFieldOrRecord && typeof statusFieldOrRecord === 'object' && ('approvedBy' in statusFieldOrRecord || 'ApprovedBy' in statusFieldOrRecord || 'employeeId' in statusFieldOrRecord)) {
+    const val = deriveRecordStatus(statusFieldOrRecord);
+    if (val === 'approved') return 'מאושר';
+    if (val === 'rejected') return 'נדחה';
+    return 'ממתין';
+  }
+  const val = extractStatusValue(statusFieldOrRecord, 'pending').toLowerCase();
+  if (val === 'approved' || val === 'מאושר') return 'מאושר';
+  if (val === 'rejected' || val === 'נדחה') return 'נדחה';
+  return 'ממתין';
+}
+
+function isStatusApproved(statusFieldOrRecord) {
+  if (statusFieldOrRecord && typeof statusFieldOrRecord === 'object' && ('approvedBy' in statusFieldOrRecord || 'ApprovedBy' in statusFieldOrRecord || 'employeeId' in statusFieldOrRecord)) {
+    return deriveRecordStatus(statusFieldOrRecord) === 'approved';
+  }
+  const val = extractStatusValue(statusFieldOrRecord, '').toLowerCase();
+  return val === 'מאושר' || val === 'approved';
+}
+
 // =============== Helper: Extract SharePoint Lookup Value ===============
 function extractLookupValue(field, defaultValue = '') {
   if (!field) return defaultValue;
@@ -3601,36 +3669,45 @@ function normalizeEmploymentType(source, defaultValue = '') {
 
   let extractedValue = '';
 
-  if (typeof source === 'object') {
-    if (source.Value || source.Label) {
-      extractedValue = source.Value || source.Label || '';
-    } else {
-      // Log specifically what we're checking
-      console.log('Checking EmploymentType field:', {
-        'employmentType': source.employmentType,
-        'EmploymentType': source.EmploymentType,
-        'field_OData_EmploymentType': source.field_OData_EmploymentType,
-        'OData__EmploymentType': source.OData__EmploymentType
-      });
-      
-      const possibleFields = [
-        source.employmentType,
-        source.EmploymentType,
-        source.EmployeeType,
-        source.employeeType,
-        source['Employment_x0020_Type'],
-        source.SogHaasaka,
-        source.field_OData_EmploymentType,
-        source.OData__EmploymentType
-      ];
+  // Helper to extract value from SharePoint lookup/choice field objects
+  const extractFromFieldObject = (obj) => {
+    if (!obj) return '';
+    if (typeof obj === 'string') return obj;
+    if (typeof obj !== 'object') return '';
+    // Try all possible object formats from SharePoint lookup/choice fields
+    const val = obj.Value || obj.value || obj.Label || obj.label || 
+                obj.LookupValue || obj.lookupValue ||
+                obj.results?.[0] || obj.Results?.[0] || '';
+    if (typeof val === 'object') {
+      // Nested object - try again
+      return extractFromFieldObject(val);
+    }
+    return val ? String(val) : '';
+  };
 
-      for (const field of possibleFields) {
-        const value = extractLookupValue(field, '');
-        if (value) {
-          extractedValue = value;
-          console.log('Found employmentType value:', value);
-          break;
-        }
+  if (typeof source === 'object') {
+    // Check known employmentType fields only (don't extract from whole record)
+    const possibleFields = [
+      source.employmentType,
+      source.EmploymentType,
+      source.EmployeeType,
+      source.employeeType,
+      source['Employment_x0020_Type'],
+      source.SogHaasaka,
+      source.field_OData_EmploymentType,
+      source.OData__EmploymentType,
+      source.OData__x0045_mploymentType,
+      source['OData__EmploymentType'],
+      source['field@odata.EmploymentType'],
+      source.Title_EmploymentType
+    ];
+
+    for (const field of possibleFields) {
+      const value = extractFromFieldObject(field) || extractLookupValue(field, '');
+      if (value && typeof value === 'string' && value.trim()) {
+        extractedValue = value;
+        console.log('Found employmentType value:', value);
+        break;
       }
     }
   } else {
@@ -3665,9 +3742,16 @@ function isValidActivityType(activityType) {
  */
 function normalizePayload(action, data) {
   const cleanPayload = (payload) => {
-    return Object.fromEntries(
-      Object.entries(payload).filter(([_, value]) => value !== '' && value !== null && value !== undefined)
-    );
+    // Replace null/undefined with empty string, keep all fields for SharePoint
+    const cleaned = {};
+    for (const [key, value] of Object.entries(payload)) {
+      if (value === null || value === undefined) {
+        cleaned[key] = '';
+      } else {
+        cleaned[key] = value;
+      }
+    }
+    return cleaned;
   };
 
   const normalizedAction = String(action || '').toLowerCase();
@@ -3740,8 +3824,8 @@ function normalizePayload(action, data) {
         team: String(data.team || ''),
         employmentType: String(data.employmentType || ''),
         attendanceDate: data.attendanceDate,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        startTime: data.startTime || '',
+        endTime: data.endTime || '',
         workHours: Number(data.workHours || 0),
         activityType: String(data.activityType || ''),
         schoolName: String(data.schoolName || ''),
@@ -3752,7 +3836,10 @@ function normalizePayload(action, data) {
         totalExpenses: Number(data.totalExpenses || 0),
         expensesDetails: String(data.expensesDetails || ''),
         notes: String(data.notes || ''),
-        status: data.status
+        status: data.status || 'pending',
+        approvedBy: String(data.approvedBy || ''),
+        approvedDate: String(data.approvedDate || ''),
+        attachmentsNames: String(data.attachmentsNames || '')
       });
       
     case 'deleterecord':
@@ -3809,6 +3896,13 @@ function normalizePayload(action, data) {
         monthKey: data.monthKey || data.month
       };
       
+    case 'cancelinstructorapproval':
+      return {
+        action: 'cancelinstructorapproval',
+        employeeId: data.employeeId,
+        monthKey: data.monthKey || data.month
+      };
+      
     default:
       throw new Error(`Unsupported action: ${normalizedAction}`);
   }
@@ -3825,8 +3919,26 @@ function normalizeEmployeeFromServer(emp) {
   console.log('All fields:', Object.keys(emp));
   console.log('Full employee object:', JSON.stringify(emp, null, 2));
   
+  // Check ALL fields that might contain employment type
+  console.log('=== Checking ALL possible EmploymentType fields ===');
+  const allFields = Object.keys(emp);
+  const empTypeFields = allFields.filter(k => 
+    k.toLowerCase().includes('employ') || 
+    k.toLowerCase().includes('type') ||
+    k.toLowerCase().includes('haasaka') ||
+    k.toLowerCase().includes('העסקה')
+  );
+  console.log('Potential employmentType fields found:', empTypeFields);
+  empTypeFields.forEach(f => console.log(`  ${f}:`, emp[f]));
+  
+  // Direct check for EmploymentType
+  console.log('=== Direct field check ===');
+  console.log('emp.EmploymentType =', emp.EmploymentType);
+  console.log('emp.employmentType =', emp.employmentType);
+  console.log('typeof emp.EmploymentType =', typeof emp.EmploymentType);
+  
   const empType = normalizeEmploymentType(emp, 'תעשיידע');
-  console.log('Normalized employmentType:', empType);
+  console.log('Normalized employmentType result:', empType);
   
   // Extract employee name - try all possible field names from SharePoint
   const empName = emp.EmployeeName || emp.employeeName || emp.Title || emp.title || '';
@@ -3870,7 +3982,7 @@ function normalizeRecordFromServer(rec) {
     team: rec.team || rec.Team || '',
     employmentType: normalizeEmploymentType(rec, ''),
     attachmentsNames: rec.attachmentsNames || rec.AttachmentsNames || '',
-    status: rec.status || rec.Status || '',
+    status: deriveRecordStatus(rec),
     approvedBy: rec.approvedBy || rec.ApprovedBy || '',
     approvedDate: rec.approvedDate || rec.ApprovedDate || '',
     rejectReason: rec.rejectReason || rec.RejectReason || '',
@@ -3938,17 +4050,25 @@ async function apiRequest(action, data, retryCount = 0) {
 // =============== Schools Data ===============
 const schoolsData = [
   {"רשות":"בנימינה","בית ספר":"מתנ\"ס"},
+  {"רשות":"בנימינה","בית ספר":"בראשית"},
+  {"רשות":"בנימינה","בית ספר":"אשכולות"},
+  {"רשות":"בנימינה","בית ספר":"אמירים"},
+  {"רשות":"בנימינה","בית ספר":"גבע"},
   {"רשות":"ג'דיידה מכר","בית ספר":"ג'דיידה יסודי"},
   {"רשות":"הרצליה","בית ספר":"ויצו פנינים אילנות"},
   {"רשות":"חיפה","בית ספר":"לאובק"},
   {"רשות":"ירושלים","בית ספר":"ביכורים"},
   {"רשות":"כיסרא סמיה","בית ספר":"כיסרא סמיה"},
+  {"רשות":"כסרא סמיע","בית ספר":"כסרא סמיע"},
   {"רשות":"ירכא","בית ספר":"ירכא אל-רואי"},
   {"רשות":"ירכא","בית ספר":"ירכא אל-אמין"},
+  {"רשות":"ירכא","בית ספר":"אלרואיא"},
   {"רשות":"ג'וליס","בית ספר":"דרכא"},
+  {"רשות":"ג'וליס","בית ספר":"ג'וליס"},
   {"רשות":"עין קיניה","בית ספר":"עין קיניה"},
   {"רשות":"בוקעתא","בית ספר":"בוקעתא"},
   {"רשות":"מג'דל שמס","בית ספר":"מג'דל שמס"},
+  {"רשות":"דלית אל-כרמל","בית ספר":"אלאשראק"},
   {"רשות":"יהוד","בית ספר":"הרצל"},
   {"רשות":"יהוד","בית ספר":"יהודה הלוי"},
   {"רשות":"יהוד","בית ספר":"היובל"},
@@ -3987,10 +4107,14 @@ const schoolsData = [
   {"רשות":"קריית טבעון","בית ספר":"כפר הנוער רמת הדסה"},
   {"רשות":"קריית שמונה","בית ספר":"מתנ\"ס קריית שמונה"},
   {"רשות":"קריית שמונה","בית ספר":"עוזיאל"},
+  {"רשות":"קריית שמונה","בית ספר":"המגינים"},
+  {"רשות":"קריית שמונה","בית ספר":"רמב\"ם"},
+  {"רשות":"קריית שמונה","בית ספר":"תל-חי"},
   {"רשות":"ראשון לציון","בית ספר":"גימנסיה"},
   {"רשות":"ראשון לציון","בית ספר":"תיכון המעיין"},
   {"רשות":"רחובות","בית ספר":"בכור לוי"},
   {"רשות":"רחובות","בית ספר":"נבון רחובות"},
+  {"רשות":"רחובות","בית ספר":"קציר"},
   {"רשות":"בוסתן הגליל","בית ספר":"מיטר"},
   {"רשות":"אופקים","בית ספר":"בן גוריון"},
   {"רשות":"אשדוד","בית ספר":"חווה חקלאית - אשכול"},
@@ -4035,6 +4159,7 @@ const schoolsData = [
   {"רשות":"רמלה","בית ספר":"חטיבת עידנים"},
   {"רשות":"רמלה","בית ספר":"מקיף יגאל אלון"},
   {"רשות":"רמלה","בית ספר":"תיכון פרופ נגר"},
+  {"רשות":"רמלה","בית ספר":"שמיר"},
   {"רשות":"שדרות","בית ספר":"חניתה ב'"},
   {"רשות":"אבן שמואל","בית ספר":"שפיר"},
   {"רשות":"שפיר","בית ספר":"תתמ\"ד"},
@@ -4233,10 +4358,10 @@ function updateMenuByRole(role) {
     if (regularDashboardContent) regularDashboardContent.style.display = 'block';
   }
   
-  // Show instructor month selector only for instructors
+  // Show month selector for ALL roles (was only instructors before)
   const instructorMonthSelector = document.getElementById('instructorMonthSelector');
   if (instructorMonthSelector) {
-    instructorMonthSelector.style.display = (role === 'instructor') ? 'flex' : 'none';
+    instructorMonthSelector.style.display = 'flex';
   }
   
   // Initialize instructor month selectors
@@ -4255,7 +4380,7 @@ function hasPermission(action, targetTeam = null) {
     case 'view_own':
       return true;
     case 'view_team':
-      return role === 'manager';
+      return role === 'manager' || role === 'operations_controller';
     case 'view_all':
       return ['operations_controller', 'system_admin', 'payroll_officer'].includes(role);
     case 'edit_own':
@@ -4263,6 +4388,9 @@ function hasPermission(action, targetTeam = null) {
     case 'edit_team':
       if (role === 'manager') {
         return user.team === targetTeam;
+      }
+      if (role === 'operations_controller') {
+        return true; // Can edit all teams
       }
       return role === 'system_admin';
     case 'edit_all':
@@ -4276,6 +4404,22 @@ function hasPermission(action, targetTeam = null) {
   }
 }
 
+function getRecordMonthKey(record) {
+  const recordDateStr = record.date || record.attendanceDate;
+  if (!recordDateStr) return null;
+  const recordDate = new Date(recordDateStr);
+  if (isNaN(recordDate.getTime())) return null;
+  return `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function isManagerApprovedForRecord(record) {
+  const empId = String(record.empNum || record.employeeId || '').trim();
+  const monthKey = getRecordMonthKey(record);
+  if (!empId || !monthKey) return false;
+  const cacheKey = `${empId}-${monthKey}`;
+  return managerApprovalCache.has(cacheKey) && managerApprovalCache.get(cacheKey);
+}
+
 function canEditRecord(record) {
   if (!isRecordUpdateSupported()) {
     return false;
@@ -4285,9 +4429,14 @@ function canEditRecord(record) {
   
   const role = user.role;
 
-  // system_admin can edit all records
+  // system_admin can edit all records (even after manager approval)
   if (role === 'system_admin') {
     return true;
+  }
+
+  // Check manager approval lock - if manager approved this employee+month, only admin can edit
+  if (isManagerApprovedForRecord(record)) {
+    return false;
   }
 
   // operations_controller can edit all teams (like manager but no team filter)
@@ -4295,7 +4444,7 @@ function canEditRecord(record) {
     return true;
   }
 
-  // manager can edit team records (bypass approval lock for team management)
+  // manager can edit team records (bypass instructor approval lock for team management)
   if (role === 'manager') {
     if (!record) return false;
     const recordTeam = record.team || record.Team || '';
@@ -4341,9 +4490,19 @@ function getEditBlockReason(record) {
 
   const role = user.role;
 
-  // Admins, managers, and operations controller can always edit
-  if (role === 'system_admin' || role === 'manager' || role === 'operations_controller') {
-    return null; // No block reason
+  // Admin can always edit
+  if (role === 'system_admin') {
+    return null;
+  }
+
+  // Check manager approval lock for non-admin roles
+  if (isManagerApprovedForRecord(record)) {
+    return 'החודש אושר ע"י מנהל - עריכה חסומה';
+  }
+
+  // Manager and operations controller can edit (unless manager-approved above)
+  if (role === 'manager' || role === 'operations_controller') {
+    return null;
   }
 
   if (role === 'payroll_officer') {
@@ -4398,7 +4557,7 @@ function canDeleteRecord(record) {
   }
   
   // Check if record has double approval (instructor + manager)
-  const hasDoubleApproval = record && record.status === 'approved' && record.managerApproved;
+  const hasDoubleApproval = record && isStatusApproved(record) && record.managerApproved;
   
   // After double approval, only admin can delete
   if (hasDoubleApproval) {
@@ -4454,7 +4613,7 @@ async function loadMyRecordsFromServer() {
   }
 
   try {
-    showAlert('🔄 טוען ימי עבודה מהשרת...', 'info');
+    console.log('טוען ימי עבודה מהשרת...');
     
     const role = localStorage.getItem("role") || '';
     const team = localStorage.getItem("team") || '';
@@ -4468,7 +4627,6 @@ async function loadMyRecordsFromServer() {
       records = [];
       renderRecordsTable();
       updateStats();
-      showAlert('✅ אין ימי עבודה קיימים', 'info');
       return;
     }
 
@@ -4511,13 +4669,17 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
     
     showAlert('🔄 מעדכן רשומה...', 'info');
     
+    // CRITICAL: For admin/manager edits, we MUST use the original record's employee data
+    // Only fall back to localStorage for instructor editing their OWN records
+    const isEditingOwnRecord = String(updatedRecord.empNum || updatedRecord.employeeId) === localStorage.getItem("employeeId");
+    
     const payload = {
       action: 'updaterecord',
       recordId: String(recordId),
-      employeeId: String(updatedRecord.empNum || updatedRecord.employeeId || localStorage.getItem("employeeId") || ''),
-      employeeName: String(updatedRecord.empName || updatedRecord.employeeName || localStorage.getItem("employeeName") || ''),
-      team: String(updatedRecord.team || localStorage.getItem("team") || ''),
-      employmentType: String(updatedRecord.employmentType || localStorage.getItem("employmentType") || ''),
+      employeeId: String(updatedRecord.empNum || updatedRecord.employeeId || (isEditingOwnRecord ? localStorage.getItem("employeeId") : '')),
+      employeeName: String(updatedRecord.empName || updatedRecord.employeeName || (isEditingOwnRecord ? localStorage.getItem("employeeName") : '')),
+      team: String(updatedRecord.team || (isEditingOwnRecord ? localStorage.getItem("team") : '')),
+      employmentType: String(updatedRecord.employmentType || (isEditingOwnRecord ? localStorage.getItem("employmentType") : '')),
       attendanceDate: updatedRecord.date || updatedRecord.attendanceDate,
       startTime: updatedRecord.start || updatedRecord.startTime,
       endTime: updatedRecord.end || updatedRecord.endTime,
@@ -4531,7 +4693,8 @@ async function updateRecordOnServer(updatedRecord, originalDate, originalStartTi
       totalExpenses: Number(updatedRecord.totalExpenses) || 0,
       expensesDetails: updatedRecord.expensesDetail || updatedRecord.expensesDetails || '',
       notes: updatedRecord.notes || '',
-      status: updatedRecord.status || 'ממתין'
+      status: updatedRecord.status || 'pending',
+      attachmentsNames: updatedRecord.attachmentsNames || ''
     };
     
     const data = await apiRequest('updaterecord', payload);
@@ -4565,7 +4728,7 @@ async function deleteRecordOnServer(record) {
     );
     if (!canDelete) return false;
     
-    showAlert('🔄 מוחק רשומה...', 'info');
+    showLoadingBar();
     
     const payload = {
       action: 'deleterecord',
@@ -4573,6 +4736,7 @@ async function deleteRecordOnServer(record) {
     };
     
     const data = await apiRequest('deleterecord', payload);
+    hideLoadingBar();
     
     if (data.success) {
       showAlert('✅ הרשומה נמחקה בהצלחה', 'success');
@@ -4582,6 +4746,7 @@ async function deleteRecordOnServer(record) {
       return false;
     }
   } catch (error) {
+    hideLoadingBar();
     console.error('Delete record error:', error);
     showAlert('❌ שגיאה במחיקת רשומה: ' + (error.message || 'שגיאה לא ידועה'), 'error');
     return false;
@@ -4719,11 +4884,20 @@ async function doLogin(event) {
       if (teamMonthFilter) delete teamMonthFilter.dataset.sessionInit;
       if (teamYearFilter) delete teamYearFilter.dataset.sessionInit;
       
+      // Brief success flash
+      showAlert('התחברת בהצלחה!', 'success');
+      setTimeout(() => {
+        const alertBox = document.getElementById('alertBox');
+        if (alertBox) alertBox.classList.remove('show');
+      }, 1500);
+      
+      showLoadingBar();
+      showPage(null, 'dashboard');
       await syncFromSharePoint(empData.empNum);
+      hideLoadingBar();
       
       updateStats();
       initInactivityTimer();
-      showPage(null, 'dashboard');
     } else {
       errorEl.textContent = data.message || 'מספר עובד או קוד אישי שגויים';
       errorEl.classList.add('show');
@@ -4812,12 +4986,8 @@ function updateMobileNavActive(pageName) {
     document.getElementById('mobileNavAdd')?.classList.add('active');
   } else if (pageName === 'records') {
     document.getElementById('mobileNavRecords')?.classList.add('active');
-  } else if (pageName === 'team-records') {
-    document.getElementById('mobileNavTeamRecords')?.classList.add('active');
   } else if (pageName === 'reports') {
     document.getElementById('mobileNavReports')?.classList.add('active');
-  } else if (pageName === 'approvals-status') {
-    document.getElementById('mobileNavApprovals')?.classList.add('active');
   } else if (pageName === 'admin') {
     document.getElementById('mobileNavAdmin')?.classList.add('active');
   }
@@ -4839,10 +5009,15 @@ function showPage(event, pageName) {
     event.preventDefault();
   }
   
-  // Role guard: non-instructors cannot access 'records' page, redirect to 'team-records'
+  // Redirect deprecated pages to dashboard (approvals-status only)
+  if (pageName === 'approvals-status') {
+    pageName = 'dashboard';
+  }
+  
+  // Role guard: non-instructors cannot access 'records' page, redirect to dashboard
   const role = localStorage.getItem("role") || '';
   if (pageName === 'records' && role !== 'instructor') {
-    pageName = 'team-records';
+    pageName = 'dashboard';
   }
 
   // Role guard: only instructors can access 'add-record' page
@@ -4851,9 +5026,9 @@ function showPage(event, pageName) {
     pageName = 'dashboard';
   }
 
-  // Role guard: payroll_officer can access dashboard, team-records, and reports
-  if (role === 'payroll_officer' && !['dashboard', 'team-records', 'reports'].includes(pageName)) {
-    pageName = 'team-records';
+  // Role guard: payroll_officer can access dashboard and reports only
+  if (role === 'payroll_officer' && !['dashboard', 'reports'].includes(pageName)) {
+    pageName = 'dashboard';
   }
   
   // Close mobile menu when navigating
@@ -4871,7 +5046,6 @@ if (typeof closeMobileMenu === 'function') {
     'records': 'recordsPage',
     'team-records': 'teamRecordsPage',
     'reports': 'reportsPage',
-    'approvals-status': 'approvalsStatusPage',
     'admin': 'adminPage'
   };
   
@@ -4893,9 +5067,8 @@ if (typeof closeMobileMenu === 'function') {
     loadInstructorMonthlyApprovalStatus();
   }
   if (pageName === 'records') loadRecordsForMonth();
-  if (pageName === 'team-records') loadTeamRecords();
+  if (pageName === 'team-records') loadTeamRecords(true);
   if (pageName === 'reports') initReportsPage();
-  if (pageName === 'approvals-status') loadApprovalsStatusPage();
   if (pageName === 'add-record') {
     // Populate employee info in header
     const user = getCurrentUserData();
@@ -4907,13 +5080,28 @@ if (typeof closeMobileMenu === 'function') {
 }
 
 // =============== Monthly Approvals Functions ===============
-const GRACE_PERIOD_DAYS = 5; // Days at start of month to approve previous month
+const GRACE_PERIOD_DAYS = 2; // Days at start of month to approve previous month (deadline: 2nd of each month)
 let instructorApprovalInfo = null;
 let previousMonthApprovalInfo = null;
+const managerApprovalCache = new Map();
 
 function getApprovalMonthKey(month, year) {
   const monthValue = String(month).padStart(2, '0');
   return `${year}-${monthValue}`;
+}
+
+function getCurrentWorkMonth() {
+  const now = new Date();
+  let month = now.getMonth() + 1;
+  let year = now.getFullYear();
+  if (now.getDate() >= 25) {
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+  return { month, year };
 }
 
 function getApprovalMonthLabel(month, year) {
@@ -4938,11 +5126,12 @@ async function fetchMonthStatus(employeeId, monthKey, team) {
       team
     });
     if (data && data.success) {
+      const approval = data.approval || {};
       return {
-        approved: !!data.approved,
-        approvalDate: data.approvalDate || null,
-        released: !!data.released,
-        releaseDate: data.releaseDate || null
+        approved: !!(approval.instructorApprovalDate),
+        approvalDate: approval.instructorApprovalDate || null,
+        released: !!(approval.released || approval.managerApprovalDate),
+        releaseDate: approval.managerApprovalDate || null
       };
     }
   } catch (e) {
@@ -4964,7 +5153,7 @@ async function ensureMonthEditable(employeeId, dateString) {
   const user = getCurrentUserData();
   const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user?.team || '');
   if (approvalStatus.released && user?.role !== 'system_admin') {
-    showAlert('הדיווח אושר לשכר. רק מנהל מערכת יכול לערוך.', 'error');
+    showAlert('הנוכחות החודשית אושרה. רק מנהל מערכת יכול לערוך.', 'error');
     return false;
   }
   if (approvalStatus.approved && ['instructor', 'payroll_officer'].includes(user?.role)) {
@@ -5002,7 +5191,7 @@ function updateMonthlyApprovalVisibility() {
     approvalsCard.style.display = ['manager', 'system_admin', 'operations_controller'].includes(user.role) ? 'block' : 'none';
   }
 
-  // Show approve to payroll button for managers and operations_controller
+  // Show approve monthly attendance button for managers and operations_controller
   const approveToPayrollBtn = document.getElementById('approveToPayrollBtn');
   if (approveToPayrollBtn) {
     approveToPayrollBtn.style.display = ['manager', 'operations_controller'].includes(user.role) ? 'inline-flex' : 'none';
@@ -5061,7 +5250,7 @@ async function loadInstructorMonthlyApprovalStatus() {
 
   // Handle current month status
   if (approvalStatus.released) {
-    statusEl.textContent = `החודש שוחרר ב-${formatApprovalDate(approvalStatus.releaseDate)}`;
+    statusEl.textContent = `הנוכחות אושרה ב-${formatApprovalDate(approvalStatus.releaseDate)}`;
     buttonEl.disabled = true;
   } else if (approvalDate) {
     const approvalDateObj = new Date(approvalDate);
@@ -5074,7 +5263,7 @@ async function loadInstructorMonthlyApprovalStatus() {
       buttonEl.style.opacity = '';
     } else {
       const daysRemaining = 20 - daysSinceApproval;
-      statusEl.textContent = `אושר בתאריך ${formatApprovalDate(approvalDate)} (ישוחרר בעוד ${daysRemaining} ימים)`;
+      statusEl.textContent = `אושר בתאריך ${formatApprovalDate(approvalDate)} (ממתין לאישור מנהל)`;
       buttonEl.disabled = true;
       buttonEl.style.background = '#94a3b8';
       buttonEl.style.opacity = '0.7';
@@ -5144,7 +5333,7 @@ async function approveMonthlyReport(whichMonth = 'current') {
 
   const status = await fetchMonthStatus(String(user.empNum || localStorage.getItem('employeeId') || ''), monthKey, user.team || '');
   if (status.released) {
-    showAlert('החודש שוחרר ונעול לקריאה בלבד', 'error');
+    showAlert('הנוכחות החודשית אושרה ונעולה לקריאה בלבד', 'error');
     return;
   }
 
@@ -5157,6 +5346,7 @@ async function approveMonthlyReport(whichMonth = 'current') {
   }
 
   const employeeId = String(user.empNum || localStorage.getItem('employeeId') || '');
+  showLoadingBar();
   try {
     const data = await apiRequest('setinstructorapproval', {
       employeeId,
@@ -5164,6 +5354,7 @@ async function approveMonthlyReport(whichMonth = 'current') {
       monthKey: monthKey,
       team: user.team || ''
     });
+    hideLoadingBar();
     if (data.success) {
       showAlert('האישור החודשי נשמר בהצלחה', 'success');
       await loadInstructorMonthlyApprovalStatus();
@@ -5171,6 +5362,7 @@ async function approveMonthlyReport(whichMonth = 'current') {
       showAlert(data.message || 'שגיאה בשמירת אישור חודשי', 'error');
     }
   } catch (error) {
+    hideLoadingBar();
     showAlert(error.message || 'שגיאה בשמירת אישור חודשי', 'error');
   }
 
@@ -5212,6 +5404,16 @@ async function loadMonthlyApprovalsTable() {
   } catch (error) {
     console.error('Error loading approval status:', error);
   }
+
+  // Remove duplicates by employeeId (convert to string to handle number/string mismatches)
+  const seenIds = new Set();
+  approvalsData = approvalsData.filter(emp => {
+    const id = String(emp.employeeId || emp.id || '');
+    if (!id || seenIds.has(id)) return false;
+    seenIds.add(id);
+    return true;
+  });
+  console.log('loadMonthlyApprovalsTable: After duplicate removal:', approvalsData.length, 'employees');
 
   // For managers - filter to their team first (client-side fallback)
   let teamFilteredData = approvalsData;
@@ -5303,7 +5505,7 @@ async function loadMonthlyApprovalsTable() {
             <td>${emp.name || emp.employeeName || '—'}</td>
             <td>${emp.employeeId || '—'}</td>
             <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? '✓ סיום דיווח' : '⏳ ממתין'}</td>
-            <td style="font-weight: 600; color: ${isReleased ? '#16a34a' : '#94a3b8'};">${isReleased ? '✓ אושר לשכר' : '—'}</td>
+            <td style="font-weight: 600; color: ${isReleased ? '#16a34a' : '#94a3b8'};">${isReleased ? '✓ אושר' : '—'}</td>
           </tr>
         `;
       }).join('');
@@ -5316,7 +5518,7 @@ async function loadMonthlyApprovalsTable() {
                 <th>שם עובד</th>
                 <th>מספר עובד</th>
                 <th>סיום דיווח</th>
-                <th>אישור לשכר</th>
+                <th>אישור מנהל</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -5332,21 +5534,34 @@ async function loadMonthlyApprovalsTable() {
 // Load Approvals Status Page (Admin only - shows both approval statuses)
 async function loadApprovalsStatusPage() {
   const user = getCurrentUserData();
-  const container = document.getElementById('approvalsStatusTable');
+  // Support both the old approvalsStatusTable and new dashboardApprovalsContent
+  const container = document.getElementById('approvalsStatusTable') || document.getElementById('dashboardApprovalsContent');
+  const dashboardContainer = document.getElementById('dashboardApprovalsContent');
 
   if (!container) return;
   if (!user || !['manager', 'operations_controller', 'payroll_officer', 'system_admin'].includes(user.role)) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">עמוד זה זמין למנהלים ומנהלי מערכת בלבד</p>';
+    if (dashboardContainer && dashboardContainer !== container) dashboardContainer.innerHTML = container.innerHTML;
     return;
   }
 
-  const monthSelect = document.getElementById('approvalsMonthFilter');
-  const yearSelect = document.getElementById('approvalsYearFilter');
+  // Use dashboardMonth/Year if available, fallback to approvalsMonthFilter
+  const monthSelect = document.getElementById('dashboardMonth') || document.getElementById('approvalsMonthFilter');
+  const yearSelect = document.getElementById('dashboardYear') || document.getElementById('approvalsYearFilter');
   const month = monthSelect ? Number(monthSelect.value) : (new Date().getMonth() + 1);
   const year = yearSelect ? Number(yearSelect.value) : new Date().getFullYear();
   const monthKey = getApprovalMonthKey(month, year);
 
-  container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;"><i class="fas fa-spinner fa-spin"></i> טוען נתונים...</p>';
+  // Silent loading - keep existing content visible, dim slightly
+  const hasContent = container.innerHTML.trim() && !container.innerHTML.includes('אין מדריכים');
+  if (hasContent) {
+    setSilentLoading(container.id, true);
+    if (dashboardContainer && dashboardContainer !== container) setSilentLoading(dashboardContainer.id, true);
+  } else {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">טוען נתונים...</p>';
+    if (dashboardContainer && dashboardContainer !== container) dashboardContainer.innerHTML = container.innerHTML;
+  }
+  showLoadingBar();
 
   let approvalsData = [];
   try {
@@ -5359,9 +5574,92 @@ async function loadApprovalsStatusPage() {
     approvalsData = Array.isArray(data.employees) ? data.employees : [];
   } catch (error) {
     console.error('Error loading approval status:', error);
-    container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 30px;">שגיאה בטעינת הנתונים</p>';
+    hideLoadingBar();
+    setSilentLoading(container.id, false);
+    if (dashboardContainer && dashboardContainer !== container) setSilentLoading(dashboardContainer.id, false);
+    if (!hasContent) {
+      container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 30px;">שגיאה בטעינת הנתונים</p>';
+      if (dashboardContainer && dashboardContainer !== container) dashboardContainer.innerHTML = container.innerHTML;
+    }
     return;
   }
+
+  // Build employment type lookup from teamRecordsCache (which has the data)
+  const employmentTypeLookup = {};
+  if (typeof teamRecordsCache !== 'undefined' && Array.isArray(teamRecordsCache)) {
+    teamRecordsCache.forEach(rec => {
+      const empId = String(rec.employeeId || rec.empNum || '').trim();
+      if (empId && !employmentTypeLookup[empId]) {
+        employmentTypeLookup[empId] = normalizeEmploymentType(rec, '');
+      }
+    });
+  }
+  console.log('Employment type lookup built from teamRecordsCache:', Object.keys(employmentTypeLookup).length, 'entries');
+  
+  // Remove duplicates by employeeId - use Map to aggregate data per employee
+  console.log('loadApprovalsStatusPage: Raw data from API:', approvalsData.length, 'records');
+  const employeeMap = new Map();
+  
+  // Helper to parse date strings to Date objects for comparison
+  const parseDate = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  
+  approvalsData.forEach(emp => {
+    // Normalize employeeId to string and trim any whitespace
+    const rawId = emp.employeeId || emp.id || '';
+    const id = String(rawId).trim();
+    if (!id) return;
+    
+    // If employee already seen, merge approval info (keep most recent approval dates)
+    if (employeeMap.has(id)) {
+      const existing = employeeMap.get(id);
+      
+      // Keep latest instructor approval date (compare as Date)
+      const existingInstDate = parseDate(existing.instructorApprovalDate);
+      const newInstDate = parseDate(emp.instructorApprovalDate);
+      if (newInstDate && (!existingInstDate || newInstDate > existingInstDate)) {
+        existing.instructorApprovalDate = emp.instructorApprovalDate;
+      }
+      
+      // Keep latest manager approval date (compare as Date)
+      const existingMgrDate = parseDate(existing.managerApprovalDate);
+      const newMgrDate = parseDate(emp.managerApprovalDate);
+      if (newMgrDate && (!existingMgrDate || newMgrDate > existingMgrDate)) {
+        existing.managerApprovalDate = emp.managerApprovalDate;
+      }
+      
+      // Keep released status if true
+      if (emp.released) existing.released = true;
+      
+      // Keep non-empty values for other fields
+      if (!existing.employeeName && emp.employeeName) existing.employeeName = emp.employeeName;
+      if (!existing.team && emp.team) existing.team = emp.team;
+      if (!existing.employmentType && emp.employmentType) existing.employmentType = emp.employmentType;
+    } else {
+      // First occurrence - add to map
+      // Enrich with employmentType from lookup if missing
+      const enrichedEmp = {
+        ...emp,
+        employeeId: id, // Ensure normalized ID
+        employmentType: emp.employmentType || employmentTypeLookup[id] || ''
+      };
+      employeeMap.set(id, enrichedEmp);
+    }
+  });
+  approvalsData = Array.from(employeeMap.values());
+  console.log('loadApprovalsStatusPage: After duplicate removal:', approvalsData.length, 'unique employees');
+
+  // Populate manager approval cache for month locking
+  approvalsData.forEach(emp => {
+    const empId = String(emp.employeeId || '').trim();
+    if (empId && monthKey) {
+      const cacheKey = `${empId}-${monthKey}`;
+      managerApprovalCache.set(cacheKey, !!(emp.managerApprovalDate || emp.released));
+    }
+  });
 
   // Client-side team filter for managers (backup if server doesn't filter)
   if (user.role === 'manager' && user.team) {
@@ -5383,6 +5681,7 @@ async function loadApprovalsStatusPage() {
 
   if (instructorsOnly.length === 0) {
     container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 30px;">אין מדריכים להצגה</p>';
+    if (dashboardContainer && dashboardContainer !== container) dashboardContainer.innerHTML = container.innerHTML;
     return;
   }
 
@@ -5419,18 +5718,53 @@ async function loadApprovalsStatusPage() {
       // Mobile: Card view
       const cards = teamEmps.map(emp => {
         const approvalDate = emp.instructorApprovalDate || emp.approvalDate || null;
-        const isReleased = emp.released || false;
-        const employmentType = emp.employmentType || '—';
+        const managerApproved = emp.managerApprovalDate || emp.released || false;
         const formattedApprovalDate = approvalDate ? new Date(approvalDate).toLocaleDateString('he-IL') : '';
+        const formattedManagerDate = emp.managerApprovalDate ? new Date(emp.managerApprovalDate).toLocaleDateString('he-IL') : '';
+        
+        let secondColumnHtml = '';
+        if (user.role === 'manager') {
+          if (managerApproved) {
+            secondColumnHtml = `
+              <div style="flex: 1; min-width: 120px; background: #dcfce7; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 11px; color: #166534; margin-bottom: 3px;">אישור חודש</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; color: #166534;">
+                  <i class="fas fa-check-circle"></i> אושר
+                </div>
+              </div>`;
+          } else if (approvalDate) {
+            secondColumnHtml = `
+              <div style="flex: 1; min-width: 120px; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">אישור חודש</div>
+                <button onclick="approveMonthForEmployee('${emp.employeeId}', '${monthKey}', '${teamName}')" 
+                  style="background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; width: auto;"
+                  data-testid="btn-approve-month-mobile-${emp.employeeId}">
+                  <i class="fas fa-check-double"></i> אישור חודש
+                </button>
+              </div>`;
+          } else {
+            secondColumnHtml = `
+              <div style="flex: 1; min-width: 120px; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">אישור חודש</div>
+                <span style="font-size: 12px; color: #94a3b8;">ממתין לדיווח</span>
+              </div>`;
+          }
+        } else {
+          secondColumnHtml = `
+            <div style="flex: 1; min-width: 120px; background: ${managerApproved ? '#dcfce7' : '#f1f5f9'}; padding: 8px 12px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 11px; color: ${managerApproved ? '#166534' : '#64748b'}; margin-bottom: 3px;">אישור מנהל</div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 5px; font-weight: 600; color: ${managerApproved ? '#166534' : '#94a3b8'};">
+                <i class="fas ${managerApproved ? 'fa-check-circle' : 'fa-clock'}"></i>
+                ${managerApproved ? (formattedManagerDate || 'אושר') : 'ממתין'}
+              </div>
+            </div>`;
+        }
         
         return `
           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
               <strong style="font-size: 16px; color: #1e293b;">${emp.name || emp.employeeName || '—'}</strong>
               <span style="font-size: 12px; color: #64748b;">#${emp.employeeId || '—'}</span>
-            </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
-              <span style="background: #f1f5f9; padding: 3px 8px; border-radius: 6px; font-size: 12px; color: #475569;">${employmentType}</span>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
               <div style="flex: 1; min-width: 120px; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; padding: 8px 12px; border-radius: 8px; text-align: center;">
@@ -5439,25 +5773,14 @@ async function loadApprovalsStatusPage() {
                   <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
                   ${approvalDate ? formattedApprovalDate : 'ממתין'}
                 </div>
+                ${(approvalDate && user.role === 'system_admin') ? `
+                <button onclick="cancelInstructorApproval('${emp.employeeId}', '${emp.name || emp.employeeName || ''}', '${monthKey}')"
+                  style="background: #ef4444; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; margin-top: 5px;"
+                  data-testid="btn-cancel-approval-mobile-${emp.employeeId}">
+                  <i class="fas fa-undo"></i> ביטול אישור
+                </button>` : ''}
               </div>
-              <div style="flex: 1; min-width: 120px; background: ${isReleased ? '#dcfce7' : '#f1f5f9'}; padding: 8px 12px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 11px; color: ${isReleased ? '#166534' : '#64748b'}; margin-bottom: 3px;">אישור מנהל</div>
-                ${approvalDate ? `
-                  <label style="display: flex; align-items: center; justify-content: center; gap: 6px; cursor: ${isReleased ? 'default' : 'pointer'};">
-                    <input type="checkbox" 
-                      ${isReleased ? 'checked disabled' : ''} 
-                      onchange="toggleManagerApproval('${emp.employeeId}', '${monthKey}', this.checked)"
-                      style="width: 16px; height: 16px; accent-color: #22c55e;"
-                      data-testid="checkbox-approval-mobile-${emp.employeeId}"
-                    >
-                    <span style="font-size: 12px; font-weight: 600; color: ${isReleased ? '#166534' : '#64748b'};">
-                      ${isReleased ? 'אושר' : 'אשר'}
-                    </span>
-                  </label>
-                ` : `
-                  <span style="font-size: 12px; color: #94a3b8;">ממתין</span>
-                `}
-              </div>
+              ${secondColumnHtml}
             </div>
           </div>
         `;
@@ -5466,39 +5789,65 @@ async function loadApprovalsStatusPage() {
       html += `<div>${cards}</div>`;
     } else {
       // Desktop: Table view
+      const secondColumnHeader = user.role === 'manager' ? 'אישור חודש' : 'אישור מנהל';
       const rows = teamEmps.map(emp => {
         const approvalDate = emp.instructorApprovalDate || emp.approvalDate || null;
-        const isReleased = emp.released || false;
-        const employmentType = emp.employmentType || '—';
+        const managerApproved = emp.managerApprovalDate || emp.released || false;
         const formattedApprovalDate = approvalDate ? new Date(approvalDate).toLocaleDateString('he-IL') : '';
+        const formattedManagerDate = emp.managerApprovalDate ? new Date(emp.managerApprovalDate).toLocaleDateString('he-IL') : '';
+        
+        let secondColumnHtml = '';
+        if (user.role === 'manager') {
+          if (managerApproved) {
+            secondColumnHtml = `
+              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #dcfce7; color: #166534;">
+                <i class="fas fa-check-circle"></i> אושר
+              </span>`;
+          } else if (approvalDate) {
+            secondColumnHtml = `
+              <button onclick="approveMonthForEmployee('${emp.employeeId}', '${monthKey}', '${teamName}')" 
+                style="background: #3b82f6; color: white; border: none; padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; width: auto;"
+                data-testid="btn-approve-month-${emp.employeeId}">
+                <i class="fas fa-check-double"></i> אישור חודש
+              </button>`;
+          } else {
+            secondColumnHtml = `<span style="color: #94a3b8; font-size: 12px;">ממתין לדיווח</span>`;
+          }
+        } else {
+          if (managerApproved) {
+            secondColumnHtml = `
+              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #dcfce7; color: #166534;">
+                <i class="fas fa-check-circle"></i> ${formattedManagerDate || 'אושר'}
+              </span>`;
+          } else {
+            secondColumnHtml = `
+              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #f1f5f9; color: #94a3b8;">
+                <i class="fas fa-clock"></i> ממתין
+              </span>`;
+          }
+        }
         
         return `
           <tr>
             <td>${emp.name || emp.employeeName || '—'}</td>
             <td>${emp.employeeId || '—'}</td>
-            <td>${employmentType}</td>
             <td style="text-align: center;">
-              <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; color: ${approvalDate ? '#166534' : '#92400e'};">
-                <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
-                ${approvalDate ? formattedApprovalDate : 'ממתין'}
-              </span>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; color: ${approvalDate ? '#166534' : '#92400e'};">
+                  <i class="fas ${approvalDate ? 'fa-check-circle' : 'fa-clock'}"></i>
+                  ${approvalDate ? formattedApprovalDate : 'ממתין'}
+                </span>
+                ${(approvalDate && user.role === 'system_admin') ? `
+                <button onclick="cancelInstructorApproval('${emp.employeeId}', '${emp.name || emp.employeeName || ''}', '${monthKey}')"
+                  style="background: #ef4444; color: white; border: none; padding: 3px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;"
+                  title="ביטול אישור מדריך"
+                  data-testid="btn-cancel-approval-${emp.employeeId}">
+                  <i class="fas fa-undo"></i> ביטול
+                </button>` : ''}
+              </div>
             </td>
             <td style="text-align: center;">
-              ${approvalDate ? `
-                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: ${isReleased ? 'default' : 'pointer'};">
-                  <input type="checkbox" 
-                    ${isReleased ? 'checked disabled' : ''} 
-                    onchange="toggleManagerApproval('${emp.employeeId}', '${monthKey}', this.checked)"
-                    style="width: 18px; height: 18px; cursor: pointer; accent-color: #22c55e;"
-                    data-testid="checkbox-approval-${emp.employeeId}"
-                  >
-                  <span style="font-size: 13px; color: ${isReleased ? '#16a34a' : '#64748b'};">
-                    ${isReleased ? 'אושר ✓' : 'אשר בדיקה'}
-                  </span>
-                </label>
-              ` : `
-                <span style="color: #94a3b8; font-size: 12px;">ממתין לדיווח</span>
-              `}
+              ${secondColumnHtml}
             </td>
           </tr>
         `;
@@ -5511,9 +5860,8 @@ async function loadApprovalsStatusPage() {
               <tr style="background: #f8fafc;">
                 <th style="padding: 12px 15px;">שם עובד</th>
                 <th style="padding: 12px 15px;">מספר עובד</th>
-                <th style="padding: 12px 15px;">סוג העסקה</th>
                 <th style="padding: 12px 15px; text-align: center;">אישור מדריך</th>
-                <th style="padding: 12px 15px; text-align: center;">אישור מנהל</th>
+                <th style="padding: 12px 15px; text-align: center;">${secondColumnHeader}</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -5525,62 +5873,98 @@ async function loadApprovalsStatusPage() {
     html += '</div>';
   });
 
+  hideLoadingBar();
+  setSilentLoading(container.id, false);
   container.innerHTML = html;
+  // Also update dashboard container if different
+  if (dashboardContainer && dashboardContainer !== container) {
+    setSilentLoading(dashboardContainer.id, false);
+    dashboardContainer.innerHTML = html;
+  }
 }
 
 // Toggle manager approval for an employee's monthly report
-async function toggleManagerApproval(employeeId, monthKey, isApproved) {
+async function approveMonthForEmployee(employeeId, monthKey, teamName) {
   const user = getCurrentUserData();
   if (!user || !['manager', 'operations_controller', 'system_admin'].includes(user.role)) {
-    showAlert('אין הרשאה לאשר בדיקה', 'error');
-    loadApprovalsStatusPage(); // Refresh to reset checkbox
+    showAlert('אין הרשאה לאשר חודש', 'error');
     return;
   }
   
-  if (!isApproved) {
-    // If unchecking, ask for confirmation
-    if (!confirm('האם לבטל את האישור?')) {
-      loadApprovalsStatusPage(); // Refresh to reset checkbox
-      return;
-    }
+  const team = teamName || user.team || '';
+  if (!team) {
+    showAlert('לא נמצא צוות לאישור', 'error');
+    return;
   }
   
+  if (!confirm(`האם לאשר את החודש ${monthKey} לצוות ${team}?`)) {
+    return;
+  }
+  
+  showLoadingBar();
   try {
-    showAlert(isApproved ? 'מאשר בדיקה...' : 'מבטל אישור...', 'info');
-    
     const payload = {
       action: 'setmanagerapproval',
-      employeeId: String(employeeId),
-      monthKey: monthKey,
-      approved: isApproved,
-      approvedBy: user.empName || user.empNum,
-      approvedDate: isApproved ? new Date().toISOString() : null
+      team: team,
+      monthKey: monthKey
     };
     
     const data = await apiRequest('setmanagerapproval', payload);
     
     if (data.success) {
-      showAlert(isApproved ? 'העובד אושר בהצלחה! ✓' : 'האישור בוטל', 'success');
-      loadApprovalsStatusPage(); // Refresh the table
+      hideLoadingBar();
+      showAlert('החודש אושר בהצלחה!', 'success');
+      loadApprovalsStatusPage();
     } else {
       throw new Error(data.message || 'שגיאה באישור');
     }
   } catch (error) {
-    console.error('Error toggling manager approval:', error);
-    showAlert('שגיאה: ' + (error.message || 'לא ניתן לעדכן אישור'), 'error');
-    loadApprovalsStatusPage(); // Refresh to reset checkbox
+    hideLoadingBar();
+    console.error('Error approving month:', error);
+    showAlert('שגיאה: ' + (error.message || 'לא ניתן לאשר חודש'), 'error');
   }
 }
 
-// Approve month to payroll - sends to admin for salary processing
-async function approveMonthToPayroll() {
+async function cancelInstructorApproval(employeeId, employeeName, monthKey) {
   const user = getCurrentUserData();
-  if (!user || !['manager', 'operations_controller'].includes(user.role)) {
-    showAlert('אין הרשאה לאישור דיווח לשכר', 'error');
+  if (!user || user.role !== 'system_admin') {
+    showAlert('רק מנהל מערכת יכול לבטל אישור מדריך', 'error');
     return;
   }
   
-  if (!confirm('האם לאשר את הדיווח החודשי ולהעביר לאדמין להכנת שכר?\n\nלאחר האישור, רק האדמין יוכל לבצע שינויים.')) {
+  if (!confirm(`האם לבטל את אישור המדריך של ${employeeName || employeeId} לחודש ${monthKey}?\n\nהמדריך יצטרך לאשר מחדש.`)) {
+    return;
+  }
+  
+  showLoadingBar();
+  try {
+    const data = await apiRequest('cancelinstructorapproval', {
+      employeeId: String(employeeId),
+      monthKey: monthKey
+    });
+    hideLoadingBar();
+    if (data.success) {
+      showAlert(`אישור המדריך של ${employeeName || employeeId} בוטל בהצלחה`, 'success');
+      loadApprovalsStatusPage();
+    } else {
+      showAlert(data.message || data.error || 'שגיאה בביטול אישור', 'error');
+    }
+  } catch (error) {
+    hideLoadingBar();
+    console.error('Error canceling instructor approval:', error);
+    showAlert('שגיאה: ' + (error.message || 'לא ניתן לבטל אישור'), 'error');
+  }
+}
+
+// Approve monthly attendance - internal approval by manager
+async function approveMonthToPayroll() {
+  const user = getCurrentUserData();
+  if (!user || !['manager', 'operations_controller'].includes(user.role)) {
+    showAlert('אין הרשאה לאישור נוכחות חודשית', 'error');
+    return;
+  }
+  
+  if (!confirm('האם לאשר את הנוכחות החודשית?\n\nלאחר האישור, רק מנהל מערכת יוכל לבצע שינויים.')) {
     return;
   }
   
@@ -5588,9 +5972,8 @@ async function approveMonthToPayroll() {
   const monthKey = getApprovalMonthKey(now.getMonth() + 1, now.getFullYear());
   const team = user.role === 'manager' ? (user.team || '') : 'all';
   
+  showLoadingBar();
   try {
-    showAlert('מאשר דיווח לשכר...', 'info');
-    
     const response = await fetch(LOGIC_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -5604,13 +5987,15 @@ async function approveMonthToPayroll() {
     });
     
     const data = await response.json();
+    hideLoadingBar();
     if (data.success) {
-      showAlert('הדיווח אושר והועבר לאדמין להכנת שכר!', 'success');
+      showAlert('הנוכחות החודשית אושרה בהצלחה!', 'success');
       await loadMonthlyApprovalsTable();
     } else {
       showAlert(data.message || 'שגיאה באישור הדיווח', 'error');
     }
   } catch (error) {
+    hideLoadingBar();
     showAlert('שגיאה באישור הדיווח: ' + error.message, 'error');
   }
 }
@@ -5618,11 +6003,11 @@ async function approveMonthToPayroll() {
 async function resetTeamMonth() {
   const user = getCurrentUserData();
   if (!isApprovalsSupported()) {
-    showAlert('⚠️ שחרור חודש אינו נתמך ב-API הנוכחי', 'error');
+    showAlert('איפוס חודש אינו נתמך ב-API הנוכחי', 'error');
     return;
   }
   if (!user || !['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
-    showAlert('אין הרשאה לשחרור חודש', 'error');
+    showAlert('אין הרשאה לאיפוס חודש', 'error');
     return;
   }
 
@@ -5642,13 +6027,13 @@ async function resetTeamMonth() {
       employeeId: user.empNum || localStorage.getItem('employeeId')
     });
     if (data.success) {
-      showAlert('החודש שוחרר בהצלחה', 'success');
+      showAlert('החודש אופס בהצלחה', 'success');
       await loadMonthlyApprovalsTable();
     } else {
-      showAlert(data.message || 'שגיאה בשחרור חודש', 'error');
+      showAlert(data.message || 'שגיאה באיפוס חודש', 'error');
     }
   } catch (error) {
-    showAlert(error.message || 'שגיאה בשחרור חודש', 'error');
+    showAlert(error.message || 'שגיאה באיפוס חודש', 'error');
   }
 }
 
@@ -5712,13 +6097,14 @@ async function loadTeamRecords(resetFilters = false) {
   }
 
   // Reset to appropriate month/year on fresh page load or when explicitly requested
-  // If we're in the first 5 days of the month, default to previous month
+  // Default to current work month (cycle resets on the 25th)
   if (resetFilters || !monthSelect?.dataset.sessionInit) {
-    let defaultMonth = now.getMonth() + 1;
-    let defaultYear = now.getFullYear();
+    const workMonth = getCurrentWorkMonth();
+    let defaultMonth = workMonth.month;
+    let defaultYear = workMonth.year;
     
-    if (now.getDate() <= 5) {
-      // Show previous month by default in first 5 days
+    // In first days of month (before grace period ends), show previous month
+    if (now.getDate() <= GRACE_PERIOD_DAYS && now.getDate() < 25) {
       defaultMonth = now.getMonth(); // getMonth() returns 0-11, so this gives previous month
       if (defaultMonth === 0) {
         defaultMonth = 12;
@@ -5754,12 +6140,15 @@ async function loadTeamRecords(resetFilters = false) {
     teamSubtitle.textContent = isMobileView() ? 'במובייל מוצג סיכום כללי בלבד' : 'סיכום לפי עובד - לחץ על שם לפירוט';
   }
 
-  // Show loading
-  document.getElementById('teamRecordsTable').innerHTML = `
-    <p style="text-align: center; color: #64748b; padding: 40px;">
-      <i class="fas fa-spinner fa-spin"></i> טוען נתונים לחודש ${selectedMonth}/${selectedYear}...
-    </p>
-  `;
+  // Silent loading - keep existing content visible
+  const teamTableEl = document.getElementById('teamRecordsTable');
+  const teamHasContent = teamTableEl.innerHTML.trim() && !teamTableEl.innerHTML.includes('אין ימי עבודה');
+  if (teamHasContent) {
+    setSilentLoading('teamRecordsTable', true);
+  } else {
+    teamTableEl.innerHTML = '<p style="text-align: center; color: #64748b; padding: 40px;">טוען נתונים...</p>';
+  }
+  showLoadingBar();
 
   try {
     // Get team records from server - filtered by month/year
@@ -5773,6 +6162,38 @@ async function loadTeamRecords(resetFilters = false) {
 
     if (data.success && Array.isArray(data.records)) {
       teamRecordsCache = data.records;
+      
+      // DEBUG: Log first record to see raw SharePoint field formats
+      if (data.records.length > 0) {
+        const sample = data.records[0];
+        console.log('=== RAW SharePoint record sample ===');
+        console.log('status:', sample.status, '(type:', typeof sample.status, ')');
+        console.log('team:', sample.team, '(type:', typeof sample.team, ')');
+        console.log('activityType:', sample.activityType, '(type:', typeof sample.activityType, ')');
+        console.log('employeeId:', sample.employeeId);
+        console.log('ID:', sample.ID);
+      }
+      
+      // Load manager approval status for month locking
+      try {
+        const teamFilter = user.role === 'manager' ? (user.team || 'all') : 'all';
+        const monthKey = getApprovalMonthKey(selectedMonth, selectedYear);
+        const approvalData = await apiRequest('getteamapprovalstatus', {
+          team: teamFilter,
+          monthKey: monthKey
+        });
+        if (Array.isArray(approvalData.employees)) {
+          approvalData.employees.forEach(emp => {
+            const empId = String(emp.employeeId || '').trim();
+            if (empId) {
+              const cacheKey = `${empId}-${monthKey}`;
+              managerApprovalCache.set(cacheKey, !!(emp.managerApprovalDate || emp.released));
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Error loading approval status for team records:', e);
+      }
       
       // Apply team filter
       let filteredRecords = data.records;
@@ -5792,8 +6213,12 @@ async function loadTeamRecords(resetFilters = false) {
         });
       }
       
+      hideLoadingBar();
+      setSilentLoading('teamRecordsTable', false);
       renderTeamTable(filteredRecords);
     } else {
+      hideLoadingBar();
+      setSilentLoading('teamRecordsTable', false);
       const debugInfo = user.role === 'manager' 
         ? `<br><small style="font-size: 12px; color: #64748b;">מנהל: ${user.empName || ''} | צוות: ${user.team || 'לא משויך'}</small>`
         : '';
@@ -5808,12 +6233,12 @@ async function loadTeamRecords(resetFilters = false) {
     }
   } catch (error) {
     console.error('Error loading team records:', error);
+    hideLoadingBar();
+    setSilentLoading('teamRecordsTable', false);
     // Fallback to local records
     renderTeamTable(records);
   } finally {
-    if (!isMobileView()) {
-      loadMonthlyApprovalsTable();
-    }
+    loadMonthlyApprovalsTable();
   }
 }
 
@@ -5859,8 +6284,7 @@ function renderTeamTable(recordsList) {
 
     employeeSummary[empId].totalRecords += Number.isNaN(recordCount) ? 0 : recordCount;
     // Count approved records
-    const statusRaw = String(rec.status || 'pending').toLowerCase();
-    if (statusRaw === 'approved') {
+    if (isStatusApproved(rec)) {
       employeeSummary[empId].approvedRecords += Number.isNaN(recordCount) ? 0 : recordCount;
     }
     employeeSummary[empId].totalHours += hours;
@@ -5875,14 +6299,10 @@ function renderTeamTable(recordsList) {
   const grandTotalRecords = summaryList.reduce((sum, emp) => sum + emp.totalRecords, 0);
 
   if (isMobileView()) {
-    const user = getCurrentUserData();
-    const canRelease = user && ['manager', 'operations_controller', 'system_admin'].includes(user.role);
-    
     const employeeCards = summaryList.map(emp => {
       const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
-      const statusText = emp.released ? 'מאושר' : (allApproved ? 'ממתין לאישור' : `${emp.approvedRecords}/${emp.totalRecords}`);
-      const statusColor = emp.released ? '#8b5cf6' : (allApproved ? '#22c55e' : '#f59e0b');
-      const canReleaseThis = canRelease && allApproved && !emp.released;
+      const statusText = allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`;
+      const statusColor = allApproved ? '#22c55e' : '#f59e0b';
       
       return `
         <div class="employee-card" style="background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -5896,12 +6316,6 @@ function renderTeamTable(recordsList) {
             <div><span>ק"מ:</span> <strong style="color: #1e293b;">${emp.totalKm.toFixed(1)}</strong></div>
             <div><span>הוצאות:</span> <strong style="color: #1e293b;">${emp.totalExpenses.toFixed(2)} ₪</strong></div>
           </div>
-          ${canRelease ? `
-            <div style="margin-top: 12px; text-align: center;">
-              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; width: auto;"><i class="fas fa-check-double"></i> אישור</button>` : 
-              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> מאושר</span>' : '<span style="color: #94a3b8; font-size: 12px;">לא כל הרשומות מאושרות</span>')}
-            </div>
-          ` : ''}
         </div>
       `;
     }).join('');
@@ -5923,9 +6337,6 @@ function renderTeamTable(recordsList) {
     return;
   }
 
-  const user = getCurrentUserData();
-  const canRelease = user && ['manager', 'operations_controller', 'system_admin'].includes(user.role);
-  
   const tableHTML = `
     <div style="margin-bottom: 15px;">
       <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים</span>
@@ -5940,15 +6351,13 @@ function renderTeamTable(recordsList) {
           <th>סה"כ ק"מ</th>
           <th>סה"כ הוצאות</th>
           <th>סטטוס רשומות</th>
-          ${canRelease ? '<th>פעולה</th>' : ''}
         </tr>
       </thead>
       <tbody>
         ${summaryList.map(emp => {
           const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
-          const statusText = emp.released ? 'מאושר' : (allApproved ? 'ממתין לאישור' : `${emp.approvedRecords}/${emp.totalRecords}`);
-          const statusColor = emp.released ? '#8b5cf6' : (allApproved ? '#22c55e' : '#f59e0b');
-          const canReleaseThis = canRelease && allApproved && !emp.released;
+          const statusText = allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`;
+          const statusColor = allApproved ? '#22c55e' : '#f59e0b';
           return `
           <tr class="employee-summary-row" onclick="showEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
             <td><i class="fas fa-chevron-left"></i></td>
@@ -5958,10 +6367,6 @@ function renderTeamTable(recordsList) {
             <td>${emp.totalKm.toFixed(1)}</td>
             <td>${emp.totalExpenses.toFixed(2)} ₪</td>
             <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${statusText}</span></td>
-            ${canRelease ? `<td onclick="event.stopPropagation();">
-              ${canReleaseThis ? `<button onclick="releaseEmployeeToPayroll('${emp.empId}', '${emp.empName}')" style="background: #8b5cf6; color: white; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check-double"></i> אישור</button>` : 
-              (emp.released ? '<span style="color: #8b5cf6;"><i class="fas fa-check-circle"></i> מאושר</span>' : '<span style="color: #94a3b8; font-size: 11px;">לא כל הרשומות מאושרות</span>')}
-            </td>` : ''}
           </tr>
         `;}).join('')}
         <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
@@ -5969,7 +6374,7 @@ function renderTeamTable(recordsList) {
           <td style="color: #3b82f6;">${formatHoursDisplay(grandTotalHours)}</td>
           <td>${grandTotalKm.toFixed(1)}</td>
           <td>${grandTotalExpenses.toFixed(2)} ₪</td>
-          <td colspan="${canRelease ? 2 : 1}"></td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -5978,45 +6383,6 @@ function renderTeamTable(recordsList) {
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
 }
 
-async function releaseEmployeeToPayroll(employeeId, employeeName) {
-  const user = getCurrentUserData();
-  if (!user || !['manager', 'operations_controller', 'system_admin'].includes(user.role)) {
-    showAlert('אין הרשאה לאשר נוכחות', 'error');
-    return;
-  }
-  
-  if (!confirm(`האם לאשר את הנוכחות של ${employeeName}?`)) {
-    return;
-  }
-  
-  const monthSelect = document.getElementById('teamMonthFilter');
-  const yearSelect = document.getElementById('teamYearFilter');
-  const month = monthSelect ? parseInt(monthSelect.value) : (new Date().getMonth() + 1);
-  const year = yearSelect ? parseInt(yearSelect.value) : new Date().getFullYear();
-  const monthKey = getApprovalMonthKey(month, year);
-  
-  try {
-    showAlert('מאשר נוכחות...', 'info');
-    
-    const data = await apiRequest('setmanagerapproval', {
-      employeeId: employeeId,
-      monthKey: monthKey,
-      team: user.team || '',
-      approvedBy: user.empName || user.empNum,
-      released: true
-    });
-    
-    if (data.success) {
-      showAlert(`הנוכחות של ${employeeName} אושרה!`, 'success');
-      await loadTeamRecords();
-    } else {
-      showAlert(data.message || 'שגיאה בסימון', 'error');
-    }
-  } catch (error) {
-    console.error('Error releasing employee:', error);
-    showAlert('שגיאה בסימון: ' + (error.message || 'נסה שוב'), 'error');
-  }
-}
 
 async function showEmployeeDetails(employeeId) {
   console.log('showEmployeeDetails called with:', employeeId);
@@ -6218,6 +6584,33 @@ function exportAllToExcel() {
 }
 
 // =============== Alert ===============
+let loadingBarEl = null;
+let loadingBarCount = 0;
+function showLoadingBar() {
+  loadingBarCount++;
+  if (!loadingBarEl) {
+    loadingBarEl = document.createElement('div');
+    loadingBarEl.className = 'loading-bar';
+    document.body.appendChild(loadingBarEl);
+  }
+}
+function hideLoadingBar() {
+  loadingBarCount = Math.max(0, loadingBarCount - 1);
+  if (loadingBarCount === 0 && loadingBarEl && loadingBarEl.parentNode) {
+    loadingBarEl.parentNode.removeChild(loadingBarEl);
+    loadingBarEl = null;
+  }
+}
+function setSilentLoading(elementId, loading) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  if (loading) {
+    el.classList.add('silent-loading');
+  } else {
+    el.classList.remove('silent-loading');
+  }
+}
+
 function showAlert(message, type = 'success') {
   const alert = document.getElementById('alertBox');
   const alertText = document.getElementById('alertText');
@@ -6305,7 +6698,7 @@ async function submitAll() {
     return;
   }
   
-  const pending = records.filter(r => r.status !== 'נשלח');
+  const pending = records.filter(r => !isStatusApproved(r));
   
   if (pending.length === 0) {
     showAlert('אין ימי עבודה חדשים לשליחה', 'info');
@@ -6528,18 +6921,19 @@ function updateDashboard() {
 // =============== Instructor Month Navigation ===============
 function initInstructorMonthSelectors() {
   const now = new Date();
-  console.log('initInstructorMonthSelectors - current date:', now.getMonth() + 1, '/', now.getFullYear());
+  const workMonth = getCurrentWorkMonth();
+  console.log('initInstructorMonthSelectors - current date:', now.getMonth() + 1, '/', now.getFullYear(), '- work month:', workMonth.month, '/', workMonth.year);
   
   // Dashboard month selector
   const instrMonthEl = document.getElementById('instructorMonth');
   const instrYearEl = document.getElementById('instructorYear');
   if (instrMonthEl && !instrMonthEl.dataset.initialized) {
-    instrMonthEl.value = now.getMonth() + 1;
+    instrMonthEl.value = workMonth.month;
     instrMonthEl.dataset.initialized = 'true';
     console.log('initInstructorMonthSelectors - set month to:', instrMonthEl.value);
   }
   if (instrYearEl && !instrYearEl.dataset.initialized) {
-    instrYearEl.value = now.getFullYear();
+    instrYearEl.value = workMonth.year;
     instrYearEl.dataset.initialized = 'true';
     console.log('initInstructorMonthSelectors - set year to:', instrYearEl.value);
   }
@@ -6548,11 +6942,11 @@ function initInstructorMonthSelectors() {
   const recMonthEl = document.getElementById('recordsMonth');
   const recYearEl = document.getElementById('recordsYear');
   if (recMonthEl && !recMonthEl.dataset.initialized) {
-    recMonthEl.value = now.getMonth() + 1;
+    recMonthEl.value = workMonth.month;
     recMonthEl.dataset.initialized = 'true';
   }
   if (recYearEl && !recYearEl.dataset.initialized) {
-    recYearEl.value = now.getFullYear();
+    recYearEl.value = workMonth.year;
     recYearEl.dataset.initialized = 'true';
   }
 }
@@ -6593,15 +6987,20 @@ async function loadInstructorMonthData() {
     recYearEl.value = instrYearEl.value;
   }
   
-  // Reload records from server to ensure we have all months
-  console.log('loadInstructorMonthData - reloading records from server');
-  await loadMyRecordsFromServer();
+  const role = localStorage.getItem('role') || '';
+  console.log('loadInstructorMonthData - role:', role, 'month:', instrMonthEl?.value, 'year:', instrYearEl?.value);
   
-  // Update stats and summary table with filtered month
+  // For managers, ops controllers, admin, payroll - update admin dashboard first (priority)
+  if (['manager', 'operations_controller', 'system_admin', 'payroll_officer'].includes(role)) {
+    console.log('loadInstructorMonthData - calling updateAdminDashboard for manager/admin');
+    updateAdminDashboard(); // Don't await - run in parallel
+  }
+  
+  // All roles need to update personal stats if visible (instructors always, others if they have records panel)
+  console.log('loadInstructorMonthData - updating personal records stats');
+  await loadMyRecordsFromServer();
   updateStats();
   renderSummaryTable();
-  
-  // Also update instructor monthly approval status if on dashboard
   loadInstructorMonthlyApprovalStatus();
 }
 
@@ -6641,9 +7040,9 @@ async function loadRecordsForMonth() {
     instrYearEl.value = recYearEl.value;
   }
   
-  // Reload approval status for selected month (instructors only)
+  // Reload approval status for selected month
   const user = getCurrentUserData();
-  if (user && user.role === 'instructor') {
+  if (user) {
     const selectedMonth = recMonthEl ? parseInt(recMonthEl.value) : (new Date().getMonth() + 1);
     const selectedYear = recYearEl ? parseInt(recYearEl.value) : new Date().getFullYear();
     const monthKey = getApprovalMonthKey(selectedMonth, selectedYear);
@@ -6651,7 +7050,14 @@ async function loadRecordsForMonth() {
     
     try {
       const approvalStatus = await fetchMonthStatus(employeeId, monthKey, user.team || '');
-      instructorApprovalInfo = { monthKey, approvalDate: approvalStatus.approvalDate || null };
+      if (user.role === 'instructor') {
+        instructorApprovalInfo = { monthKey, approvalDate: approvalStatus.approvalDate || null };
+      }
+      // Cache manager approval for month locking
+      if (employeeId) {
+        const cacheKey = `${employeeId}-${monthKey}`;
+        managerApprovalCache.set(cacheKey, !!(approvalStatus.released));
+      }
     } catch (e) {
       console.error('Error fetching month approval status:', e);
     }
@@ -6796,7 +7202,7 @@ function exportPayrollToExcel() {
   exportAttendanceWorkbook(currentMonthRecords, {
     includeSummary: true,
     monthKey,
-    filePrefix: 'דוח_שכר'
+    filePrefix: 'דוח_נוכחות'
   });
 }
 
@@ -7087,7 +7493,7 @@ async function _addRecordInternal() {
     employeeId: String(finalEmployeeId),
     employeeName: String(finalEmployeeName),
     team: String(localStorage.getItem("team") || ''),
-    employmentType: String(localStorage.getItem("employmentType") || ''),
+    employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
     role: String(localStorage.getItem("role") || ''),
     attendanceDate: String(date),
     startTime: String(startTime),
@@ -7105,32 +7511,56 @@ async function _addRecordInternal() {
     attachmentsNames: formatAttachments(attachments)
   };
   
-  // Send to SharePoint using apiRequest with retry
-  showAlert(isEditing ? '🔄 מעדכן רשומה...' : '🚀 שולח דיווח ל-SharePoint...', 'info');
+  // Send to SharePoint using apiRequest with retry - silent loading
+  showLoadingBar();
+  setSilentLoading('addRecordPage', true);
   
   try {
     const actionType = isEditing ? 'updaterecord' : 'submit';
     const data = await apiRequest(actionType, payload);
     
     if (data.success) {
+      // Upload files if any selected
+      if (selectedFiles.length > 0) {
+        const uploadResult = await uploadFilesToSharePoint(finalEmployeeId, date);
+        if (uploadResult.urls.length > 0 && (data.recordId || editingId)) {
+          const attachmentsNames = uploadResult.urls.join(', ');
+          await apiRequest('updaterecord', {
+            action: 'updaterecord',
+            recordId: String(data.recordId || editingId),
+            employeeId: String(finalEmployeeId),
+            employeeName: String(finalEmployeeName),
+            team: String(localStorage.getItem("team") || ''),
+            employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
+            attachmentsNames: attachmentsNames
+          });
+        }
+      }
+      
       clearAddForm();
-      // Clear editing state
       if (document.getElementById('addRecordPage')) {
         document.getElementById('addRecordPage').dataset.editingId = '';
       }
-      // Reset page header
       const pageHeader = document.querySelector('#addRecordPage .page-header h1');
       if (pageHeader) {
         pageHeader.textContent = 'הוספת דיווח';
       }
       
-      await syncFromSharePoint(empNum);
+      hideLoadingBar();
+      setSilentLoading('addRecordPage', false);
       showAlert(isEditing ? '✅ הרשומה עודכנה בהצלחה!' : '✅ הדיווח נשלח בהצלחה!', 'success');
-      showPage(null, 'dashboard');
+      if (isEditing) {
+        showPage(null, 'dashboard');
+      }
+      syncFromSharePoint(empNum).catch(err => console.warn('Background sync error:', err));
     } else {
+      hideLoadingBar();
+      setSilentLoading('addRecordPage', false);
       showAlert('❌ ' + (data.message || 'שגיאה בשליחה'), 'error');
     }
   } catch (error) {
+    hideLoadingBar();
+    setSilentLoading('addRecordPage', false);
     console.error('=== SUBMISSION ERROR ===');
     console.error('Endpoint:', isEditing ? 'updaterecord' : 'submit');
     console.error('Payload:', JSON.stringify(payload, null, 2));
@@ -7187,6 +7617,21 @@ function renderRecordsTable() {
       return false;
     }
     return recMonth === selectedMonth && recYear === selectedYear;
+  });
+  
+  // Sort records by date ascending (oldest first)
+  filteredRecords.sort((a, b) => {
+    const parseDate = (dateStr) => {
+      if (!dateStr) return new Date(0);
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      } else if (dateStr.includes('-')) {
+        return new Date(dateStr);
+      }
+      return new Date(0);
+    };
+    return parseDate(a.date) - parseDate(b.date);
   });
   
   document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
@@ -7548,9 +7993,9 @@ async function saveEdit() {
   
   if (editingIndex === -1 && !isAdminEdit) return;
   
-  let originalDate, originalStartTime;
+  let originalDate, originalStartTime, originalEmployeeId, originalEmployeeName, originalTeam, originalEmploymentType;
   if (isAdminEdit) {
-    // Find record in admin cache
+    // Find record in admin cache - preserve original employee data!
     let foundRec = null;
     for (const empId in adminEmployeeRecordsCache) {
       foundRec = adminEmployeeRecordsCache[empId].find(r => (r.ID || r.id) == adminEditRecordId);
@@ -7558,6 +8003,11 @@ async function saveEdit() {
     }
     originalDate = foundRec?.attendanceDate || foundRec?.date;
     originalStartTime = foundRec?.startTime;
+    // CRITICAL: Save original employee data to prevent overwriting with editor's data
+    originalEmployeeId = foundRec?.employeeId || foundRec?.EmployeeId || foundRec?.empNum || '';
+    originalEmployeeName = foundRec?.employeeName || foundRec?.EmployeeName || foundRec?.empName || '';
+    originalTeam = foundRec?.team || foundRec?.Team || '';
+    originalEmploymentType = foundRec?.employmentType || foundRec?.EmploymentType || '';
   } else {
     originalDate = records[editingIndex].date;
     originalStartTime = records[editingIndex].start;
@@ -7645,34 +8095,39 @@ async function saveEdit() {
     expensesDetails: expensesDetail,
     notes,
     attachments,
-    status: 'ממתין'
+    status: 'pending'
   };
   
-  showAlert('🔄 מעדכן רשומה בשרת...', 'info');
+  showLoadingBar();
 
   try {
     if (isAdminEdit) {
-      // Admin edit - use recordId directly
       const ok = await updateRecordOnServer({
         ...updatedRecord,
         recordId: adminEditRecordId,
-        id: adminEditRecordId
+        id: adminEditRecordId,
+        employeeId: originalEmployeeId,
+        empNum: originalEmployeeId,
+        employeeName: originalEmployeeName,
+        empName: originalEmployeeName,
+        team: originalTeam,
+        employmentType: originalEmploymentType
       }, originalDate, originalStartTime);
 
       if (!ok) {
+        hideLoadingBar();
         showAlert('⚠️ העדכון נכשל בשרת', 'error');
         closeEditModal();
         adminEditRecordId = null;
         return;
       }
 
-      // Refresh admin dashboard
       adminEditRecordId = null;
       closeEditModal();
+      hideLoadingBar();
       updateAdminDashboard();
       showAlert('✅ הרשומה עודכנה בהצלחה', 'success');
     } else {
-      // Instructor edit
       records[editingIndex] = {
         ...records[editingIndex],
         ...updatedRecord
@@ -7681,6 +8136,7 @@ async function saveEdit() {
       const ok = await updateRecordOnServer(records[editingIndex], originalDate, originalStartTime);
 
       if (!ok) {
+        hideLoadingBar();
         showAlert('⚠️ העדכון נשמר מקומית אבל נכשל בשרת', 'error');
         saveToLocalStorage();
         updateStats();
@@ -7689,11 +8145,13 @@ async function saveEdit() {
         return;
       }
 
-      await loadMyRecordsFromServer();
       closeEditModal();
+      hideLoadingBar();
+      await loadMyRecordsFromServer();
       showAlert('✅ הרשומה עודכנה בהצלחה ונשמרה בשרת', 'success');
     }
   } catch (e) {
+    hideLoadingBar();
     console.error(e);
     showAlert('❌ שגיאה בעדכון הרשומה בשרת', 'error');
     if (!isAdminEdit) {
@@ -7859,7 +8317,9 @@ function getMonthKeyFromRecords(recordsList) {
   return monthKeys.size === 1 ? Array.from(monthKeys)[0] : null;
 }
 
-function createDetailedSheet(recordsList) {
+function createDetailedSheet(recordsList, options = {}) {
+  const hideEmploymentType = options.hideEmploymentType || false;
+  
   const headers = [
     'מספר עובד',
     'שם עובד',
@@ -7877,13 +8337,16 @@ function createDetailedSheet(recordsList) {
     'פירוט הוצאות',
     'הערות',
     'קבצים מצורפים',
-    'צוות',
-    'סוג העסקה'
+    'צוות'
   ];
+  
+  if (!hideEmploymentType) {
+    headers.push('סוג העסקה');
+  }
 
   const data = [headers];
   recordsList.forEach(rec => {
-    data.push([
+    const row = [
       rec.employeeId || '',
       rec.employeeName || '',
       rec.attendanceDate || '',
@@ -7900,9 +8363,14 @@ function createDetailedSheet(recordsList) {
       rec.expensesDetails || '',
       rec.notes || '',
       rec.attachmentsNames || '',
-      rec.team || '',
-      rec.employmentType || ''
-    ]);
+      rec.team || ''
+    ];
+    
+    if (!hideEmploymentType) {
+      row.push(rec.employmentType || '');
+    }
+    
+    data.push(row);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(data);
@@ -8087,7 +8555,7 @@ function exportAttendanceWorkbook(recordsList, options = {}) {
   const wb = XLSX.utils.book_new();
   const monthKey = options.monthKey || getMonthKeyFromRecords(normalizedRecords);
 
-  XLSX.utils.book_append_sheet(wb, createDetailedSheet(normalizedRecords), 'פירוט מלא');
+  XLSX.utils.book_append_sheet(wb, createDetailedSheet(normalizedRecords, { hideEmploymentType: options.hideEmploymentType }), 'פירוט מלא');
 
   if (options.includeSummary) {
     XLSX.utils.book_append_sheet(wb, createMonthlySummarySheet(normalizedRecords, monthKey), 'סיכום חודשי');
@@ -8104,9 +8572,10 @@ function exportAttendanceWorkbook(recordsList, options = {}) {
 
 function exportToExcel() {
   const user = getCurrentUserData();
-  const includeSummary = user?.role !== 'instructor';
+  const isInstructor = user?.role === 'instructor';
   exportAttendanceWorkbook(records, {
-    includeSummary,
+    includeSummary: !isInstructor,
+    hideEmploymentType: isInstructor,
     filePrefix: 'דוח_נוכחות'
   });
 }
@@ -8503,6 +8972,8 @@ function loadAdminDashboard() {
   }
   console.log('loadAdminDashboard - selector values: month=', monthEl?.value, 'year=', yearEl?.value);
   updateAdminDashboard();
+  // Also load approvals status in the dashboard
+  loadApprovalsStatusPage();
 }
 
 async function updateAdminDashboard() {
@@ -8510,16 +8981,29 @@ async function updateAdminDashboard() {
   const mobileContainer = document.getElementById('adminMobileCardsContainer');
   if (!tbody && !mobileContainer) return;
   
+  // Silent loading - dim existing content
+  if (tbody && tbody.innerHTML.trim()) setSilentLoading('adminDashboardTableBody', true);
+  if (mobileContainer && mobileContainer.innerHTML.trim()) setSilentLoading('adminMobileCardsContainer', true);
+  showLoadingBar();
+  
   const filterEmploymentType = document.getElementById('filterEmploymentType')?.value || 'all';
   const filterTeam = document.getElementById('filterTeam')?.value || 'all';
   
-  // Get month/year from filters or use current
+  // Get month/year from filters - managers/admin use dashboardMonth/Year, instructors use instructorMonth/Year
   const now = new Date();
-  const dashboardMonthEl = document.getElementById('dashboardMonth');
-  const dashboardYearEl = document.getElementById('dashboardYear');
+  const user = getCurrentUserData();
+  const isInstructor = user && user.role === 'instructor';
   
-  console.log('updateAdminDashboard - dashboardMonthEl value:', dashboardMonthEl?.value);
-  console.log('updateAdminDashboard - dashboardYearEl value:', dashboardYearEl?.value);
+  // Select the correct month/year elements based on role
+  const dashboardMonthEl = isInstructor 
+    ? document.getElementById('instructorMonth') 
+    : (document.getElementById('dashboardMonth') || document.getElementById('instructorMonth'));
+  const dashboardYearEl = isInstructor 
+    ? document.getElementById('instructorYear') 
+    : (document.getElementById('dashboardYear') || document.getElementById('instructorYear'));
+  
+  console.log('updateAdminDashboard - role:', user?.role, 'monthEl:', dashboardMonthEl?.id, 'value:', dashboardMonthEl?.value);
+  console.log('updateAdminDashboard - yearEl:', dashboardYearEl?.id, 'value:', dashboardYearEl?.value);
   
   const currentMonth = dashboardMonthEl ? parseInt(dashboardMonthEl.value) - 1 : now.getMonth();
   const currentYear = dashboardYearEl ? parseInt(dashboardYearEl.value) : now.getFullYear();
@@ -8536,6 +9020,9 @@ async function updateAdminDashboard() {
     const data = await apiRequest('getsummary', {});
     
     if (!data.success || !Array.isArray(data.records)) {
+      hideLoadingBar();
+      setSilentLoading('adminDashboardTableBody', false);
+      setSilentLoading('adminMobileCardsContainer', false);
       tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה</td></tr>';
       return;
     }
@@ -8551,6 +9038,10 @@ async function updateAdminDashboard() {
     };
     
     // Filter to current month - support both DD/MM/YYYY and YYYY-MM-DD formats
+    console.log('=== Admin Dashboard Date Filtering ===');
+    console.log('Total records from server:', data.records.length);
+    console.log('Filter for month:', currentMonth + 1, 'year:', currentYear);
+    
     const currentMonthRecords = data.records.filter(rec => {
       if (!rec.attendanceDate) return false;
       const dateStr = rec.attendanceDate;
@@ -8566,10 +9057,13 @@ async function updateAdminDashboard() {
         recYear = parseInt(parts[0]);
         recMonth = parseInt(parts[1]) - 1;
       } else {
+        console.log('Unknown date format:', dateStr);
         return false;
       }
       return recMonth === currentMonth && recYear === currentYear;
     });
+    
+    console.log('Records after month filter:', currentMonthRecords.length);
     
     // Group by employee
     const employeeData = {};
@@ -8647,6 +9141,10 @@ async function updateAdminDashboard() {
     adminDashboardRecordsCache = filteredEmployees.flatMap(emp => emp.records);
     
     // Render table
+    hideLoadingBar();
+    setSilentLoading('adminDashboardTableBody', false);
+    setSilentLoading('adminMobileCardsContainer', false);
+    
     if (filteredEmployees.length === 0) {
       if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
       if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #64748b; padding: 40px;">אין נתונים להצגה</p>';
@@ -8702,6 +9200,9 @@ async function updateAdminDashboard() {
     
   } catch (error) {
     console.error('Error loading admin dashboard:', error);
+    hideLoadingBar();
+    setSilentLoading('adminDashboardTableBody', false);
+    setSilentLoading('adminMobileCardsContainer', false);
     if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">שגיאה בטעינת נתונים</td></tr>';
     if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 40px;">שגיאה בטעינת נתונים</p>';
   }
@@ -8726,8 +9227,14 @@ function toggleMobileAdminDetails(empId) {
     } else {
       // Get current month/year from dashboard filters
       const now = new Date();
-      const dashboardMonth = document.getElementById('dashboardMonth');
-      const dashboardYear = document.getElementById('dashboardYear');
+      const user = getCurrentUserData();
+      const isInstructor = user && user.role === 'instructor';
+      const dashboardMonth = isInstructor 
+        ? document.getElementById('instructorMonth')
+        : (document.getElementById('dashboardMonth') || document.getElementById('instructorMonth'));
+      const dashboardYear = isInstructor
+        ? document.getElementById('instructorYear')
+        : (document.getElementById('dashboardYear') || document.getElementById('instructorYear'));
       const currentMonth = dashboardMonth ? parseInt(dashboardMonth.value) - 1 : now.getMonth();
       const currentYear = dashboardYear ? parseInt(dashboardYear.value) : now.getFullYear();
       
@@ -8870,10 +9377,10 @@ function toggleMobileWeekDetails(empId, startDay, endDay) {
       recordsDiv.innerHTML = weekRecords.map(rec => {
         const date = formatDateHebrew(rec.attendanceDate || rec.date);
         const recId = rec.ID || rec.id || '';
-        const statusRaw = String(rec.status || 'pending').toLowerCase();
-        const status = statusRaw === 'approved' ? 'מאושר' : (statusRaw === 'rejected' ? 'נדחה' : 'ממתין');
-        const statusColor = statusRaw === 'approved' ? '#22c55e' : (statusRaw === 'rejected' ? '#ef4444' : '#f59e0b');
-        const isApproved = statusRaw === 'approved';
+        const isApproved = isStatusApproved(rec);
+        const isRejected = deriveRecordStatus(rec) === 'rejected';
+        const status = getStatusDisplayText(rec);
+        const statusColor = isApproved ? '#22c55e' : (isRejected ? '#ef4444' : '#f59e0b');
         const hours = parseFloat(rec.workHours || rec.hours || 0).toFixed(1);
         const km = parseFloat(rec.kilometers || rec.km || 0).toFixed(0);
         
@@ -8887,7 +9394,7 @@ function toggleMobileWeekDetails(empId, startDay, endDay) {
           </div>
           <div style="display: flex; gap: 8px;">
             ${!isApproved ? `<button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="flex: 1; background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-edit"></i> עריכה</button>` : ''}
-            ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="flex: 1; background: #22c55e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check"></i> אישור</button>` : '<span style="color: #22c55e; font-size: 12px;"><i class="fas fa-check-circle"></i> אושר</span>'}
+            ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" data-approve-record="${recId}" style="flex: 1; background: #22c55e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;"><i class="fas fa-check"></i> אישור</button>` : '<span style="color: #22c55e; font-size: 12px;"><i class="fas fa-check-circle"></i> אושר</span>'}
           </div>
         </div>`;
       }).join('');
@@ -9027,8 +9534,10 @@ function populateEditForm(record) {
   showAlert('נטען לעריכה - בצע שינויים ולחץ שמור', 'info');
 }
 
-// Approve single record from admin dashboard
+// Approve single record from admin dashboard - Optimistic UI
 async function approveRecordFromAdmin(recordId) {
+  console.log('approveRecordFromAdmin called with recordId:', recordId);
+  
   if (!recordId) {
     showAlert('לא נמצא מזהה רשומה', 'error');
     return;
@@ -9040,69 +9549,245 @@ async function approveRecordFromAdmin(recordId) {
     return;
   }
   
-  // Check permissions - only manager, system_admin can approve
+  // Check permissions
   if (!['manager', 'system_admin', 'operations_controller'].includes(user.role)) {
     showAlert('אין הרשאה לאשר רשומות', 'error');
     return;
   }
   
-  if (!confirm('האם לאשר רשומה זו?')) {
-    return;
+  // Find the record in caches
+  let record = null;
+  let recordIndex = -1;
+  let cacheSource = null;
+  let empIdForCache = null;
+  
+  // Search in teamRecordsCache
+  if (typeof teamRecordsCache !== 'undefined' && Array.isArray(teamRecordsCache)) {
+    recordIndex = teamRecordsCache.findIndex(r => String(r.ID || r.id || r.recordId) === String(recordId));
+    if (recordIndex !== -1) {
+      record = teamRecordsCache[recordIndex];
+      cacheSource = 'teamRecordsCache';
+    }
   }
   
-  // Find the record in teamRecordsCache to get full details
-  const record = (typeof teamRecordsCache !== 'undefined' ? teamRecordsCache : []).find(r => 
-    String(r.ID || r.id || r.recordId) === String(recordId)
-  );
+  // Search in adminEmployeeRecordsCache
+  if (!record && typeof adminEmployeeRecordsCache !== 'undefined') {
+    for (const empId in adminEmployeeRecordsCache) {
+      recordIndex = adminEmployeeRecordsCache[empId].findIndex(r => String(r.ID || r.id || r.recordId) === String(recordId));
+      if (recordIndex !== -1) {
+        record = adminEmployeeRecordsCache[empId][recordIndex];
+        cacheSource = 'adminEmployeeRecordsCache';
+        empIdForCache = empId;
+        break;
+      }
+    }
+  }
   
   if (!record) {
-    console.error('Record not found in cache, recordId:', recordId);
     showAlert('לא נמצאה הרשומה במטמון. נסה לרענן את הדף.', 'error');
     return;
   }
   
+  // Log the raw record for debugging
+  console.log('=== RAW RECORD FROM CACHE ===');
+  console.log('record.status:', record.status, '(type:', typeof record.status, ')');
+  console.log('record.team:', record.team, '(type:', typeof record.team, ')');
+  console.log('record.employeeId:', record.employeeId, 'record.empNum:', record.empNum);
+  console.log('record.ID:', record.ID, 'record.id:', record.id);
+  console.log('All record keys:', Object.keys(record));
+  
+  // Save original status for rollback
+  const originalStatus = record.status;
+  const originalApprovedBy = record.approvedBy;
+  const originalApprovedDate = record.approvedDate;
+  
+  // OPTIMISTIC UPDATE: Update cache immediately
+  const approvalData = {
+    status: 'approved',
+    approvedBy: user.empName || user.empNum,
+    approvedDate: new Date().toISOString()
+  };
+  
+  // Update record in cache (this updates by reference)
+  Object.assign(record, approvalData);
+  
+  // Also update the other cache if record exists there (keep both caches in sync)
+  const strRecordId = String(recordId);
+  if (cacheSource === 'teamRecordsCache' && typeof adminEmployeeRecordsCache !== 'undefined') {
+    // Found in teamRecordsCache, also update adminEmployeeRecordsCache
+    for (const empId in adminEmployeeRecordsCache) {
+      const otherRecord = adminEmployeeRecordsCache[empId].find(r => String(r.ID || r.id || r.recordId) === strRecordId);
+      if (otherRecord) {
+        Object.assign(otherRecord, approvalData);
+        break;
+      }
+    }
+  } else if (cacheSource === 'adminEmployeeRecordsCache' && typeof teamRecordsCache !== 'undefined') {
+    // Found in adminEmployeeRecordsCache, also update teamRecordsCache
+    const otherRecord = teamRecordsCache.find(r => String(r.ID || r.id || r.recordId) === strRecordId);
+    if (otherRecord) {
+      Object.assign(otherRecord, approvalData);
+    }
+  }
+  
+  // OPTIMISTIC UPDATE: Update DOM immediately
+  updateApprovalButtonInDOM(recordId, true);
+  showLoadingBar();
+  
+  // Send to API in background
   try {
-    showAlert('מאשר רשומה...', 'info');
-    
-    // Send full record data to prevent field deletion
+    const empId = String(record.employeeId || record.empNum || '');
     const payload = {
       action: 'updaterecord',
       recordId: String(recordId),
-      employeeId: String(record.employeeId || record.empNum || ''),
-      employeeName: String(record.employeeName || record.empName || ''),
-      team: String(record.team || ''),
-      employmentType: String(record.employmentType || ''),
-      attendanceDate: record.attendanceDate || record.date,
-      startTime: record.startTime || record.start,
-      endTime: record.endTime || record.end,
+      employeeId: empId,
+      employeeName: extractLookupValue(record.employeeName || record.empName, ''),
+      team: extractLookupValue(record.team, ''),
+      employmentType: normalizeEmploymentType(record, ''),
+      attendanceDate: extractLookupValue(record.attendanceDate || record.date, ''),
+      startTime: extractLookupValue(record.startTime || record.start, ''),
+      endTime: extractLookupValue(record.endTime || record.end, ''),
       workHours: Number(record.workHours || record.hours) || 0,
-      activityType: String(record.activityType || record.activity || ''),
-      schoolName: String(record.schoolName || record.school || ''),
-      municipality: String(record.municipality || ''),
-      programName: String(record.programName || record.program || ''),
+      activityType: extractLookupValue(record.activityType || record.activity, ''),
+      schoolName: extractLookupValue(record.schoolName || record.school, ''),
+      municipality: extractLookupValue(record.municipality, ''),
+      programName: extractLookupValue(record.programName || record.program, ''),
       sessionNumber: Number(record.sessionNumber || record.session) || 0,
       kilometers: Number(record.kilometers || record.km) || 0,
       totalExpenses: Number(record.totalExpenses) || 0,
-      expensesDetails: String(record.expensesDetails || record.expensesDetail || ''),
-      notes: String(record.notes || ''),
-      status: 'approved',
-      approvedBy: user.empName || user.empNum,
-      approvedDate: new Date().toISOString()
+      expensesDetails: extractLookupValue(record.expensesDetails || record.expensesDetail, ''),
+      notes: extractLookupValue(record.notes, ''),
+      attachmentsNames: extractLookupValue(record.attachmentsNames, ''),
+      ...approvalData
     };
+    
+    console.log('=== APPROVE RECORD - FULL PAYLOAD ===');
+    console.log(JSON.stringify(payload, null, 2));
     
     const data = await apiRequest('updaterecord', payload);
     
-    if (data.success) {
-      showAlert('הרשומה אושרה בהצלחה!', 'success');
-      // Refresh dashboard
-      updateAdminDashboard();
-    } else {
-      throw new Error(data.message || 'Failed to approve record');
+    console.log('=== APPROVE RECORD - API RESPONSE ===');
+    console.log(JSON.stringify(data, null, 2));
+    
+    if (!data.success) {
+      throw new Error(data.message || data.error || 'שגיאה בעדכון הרשומה');
     }
+    
+    // VERIFICATION: Re-fetch the record from SharePoint to confirm persistence
+    console.log('=== APPROVE RECORD - VERIFYING PERSISTENCE ===');
+    try {
+      const verifyData = await apiRequest('getemployeerecords', { employeeId: empId });
+      if (verifyData.success && Array.isArray(verifyData.records)) {
+        const updatedRecord = verifyData.records.find(r => String(r.ID || r.Id || r.id) === String(recordId));
+        if (updatedRecord) {
+          console.log('=== VERIFICATION - RAW RECORD KEYS ===');
+          console.log('All keys:', Object.keys(updatedRecord).join(', '));
+          const statusKeys = Object.keys(updatedRecord).filter(k => k.toLowerCase().includes('status'));
+          console.log('Status-related keys:', statusKeys.map(k => k + '=' + JSON.stringify(updatedRecord[k])).join(', '));
+          
+          const derivedStatus = deriveRecordStatus(updatedRecord);
+          const approvedByVal = updatedRecord.approvedBy || updatedRecord.ApprovedBy || '';
+          console.log('=== VERIFICATION RESULT ===');
+          console.log('Record', recordId, '- derived status:', derivedStatus);
+          console.log('Record', recordId, '- approvedBy:', approvedByVal);
+          if (derivedStatus !== 'approved') {
+            console.error('APPROVAL NOT PERSISTED! approvedBy is empty. Derived status:', derivedStatus);
+          } else {
+            console.log('APPROVAL VERIFIED - approvedBy persisted successfully:', approvedByVal);
+          }
+        } else {
+          console.warn('Could not find record', recordId, 'in verification response. Available IDs:', 
+            verifyData.records.slice(0, 5).map(r => r.ID || r.Id || r.id));
+        }
+      }
+    } catch (verifyError) {
+      console.warn('Verification fetch failed (non-critical):', verifyError.message);
+    }
+    
+    hideLoadingBar();
   } catch (error) {
-    console.error('Error approving record:', error);
+    hideLoadingBar();
+    console.error('Error approving record on server:', error);
+    
+    // ROLLBACK: Restore original status in cache
+    const rollbackData = {
+      status: originalStatus,
+      approvedBy: originalApprovedBy,
+      approvedDate: originalApprovedDate
+    };
+    Object.assign(record, rollbackData);
+    
+    // ROLLBACK: Also restore the other cache
+    if (cacheSource === 'teamRecordsCache' && typeof adminEmployeeRecordsCache !== 'undefined') {
+      for (const empId in adminEmployeeRecordsCache) {
+        const otherRecord = adminEmployeeRecordsCache[empId].find(r => String(r.ID || r.id || r.recordId) === strRecordId);
+        if (otherRecord) {
+          Object.assign(otherRecord, rollbackData);
+          break;
+        }
+      }
+    } else if (cacheSource === 'adminEmployeeRecordsCache' && typeof teamRecordsCache !== 'undefined') {
+      const otherRecord = teamRecordsCache.find(r => String(r.ID || r.id || r.recordId) === strRecordId);
+      if (otherRecord) {
+        Object.assign(otherRecord, rollbackData);
+      }
+    }
+    
+    // ROLLBACK: Restore DOM
+    updateApprovalButtonInDOM(recordId, false);
     showAlert('שגיאה באישור הרשומה: ' + (error.message || ''), 'error');
   }
+}
+
+// Store original HTML for rollback - keyed by recordId
+const approvalOriginalHTML = {};
+
+// Helper function to update approval button in DOM without full refresh
+function updateApprovalButtonInDOM(recordId, isApproved, saveOriginal = true) {
+  const strId = String(recordId);
+  
+  // Find by data attribute first (preferred), then by onclick
+  let approveBtn = document.querySelector(`[data-approve-record="${strId}"]`);
+  if (!approveBtn) {
+    approveBtn = document.querySelector(`button[onclick*="approveRecordFromAdmin('${strId}')"]`) ||
+                 document.querySelector(`button[onclick*='approveRecordFromAdmin("${strId}")']`);
+  }
+  
+  if (approveBtn) {
+    const cell = approveBtn.closest('td') || approveBtn.closest('div.record-actions') || approveBtn.parentElement;
+    if (cell) {
+      // Save original HTML for potential rollback
+      if (saveOriginal && isApproved) {
+        approvalOriginalHTML[strId] = cell.innerHTML;
+      }
+      
+      if (isApproved) {
+        cell.innerHTML = '<span style="color: #22c55e; font-weight: 600;"><i class="fas fa-check-circle"></i> מאושר</span>';
+      } else {
+        // Restore from saved HTML or recreate button
+        if (approvalOriginalHTML[strId]) {
+          cell.innerHTML = approvalOriginalHTML[strId];
+          delete approvalOriginalHTML[strId];
+        } else {
+          cell.innerHTML = `<button onclick="approveRecordFromAdmin('${strId}')" data-approve-record="${strId}" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 11px;" data-testid="button-approve-${strId}"><i class="fas fa-check"></i></button>`;
+        }
+      }
+    }
+  }
+  
+  // Also update status badge if exists (both desktop and mobile)
+  const statusBadges = document.querySelectorAll(`[data-record-status="${strId}"]`);
+  statusBadges.forEach(statusBadge => {
+    if (isApproved) {
+      statusBadge.style.background = '#dcfce7';
+      statusBadge.style.color = '#166534';
+      statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> מאושר';
+    } else {
+      statusBadge.style.background = '#fef3c7';
+      statusBadge.style.color = '#92400e';
+      statusBadge.innerHTML = '<i class="fas fa-clock"></i> ממתין';
+    }
+  });
 }
 
 // Approve team month
@@ -9185,13 +9870,13 @@ function toggleAdminEmployeeDetails(empId) {
             <tbody>
               ${records.map(rec => {
                 const recId = rec.ID || rec.id || '';
-                const statusRaw = String(rec.status || 'pending').toLowerCase();
-                const status = statusRaw === 'approved' ? 'מאושר' : (statusRaw === 'rejected' ? 'נדחה' : 'ממתין');
-                const statusColor = statusRaw === 'approved' ? '#22c55e' : (statusRaw === 'rejected' ? '#ef4444' : '#f59e0b');
-                const isApproved = statusRaw === 'approved';
+                const isApproved = isStatusApproved(rec);
+                const isRejected = deriveRecordStatus(rec) === 'rejected';
+                const status = getStatusDisplayText(rec);
+                const statusColor = isApproved ? '#22c55e' : (isRejected ? '#ef4444' : '#f59e0b');
                 return `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 8px; text-align: right;">${rec.attendanceDate || ''}</td>
+                  <td style="padding: 8px; text-align: right; white-space: nowrap;">${rec.attendanceDate || ''}</td>
                   <td style="padding: 8px; text-align: center;">${rec.startTime || ''}</td>
                   <td style="padding: 8px; text-align: center;">${rec.endTime || ''}</td>
                   <td style="padding: 8px; text-align: center; font-weight: 600;">${(rec.workHours || 0).toFixed(1)}</td>
@@ -9202,7 +9887,7 @@ function toggleAdminEmployeeDetails(empId) {
                   <td style="padding: 8px; text-align: center;"><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${status}</span></td>
                   <td style="padding: 8px; text-align: center; white-space: nowrap;">
                     ${!isApproved ? `<button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;" title="עריכה"><i class="fas fa-edit"></i></button>` : ''}
-                    ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="אישור"><i class="fas fa-check"></i></button>` : '<span style="color: #22c55e;"><i class="fas fa-check-circle"></i></span>'}
+                    ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" data-approve-record="${recId}" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="אישור"><i class="fas fa-check"></i></button>` : '<span style="color: #22c55e;"><i class="fas fa-check-circle"></i></span>'}
                   </td>
                 </tr>
               `;}).join('')}
@@ -9264,6 +9949,18 @@ function populateTeamFilter() {
   const teamSelect = document.getElementById('reportTeam');
   if (!teamSelect) return;
   
+  const role = localStorage.getItem("role") || '';
+  const userTeam = localStorage.getItem("team") || '';
+  
+  // Manager can only see their own team - hide filter or lock it
+  if (role === 'manager' && userTeam) {
+    teamSelect.innerHTML = `<option value="${userTeam}">${userTeam}</option>`;
+    teamSelect.value = userTeam;
+    teamSelect.disabled = true;
+    return;
+  }
+  
+  teamSelect.disabled = false;
   const currentValue = teamSelect.value;
   teamSelect.innerHTML = '<option value="all">הכל</option>';
   
@@ -9284,8 +9981,10 @@ function populateTeamFilter() {
 
 function getFilteredRecordsByMonth(recordsList, month, year) {
   return recordsList.filter(rec => {
-    if (!rec.date) return false;
-    const recDate = new Date(rec.date);
+    const dateStr = rec.date || rec.attendanceDate;
+    if (!dateStr) return false;
+    const recDate = parseRecordDate(dateStr);
+    if (!recDate) return false;
     return recDate.getMonth() + 1 === parseInt(month) && recDate.getFullYear() === parseInt(year);
   });
 }
@@ -9328,6 +10027,14 @@ async function loadReportData() {
     
     reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
     
+    // Manager can only see their own team
+    if (user.role === 'manager') {
+      const managerTeam = user.team || localStorage.getItem('team') || '';
+      if (managerTeam) {
+        reportRecords = reportRecords.filter(rec => rec.team === managerTeam);
+      }
+    }
+    
     if (employmentType !== 'all') {
       reportRecords = reportRecords.filter(rec => rec.employmentType === employmentType);
     }
@@ -9337,7 +10044,7 @@ async function loadReportData() {
     }
     
     if (activityType !== 'all') {
-      reportRecords = reportRecords.filter(rec => rec.activity === activityType);
+      reportRecords = reportRecords.filter(rec => (rec.activity || rec.activityType) === activityType);
     }
     
     updateReportStats();
@@ -9576,17 +10283,65 @@ function clearSelectedFiles() {
   if (input) input.value = '';
 }
 
-async function uploadFilesToSharePoint(recordId) {
-  if (selectedFiles.length === 0) return true;
+async function uploadFilesToSharePoint(employeeId, attendanceDate) {
+  if (selectedFiles.length === 0) return { success: true, urls: [] };
   
-  // Note: File upload to SharePoint requires additional Logic App configuration
-  // For now, we'll store file names as references
-  const fileNames = selectedFiles.map(f => f.name).join(', ');
-  console.log('Files to upload:', fileNames);
+  const uploadedUrls = [];
   
-  // TODO: Implement actual file upload when Logic App is configured
-  showAlert(`${selectedFiles.length} קבצים מוכנים להעלאה`, 'info');
-  return true;
+  for (let i = 0; i < selectedFiles.length; i++) {
+    const file = selectedFiles[i];
+    try {
+      // Convert file to base64
+      const base64Content = await fileToBase64(file);
+      
+      // File naming: employeeId_attendanceDate.extension
+      const ext = file.name.split('.').pop() || 'bin';
+      const formattedDate = String(attendanceDate).replace(/\//g, '-');
+      const suffix = selectedFiles.length > 1 ? `_${i + 1}` : '';
+      const standardFileName = `${employeeId}_${formattedDate}${suffix}.${ext}`;
+      
+      const payload = {
+        action: 'uploadfile',
+        employeeId: String(employeeId),
+        attendanceDate: String(attendanceDate),
+        fileName: standardFileName,
+        fileContent: base64Content
+      };
+      
+      const response = await apiRequest('uploadfile', payload);
+      
+      if (response.success) {
+        uploadedUrls.push(response.fileUrl);
+        console.log('File uploaded successfully:', file.name);
+      } else {
+        console.error('Failed to upload file:', file.name);
+        showAlert(`שגיאה בהעלאת ${file.name}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', file.name, error);
+      showAlert(`שגיאה בהעלאת ${file.name}`, 'error');
+    }
+  }
+  
+  if (uploadedUrls.length > 0) {
+    showAlert(`${uploadedUrls.length} קבצים הועלו בהצלחה`, 'success');
+  }
+  
+  return { success: uploadedUrls.length > 0, urls: uploadedUrls };
+}
+
+// Helper function to convert file to base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Remove the data:mime/type;base64, prefix
+      const base64 = reader.result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
 }
 
 function clearAllData() {

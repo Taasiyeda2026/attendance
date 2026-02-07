@@ -1,16 +1,18 @@
 {
   "name": "מערכת נוכחות - תעשיידע",
-  "short_name": "תעשיידע",
+  "short_name": "נוכחות",
   "description": "מערכת ניהול נוכחות למדריכים ומנהלי צוות - דיווחים, מעקב ודוחות בזמן אמת",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#1e40af",
   "orientation": "portrait-primary",
   "dir": "rtl",
   "lang": "he",
   "categories": ["productivity", "business", "education"],
+  "id": "attendance-tasiyeda-pwa",
   "icons": [
     {
       "src": "./icons/icon-72x72.png",
@@ -91,7 +93,20 @@
           "sizes": "96x96"
         }
       ]
+    },
+    {
+      "name": "לוח בקרה",
+      "short_name": "בקרה",
+      "description": "לוח בקרה וסיכומים",
+      "url": "./index.html#dashboard",
+      "icons": [
+        {
+          "src": "./icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "handle_links": "preferred"
 }
