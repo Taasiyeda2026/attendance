@@ -2504,11 +2504,13 @@
               <thead>
                 <tr>
                   <th style="width: 30px; text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;"></th>
-                  <th style="text-align: right; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">מספר עובד</th>
                   <th style="text-align: right; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שם עובד</th>
-                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">צוות</th>
-                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סוג העסקה</th>
-                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ שעות</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">ימי עבודה</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שעות קורס</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שעות סדנה</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שעות הכשרה</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שעות סיור</th>
+                  <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">שעות ביטול זמן</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ ק"מ</th>
                   <th style="text-align: center; padding: 12px 8px; background: #f1f5f9; font-weight: 600;">סה"כ הוצאות</th>
                 </tr>
@@ -2706,8 +2708,8 @@
         <div style="display: flex; align-items: center; gap: 20px;">
           <h1 style="margin: 0; font-size: 24px;">הוספת רשומה חדשה</h1>
           <div id="formUserInfoHeader" style="display: flex; gap: 15px; background: #f1f5f9; padding: 6px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;">
-            <span>מספר עובד: <span id="displayEmpNum"></span></span>
-            <span>שם עובד: <span id="displayEmpName"></span></span>
+            <span id="displayEmpNum" style="display:none;"></span>
+            <span><span id="displayEmpName"></span></span>
           </div>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -5449,7 +5451,7 @@ async function loadMonthlyApprovalsTable() {
           <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <strong style="color: #1e293b;">${emp.name || emp.employeeName || '—'}</strong>
-              <span style="font-size: 11px; color: #64748b;">#${emp.employeeId || '—'}</span>
+              <span style="font-size: 11px; color: #64748b;"></span>
             </div>
             <div style="display: flex; gap: 8px;">
               <div style="flex: 1; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; padding: 6px 10px; border-radius: 6px; text-align: center;">
@@ -5478,7 +5480,6 @@ async function loadMonthlyApprovalsTable() {
         return `
           <tr>
             <td>${emp.name || emp.employeeName || '—'}</td>
-            <td>${emp.employeeId || '—'}</td>
             <td style="font-weight: 600; color: ${approvalDate ? '#16a34a' : '#f97316'};">${approvalDate ? '✓ סיום דיווח' : '⏳ ממתין'}</td>
             <td style="font-weight: 600; color: ${isReleased ? '#16a34a' : '#94a3b8'};">${isReleased ? '✓ אושר' : '—'}</td>
           </tr>
@@ -5491,7 +5492,6 @@ async function loadMonthlyApprovalsTable() {
             <thead>
               <tr>
                 <th>שם עובד</th>
-                <th>מספר עובד</th>
                 <th>סיום דיווח</th>
                 <th>אישור מנהל</th>
               </tr>
@@ -5810,7 +5810,6 @@ async function loadApprovalsStatusPage() {
         return `
           <tr>
             <td>${emp.name || emp.employeeName || '—'}</td>
-            <td>${emp.employeeId || '—'}</td>
             <td style="text-align: center;">
               <div style="display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
                 <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: ${approvalDate ? '#dcfce7' : '#fef3c7'}; color: ${approvalDate ? '#166534' : '#92400e'};">
@@ -5839,7 +5838,6 @@ async function loadApprovalsStatusPage() {
             <thead>
               <tr style="background: #f8fafc;">
                 <th style="padding: 12px 15px;">שם עובד</th>
-                <th style="padding: 12px 15px;">מספר עובד</th>
                 <th style="padding: 12px 15px; text-align: center;">אישור מדריך</th>
                 <th style="padding: 12px 15px; text-align: center;">${secondColumnHeader}</th>
               </tr>
@@ -6243,6 +6241,8 @@ function renderTeamTable(recordsList) {
     return;
   }
 
+  const activityColumns = ['קורס', 'סדנה', 'הכשרה', 'סיור', 'ביטול זמן'];
+
   // Group by employee and calculate summary
   const employeeSummary = {};
   recordsList.forEach(rec => {
@@ -6253,8 +6253,8 @@ function renderTeamTable(recordsList) {
     const hours = parseFloat(rec.totalHours || rec.workHours || rec.hours || rec.WorkHours || 0);
     const km = parseFloat(rec.totalKm || rec.kilometers || rec.km || rec.Kilometers || 0);
     const expenses = parseFloat(rec.totalExpenses || rec.TotalExpenses || 0);
-    // Each record = 1 work day unless explicitly specified
-    const recordCount = parseInt(rec.totalRecords || rec.totalDays || rec.workDays || 1, 10);
+    const activity = extractLookupValue(rec.activityType || rec.ActivityType || rec.activity || '', '').trim();
+    const dateStr = rec.attendanceDate || rec.date || '';
 
     if (!employeeSummary[empId]) {
       employeeSummary[empId] = {
@@ -6262,49 +6262,58 @@ function renderTeamTable(recordsList) {
         empName,
         team,
         employmentType: empType,
-        totalRecords: 0,
-        approvedRecords: 0,
-        totalHours: 0,
         totalKm: 0,
         totalExpenses: 0,
+        dates: new Set(),
         released: rec.released || false
       };
+      activityColumns.forEach(a => employeeSummary[empId][a] = 0);
     }
 
-    employeeSummary[empId].totalRecords += Number.isNaN(recordCount) ? 0 : recordCount;
-    // Count approved records
-    if (isStatusApproved(rec)) {
-      employeeSummary[empId].approvedRecords += Number.isNaN(recordCount) ? 0 : recordCount;
+    if (activityColumns.includes(activity)) {
+      employeeSummary[empId][activity] += hours;
     }
-    employeeSummary[empId].totalHours += hours;
     employeeSummary[empId].totalKm += km;
     employeeSummary[empId].totalExpenses += expenses;
+    if (dateStr) employeeSummary[empId].dates.add(dateStr);
   });
 
   const summaryList = Object.values(employeeSummary);
-  const grandTotalHours = summaryList.reduce((sum, emp) => sum + emp.totalHours, 0);
-  const grandTotalKm = summaryList.reduce((sum, emp) => sum + emp.totalKm, 0);
-  const grandTotalExpenses = summaryList.reduce((sum, emp) => sum + emp.totalExpenses, 0);
-  const grandTotalRecords = summaryList.reduce((sum, emp) => sum + emp.totalRecords, 0);
+  const grandTotals = { days: 0, km: 0, expenses: 0 };
+  activityColumns.forEach(a => grandTotals[a] = 0);
+  summaryList.forEach(emp => {
+    grandTotals.days += emp.dates.size;
+    grandTotals.km += emp.totalKm;
+    grandTotals.expenses += emp.totalExpenses;
+    activityColumns.forEach(a => grandTotals[a] += emp[a]);
+  });
 
   if (isMobileView()) {
     const employeeCards = summaryList.map(emp => {
-      const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
-      const statusText = allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`;
-      const statusColor = allApproved ? '#22c55e' : '#f59e0b';
-      
+      const activityLines = activityColumns.filter(a => emp[a] > 0).map(a =>
+        `<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="color: #64748b;">${a}</span><strong>${formatHoursDisplay(emp[a])}</strong></div>`
+      ).join('');
       return `
         <div class="employee-card" style="background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <strong style="color: #3b82f6; font-size: 16px;">${emp.empName}</strong>
-            <span style="background: ${statusColor}; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">${statusText}</span>
+            <span style="background: #e2e8f0; padding: 3px 10px; border-radius: 12px; font-size: 12px;">${emp.team || '-'}</span>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; color: #64748b;">
-            <div><span>צוות:</span> <strong style="color: #1e293b;">${emp.team || '-'}</strong></div>
-            <div><span>שעות:</span> <strong style="color: #1e293b;">${formatHoursDisplay(emp.totalHours)}</strong></div>
-            <div><span>ק"מ:</span> <strong style="color: #1e293b;">${emp.totalKm.toFixed(1)}</strong></div>
-            <div><span>הוצאות:</span> <strong style="color: #1e293b;">${emp.totalExpenses.toFixed(2)} ₪</strong></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; font-size: 13px;">
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">ימי עבודה</div>
+              <strong>${emp.dates.size}</strong>
+            </div>
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">ק"מ</div>
+              <strong>${emp.totalKm.toFixed(0)}</strong>
+            </div>
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">הוצאות</div>
+              <strong>${emp.totalExpenses.toFixed(0)} ₪</strong>
+            </div>
           </div>
+          ${activityLines ? `<div style="font-size: 13px; border-top: 1px solid #e2e8f0; padding-top: 6px;">${activityLines}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -6315,9 +6324,9 @@ function renderTeamTable(recordsList) {
           <h4 style="margin: 0 0 10px 0;">סיכום צוות</h4>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
             <div>עובדים: <strong>${summaryList.length}</strong></div>
-            <div>שעות: <strong>${formatHoursDisplay(grandTotalHours)}</strong></div>
-            <div>ק"מ: <strong>${grandTotalKm.toFixed(1)}</strong></div>
-            <div>הוצאות: <strong>${grandTotalExpenses.toFixed(2)} ₪</strong></div>
+            <div>ימי עבודה: <strong>${grandTotals.days}</strong></div>
+            <div>ק"מ: <strong>${grandTotals.km.toFixed(0)}</strong></div>
+            <div>הוצאות: <strong>${grandTotals.expenses.toFixed(0)} ₪</strong></div>
           </div>
         </div>
         ${employeeCards}
@@ -6326,47 +6335,57 @@ function renderTeamTable(recordsList) {
     return;
   }
 
+  const colW = 'width: 10%; min-width: 70px;';
   const tableHTML = `
     <div style="margin-bottom: 15px;">
       <span style="color: #64748b;">סה"כ ${summaryList.length} עובדים</span>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 30px;"></th>
-          <th>שם עובד</th>
-          <th>צוות</th>
-          <th>סה"כ שעות</th>
-          <th>סה"כ ק"מ</th>
-          <th>סה"כ הוצאות</th>
-          <th>סטטוס רשומות</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${summaryList.map(emp => {
-          const allApproved = emp.totalRecords > 0 && emp.approvedRecords === emp.totalRecords;
-          const statusText = allApproved ? 'מאושר' : `${emp.approvedRecords}/${emp.totalRecords}`;
-          const statusColor = allApproved ? '#22c55e' : '#f59e0b';
-          return `
+    <div style="overflow-x: auto;">
+      <table style="table-layout: fixed; width: 100%;">
+        <thead>
+          <tr>
+            <th style="width: 30px;"></th>
+            <th style="${colW}">שם עובד</th>
+            <th style="${colW} text-align: center;">ימי עבודה</th>
+            <th style="${colW} text-align: center;">שעות קורס</th>
+            <th style="${colW} text-align: center;">שעות סדנה</th>
+            <th style="${colW} text-align: center;">שעות הכשרה</th>
+            <th style="${colW} text-align: center;">שעות סיור</th>
+            <th style="${colW} text-align: center;">שעות ביטול זמן</th>
+            <th style="${colW} text-align: center;">סה"כ ק"מ</th>
+            <th style="${colW} text-align: center;">סה"כ הוצאות</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${summaryList.map(emp => `
           <tr class="employee-summary-row" onclick="showEmployeeDetails('${emp.empId}')" style="cursor: pointer;">
             <td><i class="fas fa-chevron-left"></i></td>
             <td><strong style="color: #3b82f6;">${emp.empName}</strong></td>
-            <td>${emp.team || '-'}</td>
-            <td><strong>${formatHoursDisplay(emp.totalHours)}</strong></td>
-            <td>${emp.totalKm.toFixed(1)}</td>
-            <td>${emp.totalExpenses.toFixed(2)} ₪</td>
-            <td><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${statusText}</span></td>
+            <td style="text-align: center;">${emp.dates.size}</td>
+            <td style="text-align: center;">${formatHoursDisplay(emp['קורס'])}</td>
+            <td style="text-align: center;">${formatHoursDisplay(emp['סדנה'])}</td>
+            <td style="text-align: center;">${formatHoursDisplay(emp['הכשרה'])}</td>
+            <td style="text-align: center;">${formatHoursDisplay(emp['סיור'])}</td>
+            <td style="text-align: center;">${formatHoursDisplay(emp['ביטול זמן'])}</td>
+            <td style="text-align: center;">${emp.totalKm.toFixed(0)}</td>
+            <td style="text-align: center;">${emp.totalExpenses.toFixed(0)} ₪</td>
           </tr>
-        `;}).join('')}
-        <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
-          <td colspan="3" style="text-align: left;">סה"כ:</td>
-          <td style="color: #3b82f6;">${formatHoursDisplay(grandTotalHours)}</td>
-          <td>${grandTotalKm.toFixed(1)}</td>
-          <td>${grandTotalExpenses.toFixed(2)} ₪</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
+          `).join('')}
+          <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #3b82f6;">
+            <td></td>
+            <td>סה"כ</td>
+            <td style="text-align: center; color: #3b82f6;">${grandTotals.days}</td>
+            <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['קורס'])}</td>
+            <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['סדנה'])}</td>
+            <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['הכשרה'])}</td>
+            <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['סיור'])}</td>
+            <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['ביטול זמן'])}</td>
+            <td style="text-align: center; color: #3b82f6;">${grandTotals.km.toFixed(0)}</td>
+            <td style="text-align: center; color: #3b82f6;">${grandTotals.expenses.toFixed(0)} ₪</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   `;
 
   document.getElementById('teamRecordsTable').innerHTML = tableHTML;
@@ -9089,6 +9108,7 @@ async function updateAdminDashboard() {
     
     // Group by employee
     const employeeData = {};
+    const adminActivityColumns = ['קורס', 'סדנה', 'הכשרה', 'סיור', 'ביטול זמן'];
     
     currentMonthRecords.forEach(rec => {
       const empId = rec.employeeId || 'unknown';
@@ -9099,7 +9119,7 @@ async function updateAdminDashboard() {
       const team = (empFromList && empFromList.team) || extractValue(rec.team) || extractValue(rec.Team) || '-';
       const empType = (empFromList && empFromList.employmentType) || normalizeEmploymentType(rec, '');
       
-      if (!employeeData[empId]) {
+    if (!employeeData[empId]) {
         employeeData[empId] = {
           empId: empId,
           empName: (empFromList && empFromList.name) || empName,
@@ -9109,23 +9129,29 @@ async function updateAdminDashboard() {
           totalHours: 0,
           totalKm: 0,
           totalExpenses: 0,
+          dates: new Set(),
           records: []
         };
+        adminActivityColumns.forEach(a => employeeData[empId][a] = 0);
       } else {
-        // עדכן employmentType רק אם הנוכחי לא ריק והשמור הוא ברירת מחדל
         if (empType && empType !== '' && (!employeeData[empId].employmentType || employeeData[empId].employmentType === '')) {
           employeeData[empId].employmentType = empType;
         }
-        // עדכן team רק אם הנוכחי לא ריק והשמור ריק
         if (team && team !== '-' && (!employeeData[empId].team || employeeData[empId].team === '-')) {
           employeeData[empId].team = team;
         }
       }
       
+      const actVal = extractValue(rec.activityType) || extractValue(rec.ActivityType) || '';
+      const recHours = parseFloat(rec.workHours || rec.hours || 0);
+      if (adminActivityColumns.includes(actVal)) {
+        employeeData[empId][actVal] += recHours;
+      }
       employeeData[empId].totalRecords++;
-      employeeData[empId].totalHours += parseFloat(rec.workHours || rec.hours || 0);
+      employeeData[empId].totalHours += recHours;
       employeeData[empId].totalKm += parseFloat(rec.kilometers || rec.km || 0);
       employeeData[empId].totalExpenses += parseFloat(rec.totalExpenses || 0);
+      if (rec.attendanceDate) employeeData[empId].dates.add(rec.attendanceDate);
       employeeData[empId].records.push(rec);
     });
     
@@ -9171,7 +9197,7 @@ async function updateAdminDashboard() {
     setSilentLoading('adminMobileCardsContainer', false);
     
     if (filteredEmployees.length === 0) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #64748b;">אין נתונים להצגה לפי הסינונים שנבחרו</td></tr>';
       if (mobileContainer) mobileContainer.innerHTML = '<p style="text-align: center; color: #64748b; padding: 40px;">אין נתונים להצגה</p>';
       return;
     }
@@ -9183,16 +9209,18 @@ async function updateAdminDashboard() {
           <td style="padding: 10px 8px; text-align: center;">
             <i class="fas fa-chevron-left" id="admin-chevron-${emp.empId}" style="transition: transform 0.3s; color: #64748b;"></i>
           </td>
-          <td style="padding: 10px 8px; text-align: right;">${emp.empId}</td>
           <td style="padding: 10px 8px; text-align: right; font-weight: 500; color: #3b82f6;">${emp.empName}</td>
-          <td style="padding: 10px 8px; text-align: center;">${emp.team}</td>
-          <td style="padding: 10px 8px; text-align: center;">${emp.employmentType}</td>
-          <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${emp.totalHours.toFixed(1)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${emp.dates ? emp.dates.size : emp.totalRecords}</td>
+          <td style="padding: 10px 8px; text-align: center;">${formatHoursDisplay(emp['קורס'] || 0)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${formatHoursDisplay(emp['סדנה'] || 0)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${formatHoursDisplay(emp['הכשרה'] || 0)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${formatHoursDisplay(emp['סיור'] || 0)}</td>
+          <td style="padding: 10px 8px; text-align: center;">${formatHoursDisplay(emp['ביטול זמן'] || 0)}</td>
           <td style="padding: 10px 8px; text-align: center;">${emp.totalKm.toFixed(0)}</td>
           <td style="padding: 10px 8px; text-align: center;">${emp.totalExpenses.toFixed(0)} ₪</td>
         </tr>
         <tr id="admin-details-${emp.empId}" class="employee-details-row" style="display: none;">
-          <td colspan="8" style="padding: 0; background: #f8fafc;">
+          <td colspan="10" style="padding: 0; background: #f8fafc;">
             <div id="admin-details-content-${emp.empId}" style="padding: 20px;">
               <!-- Will be filled when expanded -->
             </div>
@@ -9203,24 +9231,37 @@ async function updateAdminDashboard() {
     
     // Mobile cards
     if (mobileContainer) {
-      mobileContainer.innerHTML = filteredEmployees.map(emp => `
+      const adminActCols = ['קורס', 'סדנה', 'הכשרה', 'סיור', 'ביטול זמן'];
+      mobileContainer.innerHTML = filteredEmployees.map(emp => {
+        const actLines = adminActCols.filter(a => (emp[a] || 0) > 0).map(a =>
+          `<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="color: #64748b;">${a}</span><strong>${formatHoursDisplay(emp[a])}</strong></div>`
+        ).join('');
+        return `
         <div class="content-card" style="margin-bottom: 12px; padding: 15px;" onclick="toggleMobileAdminDetails('${emp.empId}')">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span style="font-weight: 600; color: #3b82f6; font-size: 16px;">${emp.empName}</span>
             <span style="background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-size: 12px;">${emp.team}</span>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569;">
-            <div><i class="fas fa-id-badge" style="width: 18px; color: #94a3b8;"></i> ${emp.empId}</div>
-            <div><i class="fas fa-briefcase" style="width: 18px; color: #94a3b8;"></i> ${emp.employmentType}</div>
-            <div><i class="fas fa-clock" style="width: 18px; color: #94a3b8;"></i> ${emp.totalHours.toFixed(1)} שעות</div>
-            <div><i class="fas fa-road" style="width: 18px; color: #94a3b8;"></i> ${emp.totalKm.toFixed(0)} ק"מ</div>
-            <div><i class="fas fa-shekel-sign" style="width: 18px; color: #94a3b8;"></i> ${emp.totalExpenses.toFixed(0)} ₪</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; font-size: 13px;">
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">ימי עבודה</div>
+              <strong>${emp.dates ? emp.dates.size : emp.totalRecords}</strong>
+            </div>
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">ק"מ</div>
+              <strong>${emp.totalKm.toFixed(0)}</strong>
+            </div>
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">הוצאות</div>
+              <strong>${emp.totalExpenses.toFixed(0)} ₪</strong>
+            </div>
           </div>
+          ${actLines ? `<div style="font-size: 13px; border-top: 1px solid #e2e8f0; padding-top: 6px;">${actLines}</div>` : ''}
           <div id="mobile-details-${emp.empId}" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
             <!-- יתמלא בלחיצה -->
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
     
   } catch (error) {
@@ -9888,7 +9929,6 @@ function toggleAdminEmployeeDetails(empId) {
                 <th style="padding: 10px; text-align: right;">בית ספר</th>
                 <th style="padding: 10px; text-align: center;">ק"מ</th>
                 <th style="padding: 10px; text-align: center;">הוצאות</th>
-                <th style="padding: 10px; text-align: center;">סטטוס</th>
                 <th style="padding: 10px; text-align: center;">פעולות</th>
               </tr>
             </thead>
@@ -9909,7 +9949,6 @@ function toggleAdminEmployeeDetails(empId) {
                   <td style="padding: 8px; text-align: right;">${extractValue(rec.schoolName) || extractValue(rec.SchoolName) || ''}</td>
                   <td style="padding: 8px; text-align: center;">${rec.kilometers || rec.km || 0}</td>
                   <td style="padding: 8px; text-align: center;">${(rec.totalExpenses || 0).toFixed(0)} ₪</td>
-                  <td style="padding: 8px; text-align: center;"><span style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${status}</span></td>
                   <td style="padding: 8px; text-align: center; white-space: nowrap;">
                     ${!isApproved ? `<button onclick="event.stopPropagation(); editRecordFromAdmin('${recId}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px;" title="עריכה"><i class="fas fa-edit"></i></button>` : ''}
                     ${!isApproved ? `<button onclick="event.stopPropagation(); approveRecordFromAdmin('${recId}')" data-approve-record="${recId}" style="background: #22c55e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="אישור"><i class="fas fa-check"></i></button>` : '<span style="color: #22c55e;"><i class="fas fa-check-circle"></i></span>'}
@@ -10084,7 +10123,7 @@ async function loadReportData() {
     updateReportStats();
     renderReportByEmployee();
     if (!isMobileView()) {
-      showAlert(`נטענו ${reportRecords.length} ימי עבודה לחודש ${month}/${year}`, 'success');
+      showAlert('התחברות בהצלחה', 'success');
     }
   } catch (error) {
     console.error('Load report data error:', error);
@@ -10112,78 +10151,113 @@ function renderReportByEmployee() {
     return;
   }
 
-  if (isMobileView()) {
-    const totals = {
-      count: reportRecords.length,
-      hours: reportRecords.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0),
-      km: reportRecords.reduce((s, r) => s + (parseFloat(r.km) || 0), 0),
-      expenses: reportRecords.reduce((s, r) => s + (parseFloat(r.totalExpenses) || 0), 0)
-    };
+  const activityColumns = ['קורס', 'סדנה', 'הכשרה', 'סיור', 'ביטול זמן'];
 
-    container.innerHTML = `
-      <div class="mobile-report-summary">
-        <div style="font-weight: 600; margin-bottom: 8px;">במובייל מוצג סיכום כללי בלבד.</div>
-        <div>שעות: <strong>${formatHoursDisplay(totals.hours)}</strong></div>
-        <div>ק"מ: <strong>${totals.km.toFixed(0)}</strong></div>
-        <div>הוצאות: <strong>${totals.expenses.toFixed(0)} ₪</strong></div>
-      </div>
-    `;
-    return;
-  }
-  
   const byEmployee = {};
   reportRecords.forEach(rec => {
     const key = rec.empName || 'לא ידוע';
     if (!byEmployee[key]) {
-      byEmployee[key] = { empNum: rec.empNum, hours: 0, km: 0, expenses: 0, count: 0 };
+      byEmployee[key] = { empNum: rec.empNum, km: 0, expenses: 0, dates: new Set() };
+      activityColumns.forEach(a => byEmployee[key][a] = 0);
     }
-    byEmployee[key].hours += parseFloat(rec.hours) || 0;
+    const hours = parseFloat(rec.hours) || 0;
+    const activity = (rec.activity || '').trim();
+    if (activityColumns.includes(activity)) {
+      byEmployee[key][activity] += hours;
+    }
     byEmployee[key].km += parseFloat(rec.km) || 0;
     byEmployee[key].expenses += parseFloat(rec.totalExpenses) || 0;
-    byEmployee[key].count++;
+    if (rec.date) byEmployee[key].dates.add(rec.date);
   });
+
+  const colW = 'width: 11.11%; min-width: 80px;';
+
+  if (isMobileView()) {
+    const cards = Object.keys(byEmployee).sort().map(name => {
+      const emp = byEmployee[name];
+      const totalHours = activityColumns.reduce((s, a) => s + emp[a], 0);
+      const activityLines = activityColumns.filter(a => emp[a] > 0).map(a =>
+        `<div style="display: flex; justify-content: space-between; padding: 2px 0;"><span style="color: #64748b;">${a}</span><strong>${formatHoursDisplay(emp[a])}</strong></div>`
+      ).join('');
+      return `
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 10px;">
+          <div style="font-weight: 600; color: #1e293b; font-size: 15px; margin-bottom: 8px;">${name}</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; font-size: 13px;">
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">ימי עבודה</div>
+              <strong>${emp.dates.size}</strong>
+            </div>
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">ק"מ</div>
+              <strong>${emp.km.toFixed(0)}</strong>
+            </div>
+            <div style="text-align: center; background: #f1f5f9; border-radius: 6px; padding: 6px;">
+              <div style="color: #64748b; font-size: 11px;">הוצאות</div>
+              <strong>${emp.expenses.toFixed(0)} ₪</strong>
+            </div>
+          </div>
+          ${activityLines ? `<div style="font-size: 13px; border-top: 1px solid #e2e8f0; padding-top: 6px;">${activityLines}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+    container.innerHTML = cards;
+    return;
+  }
   
   let html = `
     <div style="overflow-x: auto;">
-      <table>
+      <table style="table-layout: fixed; width: 100%;">
         <thead>
           <tr>
-            <th>שם עובד</th>
-            <th>מספר עובד</th>
-            <th>שעות</th>
-            <th>ק"מ</th>
-            <th>הוצאות</th>
+            <th style="${colW}">שם עובד</th>
+            <th style="${colW} text-align: center;">ימי עבודה</th>
+            <th style="${colW} text-align: center;">שעות קורס</th>
+            <th style="${colW} text-align: center;">שעות סדנה</th>
+            <th style="${colW} text-align: center;">שעות הכשרה</th>
+            <th style="${colW} text-align: center;">שעות סיור</th>
+            <th style="${colW} text-align: center;">שעות ביטול זמן</th>
+            <th style="${colW} text-align: center;">סה"כ ק"מ</th>
+            <th style="${colW} text-align: center;">סה"כ הוצאות</th>
           </tr>
         </thead>
         <tbody>
   `;
   
+  const grandTotals = { days: 0, km: 0, expenses: 0 };
+  activityColumns.forEach(a => grandTotals[a] = 0);
+
   Object.keys(byEmployee).sort().forEach(name => {
     const emp = byEmployee[name];
+    grandTotals.days += emp.dates.size;
+    grandTotals.km += emp.km;
+    grandTotals.expenses += emp.expenses;
+    activityColumns.forEach(a => grandTotals[a] += emp[a]);
     html += `
       <tr>
-        <td>${name || 'לא ידוע'}</td>
-        <td>${emp.empNum || '-'}</td>
-        <td><strong>${formatHoursDisplay(emp.hours)}</strong></td>
-        <td>${emp.km.toFixed(0)}</td>
-        <td>${emp.expenses.toFixed(0)} ₪</td>
+        <td>${name}</td>
+        <td style="text-align: center;">${emp.dates.size}</td>
+        <td style="text-align: center;">${formatHoursDisplay(emp['קורס'])}</td>
+        <td style="text-align: center;">${formatHoursDisplay(emp['סדנה'])}</td>
+        <td style="text-align: center;">${formatHoursDisplay(emp['הכשרה'])}</td>
+        <td style="text-align: center;">${formatHoursDisplay(emp['סיור'])}</td>
+        <td style="text-align: center;">${formatHoursDisplay(emp['ביטול זמן'])}</td>
+        <td style="text-align: center;">${emp.km.toFixed(0)}</td>
+        <td style="text-align: center;">${emp.expenses.toFixed(0)} ₪</td>
       </tr>
     `;
   });
   
-  const totals = {
-    count: reportRecords.length,
-    hours: reportRecords.reduce((s, r) => s + (parseFloat(r.hours) || 0), 0),
-    km: reportRecords.reduce((s, r) => s + (parseFloat(r.km) || 0), 0),
-    expenses: reportRecords.reduce((s, r) => s + (parseFloat(r.totalExpenses) || 0), 0)
-  };
-  
   html += `
       <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #3b82f6;">
-        <td colspan="2">סה"כ</td>
-        <td style="color: #3b82f6;">${totals.hours.toFixed(1)}</td>
-        <td style="color: #3b82f6;">${totals.km.toFixed(0)}</td>
-        <td style="color: #3b82f6;">${totals.expenses.toFixed(0)} ₪</td>
+        <td>סה"כ</td>
+        <td style="text-align: center; color: #3b82f6;">${grandTotals.days}</td>
+        <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['קורס'])}</td>
+        <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['סדנה'])}</td>
+        <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['הכשרה'])}</td>
+        <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['סיור'])}</td>
+        <td style="text-align: center; color: #3b82f6;">${formatHoursDisplay(grandTotals['ביטול זמן'])}</td>
+        <td style="text-align: center; color: #3b82f6;">${grandTotals.km.toFixed(0)}</td>
+        <td style="text-align: center; color: #3b82f6;">${grandTotals.expenses.toFixed(0)} ₪</td>
       </tr>
         </tbody>
       </table>
