@@ -2938,7 +2938,7 @@
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h1>הרשומות שלי</h1>
-          <p>צפייה ברשומות</p>
+          <p>צפייה ברשומות לפי שבוע</p>
         </div>
         <button class="btn btn-secondary btn-icon" onclick="showPage(event, 'dashboard')" title="חזור ללוח בקרה">
           <i class="fas fa-arrow-right" style="font-size: 18px;"></i>
@@ -5696,7 +5696,8 @@ async function loadApprovalsStatusPage() {
         const formattedManagerDate = emp.managerApprovalDate ? new Date(emp.managerApprovalDate).toLocaleDateString('he-IL') : '';
         
         let secondColumnHtml = '';
-        if (user.role === 'manager') {
+        const canApproveMonth = (user.role === 'manager' || user.role === 'operations_controller');
+        if (canApproveMonth) {
           if (managerApproved) {
             secondColumnHtml = `
               <div style="flex: 1; min-width: 120px; background: #dcfce7; padding: 8px 12px; border-radius: 8px; text-align: center;">
@@ -5762,7 +5763,8 @@ async function loadApprovalsStatusPage() {
       html += `<div>${cards}</div>`;
     } else {
       // Desktop: Table view
-      const secondColumnHeader = user.role === 'manager' ? 'אישור חודש' : 'אישור מנהל';
+      const canApproveMonthDesktop = (user.role === 'manager' || user.role === 'operations_controller');
+      const secondColumnHeader = canApproveMonthDesktop ? 'אישור חודש' : 'אישור מנהל';
       const rows = teamEmps.map(emp => {
         const approvalDate = emp.instructorApprovalDate || emp.approvalDate || null;
         const managerApproved = emp.managerApprovalDate || emp.released || false;
@@ -5770,7 +5772,7 @@ async function loadApprovalsStatusPage() {
         const formattedManagerDate = emp.managerApprovalDate ? new Date(emp.managerApprovalDate).toLocaleDateString('he-IL') : '';
         
         let secondColumnHtml = '';
-        if (user.role === 'manager') {
+        if (canApproveMonthDesktop) {
           if (managerApproved) {
             secondColumnHtml = `
               <span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #dcfce7; color: #166534;">
