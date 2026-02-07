@@ -2592,7 +2592,7 @@
             </div>
           </div>
           <div class="stat-card-value" id="totalRecordsStat">0</div>
-          <div class="stat-card-label">תאריכים שונים בחודש</div>
+          <div class="stat-card-label">ימי עבודה</div>
         </div>
         
         <div class="stat-card purple">
@@ -2704,7 +2704,7 @@
 
     <!-- Add Record Page -->
     <div id="addRecordPage" class="page hidden">
-      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px;">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; max-width: 900px; margin-left: auto; margin-right: auto;">
         <div style="display: flex; align-items: center; gap: 20px;">
           <h1 style="margin: 0; font-size: 24px;">הוספת רשומה חדשה</h1>
           <div id="formUserInfoHeader" style="display: flex; gap: 15px; background: #f1f5f9; padding: 6px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; color: #475569; border: 1px solid #e2e8f0;">
@@ -2722,7 +2722,7 @@
         </div>
       </div>
       
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 900px; margin: 0 auto;">
         
         <div class="content-card">
           <div class="card-header" style="padding: 12px 16px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);">
@@ -2945,6 +2945,9 @@
         </button>
       </div>
       
+      <!-- Desktop Calendar - hidden on mobile -->
+      <div id="recordsCalendarWrapper" class="hide-mobile" style="margin-bottom: 20px;"></div>
+
       <div class="content-card">
         <div class="card-header" style="flex-direction: column; gap: 15px;">
           <!-- Month Navigation for Records -->
@@ -2978,16 +2981,6 @@
           
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <h2 class="card-title">סה"כ <span id="totalRecordsCount">0</span> ימי עבודה</h2>
-            <div style="display: flex; gap: 10px;">
-            <button class="btn btn-success hide-mobile" onclick="exportToExcel()">
-              <i class="fas fa-file-excel"></i>
-              ייצוא ל-Excel
-            </button>
-            <button class="btn btn-primary" onclick="syncFromSharePoint(JSON.parse(localStorage.getItem('currentUser') || '{}').empNum)">
-              <i class="fas fa-sync"></i>
-              רענן נתונים
-            </button>
-            </div>
           </div>
         </div>
         <div class="card-body">
@@ -2995,6 +2988,18 @@
             <p style="text-align: center; color: #94a3b8; padding: 40px;">אין ימי עבודה להצגה</p>
           </div>
         </div>
+      </div>
+
+      <!-- Desktop bottom buttons - hidden on mobile -->
+      <div class="hide-mobile" style="display: flex; justify-content: center; gap: 12px; margin-top: 16px;">
+        <button class="btn btn-success" onclick="exportToExcel()">
+          <i class="fas fa-file-excel"></i>
+          ייצוא ל-Excel
+        </button>
+        <button class="btn btn-primary" onclick="syncFromSharePoint(JSON.parse(localStorage.getItem('currentUser') || '{}').empNum)">
+          <i class="fas fa-sync"></i>
+          רענן נתונים
+        </button>
       </div>
     </div>
 
@@ -3151,18 +3156,6 @@
                 <option value="מעוף">מעוף</option>
                 <option value="מנפאואר">מנפאואר</option>
                 <option value="עצמאי">עצמאי</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin: 0; min-width: 120px;">
-              <label style="font-size: 12px; margin-bottom: 4px;">סוג פעילות</label>
-              <select id="reportActivityType" class="form-input" onchange="loadReportData()" style="padding: 8px;">
-                <option value="all">הכל</option>
-                <option value="ביטול זמן">ביטול זמן</option>
-                <option value="הכשרה">הכשרה</option>
-                <option value="סדנה">סדנה</option>
-                <option value="סיור">סיור</option>
-                <option value="קורס">קורס</option>
-                <option value="תפעול">תפעול</option>
               </select>
             </div>
             <button class="btn btn-primary" onclick="loadReportData()" style="margin-top: 18px;">
@@ -7661,6 +7654,8 @@ function renderRecordsTable() {
   const recordsContainer = document.getElementById('recordsTable');
   if (!recordsContainer) return;
   
+  renderRecordsCalendar(selectedMonth, selectedYear, filteredRecords);
+
   if (filteredRecords.length === 0) {
     recordsContainer.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">אין רשומות להצגה לחודש זה</p>';
     return;
@@ -7737,6 +7732,7 @@ function renderRecordsTable() {
         
         // Build action buttons based on permissions
         let actionButtons = '';
+        actionButtons += `<button onclick="copyRecord(${rec._originalIndex})" style="flex: 1; background: #fdba74; color: #9a3412; padding: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;"><i class="fas fa-copy"></i> העתקה</button>`;
         if (canPotentiallyEdit && canEditThis) {
           actionButtons += `<button onclick="editRecord(${rec._originalIndex})" style="flex: 1; background: #3b82f6; color: white; padding: 8px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;"><i class="fas fa-edit"></i> עריכה</button>`;
         }
@@ -7849,6 +7845,9 @@ function renderRecordsTable() {
             <td style="text-align: center;">${rec.km || 0}</td>
             ${showActionsColumn ? `
             <td style="white-space: nowrap;">
+              <button onclick="copyRecord(${originalIdx})" style="background: #fed7aa; color: #9a3412; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="העתק רשומה">
+                <i class="fas fa-copy"></i>
+              </button>
               ${canEditRecord(rec) ? `
               <button onclick="editRecord(${originalIdx})" style="background: #dbeafe; color: #1e40af; padding: 4px 6px; border: none; border-radius: 4px; cursor: pointer; margin-left: 2px;" title="עריכה">
                 <i class="fas fa-edit"></i>
@@ -7879,6 +7878,132 @@ function renderRecordsTable() {
   `;
   
   recordsContainer.innerHTML = tableHTML;
+}
+
+function renderRecordsCalendar(month, year, filteredRecords) {
+  const wrapper = document.getElementById('recordsCalendarWrapper');
+  if (!wrapper) return;
+  if (isMobileView()) {
+    wrapper.innerHTML = '';
+    return;
+  }
+
+  const daysWithRecords = new Set();
+  filteredRecords.forEach(rec => {
+    if (!rec.date) return;
+    let day;
+    if (rec.date.includes('/')) {
+      day = parseInt(rec.date.split('/')[0]);
+    } else if (rec.date.includes('-')) {
+      day = parseInt(rec.date.split('-')[2]);
+    }
+    if (day) daysWithRecords.add(day);
+  });
+
+  const monthNames = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  const dayNames = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+  const todayDate = today.getDate();
+
+  const pastelColors = ['#dbeafe','#e0f2fe','#cffafe','#d1fae5','#fef3c7','#fce7f3','#ede9fe'];
+
+  let calendarHTML = `
+    <div style="max-width: 50%; margin: 0 auto;">
+    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 16px 24px; display: flex; justify-content: center; align-items: center;">
+        <h3 style="margin: 0; color: white; font-size: 18px; font-weight: 600;">
+          <i class="fas fa-calendar-alt" style="margin-left: 8px;"></i>
+          ${monthNames[month]} ${year}
+        </h3>
+      </div>
+      <div style="padding: 16px 20px;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed;">
+          <thead>
+            <tr>
+              ${dayNames.map(d => `<th style="text-align: center; padding: 8px 0; font-size: 13px; font-weight: 600; color: ${d === 'ש׳' ? '#dc2626' : '#64748b'};">${d}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>`;
+
+  let dayCounter = 1;
+  for (let row = 0; row < 6; row++) {
+    if (dayCounter > daysInMonth) break;
+    calendarHTML += '<tr>';
+    for (let col = 0; col < 7; col++) {
+      if ((row === 0 && col < firstDay) || dayCounter > daysInMonth) {
+        calendarHTML += '<td style="padding: 6px;"></td>';
+      } else {
+        const hasRecord = daysWithRecords.has(dayCounter);
+        const isToday = isCurrentMonth && dayCounter === todayDate;
+        const isFriday = col === 5;
+        const isSaturday = col === 6;
+        const pastelBg = hasRecord ? pastelColors[dayCounter % pastelColors.length] : 'transparent';
+
+        let cellStyle = `text-align: center; padding: 8px 4px; border-radius: 10px; font-size: 14px; font-weight: 500; transition: all 0.2s ease;`;
+
+        if (isToday) {
+          cellStyle += ` background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-weight: 700; box-shadow: 0 2px 8px rgba(59,130,246,0.35);`;
+        } else if (hasRecord) {
+          cellStyle += ` background: ${pastelBg}; color: #1e3a5f; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(59,130,246,0.15);`;
+        } else if (isSaturday) {
+          cellStyle += ` color: #dc2626;`;
+        } else if (isFriday) {
+          cellStyle += ` color: #9ca3af;`;
+        } else {
+          cellStyle += ` color: #475569;`;
+        }
+
+        calendarHTML += `<td style="${cellStyle}">${dayCounter}</td>`;
+        dayCounter++;
+      }
+    }
+    calendarHTML += '</tr>';
+  }
+
+  calendarHTML += `
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>`;
+
+  wrapper.innerHTML = calendarHTML;
+}
+
+function copyRecord(index) {
+  const rec = records[index];
+  if (!rec) return;
+  
+  showPage('add-record');
+  
+  setTimeout(() => {
+    document.getElementById('activityType').value = rec.activity || '';
+    
+    if (rec.school && schoolsData.length > 0) {
+      const matchedSchool = schoolsData.find(s => s['בית ספר'] === rec.school);
+      if (matchedSchool) {
+        selectSchool(matchedSchool);
+      }
+    }
+    
+    document.getElementById('programField').value = rec.program || '';
+    document.getElementById('sessionNum').value = rec.session || '';
+    document.getElementById('kmField').value = rec.km || '';
+    document.getElementById('totalExpenses').value = rec.totalExpenses || '';
+    document.getElementById('expensesDetail').value = rec.expensesDetail || '';
+    document.getElementById('notesField').value = rec.notes || '';
+    
+    if (rec.school === 'זום') {
+      document.getElementById('kmField').value = '0';
+      document.getElementById('kmField').readOnly = true;
+      document.getElementById('kmField').style.background = '#f1f5f9';
+      document.getElementById('kmField').style.cursor = 'not-allowed';
+    }
+  }, 100);
 }
 
 async function deleteRecord(index) {
@@ -10058,7 +10183,6 @@ async function loadReportData() {
   const year = document.getElementById('reportYear').value;
   const employmentType = document.getElementById('reportEmploymentType')?.value || 'all';
   const team = document.getElementById('reportTeam')?.value || 'all';
-  const activityType = document.getElementById('reportActivityType')?.value || 'all';
   
   const user = getCurrentUserData();
   if (!user) return;
@@ -10145,10 +10269,6 @@ async function loadReportData() {
         const recTeam = extractLookupValue(rec.team, '').trim().toLowerCase();
         return recTeam === team.trim().toLowerCase();
       });
-    }
-    
-    if (activityType !== 'all') {
-      reportRecords = reportRecords.filter(rec => (rec.activity || rec.activityType) === activityType);
     }
     
     updateReportStats();
