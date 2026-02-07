@@ -7634,7 +7634,8 @@ function renderRecordsTable() {
     return parseDate(a.date) - parseDate(b.date);
   });
   
-  document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
+  const uniqueWorkDays = new Set(filteredRecords.map(rec => rec.date)).size;
+  document.getElementById('totalRecordsCount').textContent = uniqueWorkDays;
   
   const totalHours = filteredRecords.reduce((sum, rec) => sum + (rec.hours || 0), 0);
   const totalKm = filteredRecords.reduce((sum, rec) => sum + (rec.km || 0), 0);
@@ -7745,7 +7746,7 @@ function renderRecordsTable() {
               <div style="font-size: 12px; color: #3b82f6; margin-top: 2px;">${week.weekRange}</div>
             </div>
             <div style="text-align: left;">
-              <div style="font-size: 13px; color: #1e40af;">${week.records.length} ימים</div>
+              <div style="font-size: 13px; color: #1e40af;">${new Set(week.records.map(r => r.date)).size} ימים</div>
               <div style="font-size: 14px; font-weight: 600; color: #1e40af;">${formatHoursDisplay(weekHours)} שעות</div>
             </div>
           </div>
@@ -7762,7 +7763,7 @@ function renderRecordsTable() {
           <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #1e40af;"><i class="fas fa-chart-bar" style="margin-left: 8px;"></i>סיכום חודשי</h4>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 10px; text-align: center;">
-              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">${records.length}</div>
+              <div style="font-size: 20px; font-weight: 700; color: #1e40af;">${uniqueWorkDays}</div>
               <div style="font-size: 12px; color: #475569;">ימי עבודה</div>
             </div>
             <div style="background: rgba(255,255,255,0.6); padding: 10px; border-radius: 10px; text-align: center;">
