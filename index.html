@@ -5584,6 +5584,8 @@ async function loadApprovalsStatusPage() {
     return;
   }
 
+  try {
+
   // Build employment type lookup from teamRecordsCache (which has the data)
   const employmentTypeLookup = {};
   if (typeof teamRecordsCache !== 'undefined' && Array.isArray(teamRecordsCache)) {
@@ -5880,6 +5882,13 @@ async function loadApprovalsStatusPage() {
   if (dashboardContainer && dashboardContainer !== container) {
     setSilentLoading(dashboardContainer.id, false);
     dashboardContainer.innerHTML = html;
+  }
+
+  } catch (renderError) {
+    console.error('Error rendering approvals:', renderError);
+    hideLoadingBar();
+    setSilentLoading(container.id, false);
+    if (dashboardContainer && dashboardContainer !== container) setSilentLoading(dashboardContainer.id, false);
   }
 }
 
@@ -6586,6 +6595,7 @@ function exportAllToExcel() {
 // =============== Alert ===============
 let loadingBarEl = null;
 let loadingBarCount = 0;
+let loadingBarTimeout = null;
 function showLoadingBar() {
   loadingBarCount++;
   if (!loadingBarEl) {
@@ -6593,12 +6603,22 @@ function showLoadingBar() {
     loadingBarEl.className = 'loading-bar';
     document.body.appendChild(loadingBarEl);
   }
+  if (loadingBarTimeout) clearTimeout(loadingBarTimeout);
+  loadingBarTimeout = setTimeout(() => {
+    if (loadingBarEl && loadingBarEl.parentNode) {
+      console.warn('[LoadingBar] Auto-hide after 15s timeout, count was:', loadingBarCount);
+      loadingBarCount = 0;
+      loadingBarEl.parentNode.removeChild(loadingBarEl);
+      loadingBarEl = null;
+    }
+  }, 15000);
 }
 function hideLoadingBar() {
   loadingBarCount = Math.max(0, loadingBarCount - 1);
   if (loadingBarCount === 0 && loadingBarEl && loadingBarEl.parentNode) {
     loadingBarEl.parentNode.removeChild(loadingBarEl);
     loadingBarEl = null;
+    if (loadingBarTimeout) { clearTimeout(loadingBarTimeout); loadingBarTimeout = null; }
   }
 }
 function setSilentLoading(elementId, loading) {
