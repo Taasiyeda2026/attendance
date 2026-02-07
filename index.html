@@ -10077,6 +10077,24 @@ async function loadReportData() {
   }
   
   try {
+    let reportEmployeesMap = {};
+    try {
+      const empData = await apiRequest('getallemployees', {});
+      if (empData.success && Array.isArray(empData.employees)) {
+        empData.employees.forEach(emp => {
+          const empId = emp.employeeId || emp.EmployeeId || '';
+          if (empId) {
+            reportEmployeesMap[empId] = {
+              employmentType: normalizeEmploymentType(emp, ''),
+              team: extractLookupValue(emp.Team || emp.team || '', '')
+            };
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Reports: Could not load employees list:', e.message);
+    }
+
     if (isMobileView()) {
       reportRecords = getFilteredRecordsByMonth(getAvailableRecords(), month, year);
     } else {
@@ -10090,6 +10108,19 @@ async function loadReportData() {
     }
     
     reportRecords = getFilteredRecordsByMonth(reportRecords, month, year);
+
+    reportRecords.forEach(rec => {
+      const empId = rec.employeeId || '';
+      const empInfo = reportEmployeesMap[empId];
+      if (empInfo) {
+        if (!rec.employmentType || rec.employmentType === '') {
+          rec.employmentType = empInfo.employmentType;
+        }
+        if (!rec.team || rec.team === '' || rec.team === '-') {
+          rec.team = empInfo.team;
+        }
+      }
+    });
     
     // Manager can only see their own team
     if (user.role === 'manager') {
