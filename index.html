@@ -7550,21 +7550,35 @@ async function _addRecordInternal() {
     const data = await apiRequest(actionType, payload);
     
     if (data.success) {
-      // Upload files if any selected
-      if (selectedFiles.length > 0) {
-        const uploadResult = await uploadFilesToSharePoint(finalEmployeeId, date);
-        if (uploadResult.urls.length > 0 && (data.recordId || editingId)) {
-          const attachmentsNames = uploadResult.urls.join(', ');
-          await apiRequest('updaterecord', {
-            action: 'updaterecord',
-            recordId: String(data.recordId || editingId),
-            employeeId: String(finalEmployeeId),
-            employeeName: String(finalEmployeeName),
-            team: String(localStorage.getItem("team") || ''),
-            employmentType: String(localStorage.getItem("employmentType") || 'תעשיידע'),
-            attachmentsNames: attachmentsNames
-          });
+      let submitSuccessMessage = isEditing ? '✅ הרשומה עודכנה בהצלחה!' : '✅ הדיווח נשלח בהצלחה!';
+
+      if (!isEditing && selectedFiles.length > 0) {
+        let uploadSucceeded = true;
+
+        for (const file of selectedFiles) {
+          try {
+            const base64Content = await fileToBase64(file);
+            const uploadPayload = {
+              action: 'uploadfile',
+              employeeId: String(finalEmployeeId),
+              attendanceDate: String(date),
+              fileName: String(file.name),
+              fileContent: String(base64Content)
+            };
+
+            const uploadResponse = await apiRequest('uploadfile', uploadPayload);
+            if (!uploadResponse.success) {
+              uploadSucceeded = false;
+            }
+          } catch (uploadError) {
+            uploadSucceeded = false;
+            console.error('Error uploading file after submit:', file.name, uploadError);
+          }
         }
+
+        submitSuccessMessage = uploadSucceeded
+          ? 'הדיווח נשמר והקובץ הועלה'
+          : 'הדיווח נשמר, אבל הקובץ לא הועלה';
       }
       
       clearAddForm();
@@ -7578,7 +7592,7 @@ async function _addRecordInternal() {
       
       hideLoadingBar();
       setSilentLoading('addRecordPage', false);
-      showAlert(isEditing ? '✅ הרשומה עודכנה בהצלחה!' : '✅ הדיווח נשלח בהצלחה!', 'success');
+      showAlert(submitSuccessMessage, 'success');
       if (isEditing) {
         showPage(null, 'dashboard');
       }
