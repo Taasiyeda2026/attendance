@@ -3901,6 +3901,15 @@ function normalizePayload(action, data) {
         employeeId: data.employeeId,
         monthKey: data.monthKey || data.month
       };
+
+    case 'uploadfile':
+      return {
+        action: 'uploadfile',
+        employeeId: data.employeeId,
+        attendanceDate: data.attendanceDate,
+        fileName: data.fileName,
+        fileContent: data.fileContent
+      };
       
     default:
       throw new Error(`Unsupported action: ${normalizedAction}`);
